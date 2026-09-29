@@ -1,0 +1,26 @@
+# Personal learning context — keeps learner-profile out of commits
+/devpost/learner-profile.md
+
+# Local credential files
+.env
+.env.*
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+.next/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
