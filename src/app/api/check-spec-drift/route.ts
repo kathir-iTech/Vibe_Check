@@ -1,27 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN || "";
-
-async function githubApi(url: string) {
-  const headers: Record<string, string> = {
-    Accept: "application/vnd.github.v3+json",
-    "User-Agent": "VibeCheck",
-  };
-  if (GITHUB_TOKEN) {
-    headers["Authorization"] = `token ${GITHUB_TOKEN}`;
-  }
-  const response = await fetch(url, { headers });
-  if (!response.ok) {
-    throw new Error(`GitHub API error: ${response.status}`);
-  }
-  return response.json();
-}
+import { githubApi } from "@/lib/github";
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
   const repoUrl = body.repoUrl || "";
-  const claims = body.claims || [];
-  const evidence = body.evidence || {};
+  const claims = Array.isArray(body.claims) ? body.claims : [];
+  const evidence = body.evidence && typeof body.evidence === "object" ? body.evidence : {};
 
   if (!repoUrl || !claims.length) {
     return NextResponse.json({ drift: [] });
@@ -40,33 +24,33 @@ export async function POST(request: NextRequest) {
 
   try {
     const [scopeDoc, prdDoc, specDoc] = await Promise.all([
-      githubApi(`/repos/${owner}/${cleanRepo}/contents/devpost/scope.md`).catch(() => null),
-      githubApi(`/repos/${owner}/${cleanRepo}/contents/devpost/prd.md`).catch(() => null),
-      githubApi(`/repos/${owner}/${cleanRepo}/contents/devpost/spec.md`).catch(() => null),
+      githubApi(`${base}/contents/devpost/scope.md`).catch(() => null),
+      githubApi(`${base}/contents/devpost/prd.md`).catch(() => null),
+      githubApi(`${base}/contents/devpost/spec.md`).catch(() => null),
     ]);
 
-    const specContent = scopeDoc
+    const scopeContent = scopeDoc
       ? Buffer.from(scopeDoc.content, "base64").toString()
       : "";
     const prdContent = prdDoc
       ? Buffer.from(prdDoc.content, "base64").toString()
       : "";
-    const specContent2 = specDoc
+    const specContent = specDoc
       ? Buffer.from(specDoc.content, "base64").toString()
       : "";
 
-    const allSpecText = `${specContent}\n${prdContent}\n${specContent2}`;
+    const allSpecText = `${scopeContent}\n${prdContent}\n${specContent}`;
     const specKeywords = extractKeywords(allSpecText);
 
     for (const claim of claims) {
       const claimText = claim.text || claim;
-      const claimWords = claimText.toLowerCase().split(/\s+/);
-      const evidenceFiles = evidence[claim.id || claimText]?.files || [];
+      const claimId = claim.id || claimText;
+      const evidenceFiles = evidence[claimId]?.files || [];
       const hasEvidence = evidenceFiles.length > 0;
 
       if (!hasEvidence) {
         driftFlags.push({
-          claimId: claim.id || claimText,
+          claimId,
           claimText,
           verdict: "SPEC-DRIFT",
           reason: "Claim references a feature not found in repo evidence and no supporting spec files match",
@@ -79,7 +63,7 @@ export async function POST(request: NextRequest) {
         );
         if (!matchesSpec) {
           driftFlags.push({
-            claimId: claim.id || claimText,
+            claimId,
             claimText,
             verdict: "SPEC-DRIFT",
             reason: "Claim appears to contradict repository spec files",
@@ -88,12 +72,12 @@ export async function POST(request: NextRequest) {
         }
       }
     }
-  } catch {
+  } catch (error) {
     driftFlags.push({
       claimId: "error",
       claimText: "spec-drift-check",
       verdict: "SPEC-DRIFT",
-      reason: "Could not fetch spec files from repo",
+      reason: `Could not fetch spec files from repo: ${error instanceof Error ? error.message : String(error)}`,
       specReference: "N/A",
     });
   }
@@ -103,11 +87,12 @@ export async function POST(request: NextRequest) {
 
 function extractKeywords(text: string): string[] {
   const keywords: string[] = [];
+  const stopWords = new Set(["this", "that", "they", "have", "been", "will", "from", "with", "what", "when", "where", "how", "than", "over", "been", "their", "there", "would", "could", "should", "about", "into", "more", "some", "such"]);
   const sections = text.split(/##+/);
   for (const section of sections) {
     const words = section.toLowerCase().split(/\s+/).filter((w: string) => w.length > 3);
     for (const w of words) {
-      if (!keywords.includes(w) && !["this", "that", "they", "have", "been", "will", "from", "with", "what", "when", "where", "how", "than", "over", "been"].includes(w)) {
+      if (!keywords.includes(w) && !stopWords.has(w)) {
         if (keywords.length < 20) keywords.push(w);
       }
     }
@@ -117,9 +102,16 @@ function extractKeywords(text: string): string[] {
 
 export async function GET(request: NextRequest) {
   const repoUrl = request.nextUrl.searchParams.get("repoUrl") || "";
-  const claimsParam = request.nextUrl.searchParams.get("claims") || "";
-  const claims = claimsParam ? JSON.parse(claimsParam) : [];
+  const claimsParam = request.nextUrl.searchParams.get("claims") || "[]";
+  let claims: any[] = [];
+  try {
+    claims = JSON.parse(claimsParam);
+  } catch {
+    claims = [];
+  }
   const evidence = {};
-  const result = await POST(Object.assign(request, { json: () => Promise.resolve({ repoUrl, claims, evidence }) }));
-  return result;
+  const fakeRequest = {
+    json: () => Promise.resolve({ repoUrl, claims, evidence }),
+  } as unknown as NextRequest;
+  return POST(fakeRequest);
 }

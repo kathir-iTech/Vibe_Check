@@ -1,23 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN || "";
-
-async function githubApi(url: string) {
-  const headers: Record<string, string> = {
-    Accept: "application/vnd.github.v3+json",
-    "User-Agent": "VibeCheck",
-  };
-  if (GITHUB_TOKEN) {
-    headers["Authorization"] = `token ${GITHUB_TOKEN}`;
-  }
-  const response = await fetch(url, { headers });
-  return response.json();
-}
+import { githubApi, getDefaultBranch } from "@/lib/github";
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
   const repoUrl = body.repoUrl || "";
-  const claims = body.claims || [];
+  const claims = Array.isArray(body.claims) ? body.claims : [];
 
   if (!repoUrl) {
     return NextResponse.json({ evidence: {}, error: "repoUrl required" });
@@ -30,6 +17,17 @@ export async function POST(request: NextRequest) {
 
   const [, owner, repo] = match;
   const cleanRepo = repo.replace(/\.git$/, "");
+
+  let branch: string;
+  try {
+    branch = await getDefaultBranch(owner, cleanRepo);
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    return NextResponse.json(
+      { evidence: {}, error: `Could not access repo ${owner}/${cleanRepo}: ${msg}` },
+      { status: 404 }
+    );
+  }
   const base = `https://api.github.com/repos/${owner}/${cleanRepo}`;
 
   const evidence: Record<string, any> = {};
@@ -41,7 +39,7 @@ export async function POST(request: NextRequest) {
     try {
       const [commits, files] = await Promise.all([
         githubApi(`${base}/commits?per_page=30`),
-        githubApi(`/repos/${owner}/${cleanRepo}/git/trees/master?recursive=1`),
+        githubApi(`${base}/git/trees/${branch}?recursive=1`),
       ]);
 
       const fileNames = files?.tree?.map((t: any) => t.path) || [];
@@ -51,9 +49,11 @@ export async function POST(request: NextRequest) {
         )
       );
 
-      const relevantCommits = commits.filter((c: any) =>
-        c.commit?.message?.toLowerCase().includes(claimText.toLowerCase().slice(0, 20))
-      );
+      const relevantCommits = Array.isArray(commits)
+        ? commits.filter((c: any) =>
+            c.commit?.message?.toLowerCase().includes(claimText.toLowerCase().slice(0, 20))
+          )
+        : [];
 
       evidence[claimId] = {
         files: relevantFiles.slice(0, 10),
@@ -64,8 +64,9 @@ export async function POST(request: NextRequest) {
         })),
         totalFilesInRepo: fileNames.length,
       };
-    } catch {
-      evidence[claimId] = { error: "Failed to fetch evidence" };
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      evidence[claimId] = { error: `Failed to fetch evidence: ${msg}` };
     }
   }
 
@@ -80,6 +81,8 @@ export async function GET(request: NextRequest) {
   }
   const [, owner, repo] = match;
   const cleanRepo = repo.replace(/\.git$/, "");
-  const data = await githubApi(`https://api.github.com/repos/${owner}/${cleanRepo}/commits?per_page=5`);
+  const data = await githubApi(
+    `https://api.github.com/repos/${owner}/${cleanRepo}/commits?per_page=5`
+  );
   return NextResponse.json({ commits: data });
 }
