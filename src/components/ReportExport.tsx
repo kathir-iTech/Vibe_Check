@@ -47,35 +47,42 @@ export function ReportExport({ repoUrl, claims, evidence, verdicts }: Props) {
   }
 
   return (
-    <div>
-      <button
-        onClick={handleGenerate}
-        disabled={busy || !hasClaims}
-        style={{ padding: "8px 16px", background: hasClaims ? "#3b82f6" : "#666", color: "#fff", border: "none", borderRadius: 4, cursor: busy ? "wait" : hasClaims ? "pointer" : "not-allowed", fontWeight: "bold" }}
-      >
-        {busy ? "Generating..." : "Generate Shareable Report"}
-      </button>
-      <button
-        onClick={handleExport}
-        disabled={!hasClaims}
-        style={{ padding: "8px 16px", marginLeft: 8, background: hasClaims ? "#555" : "#666", color: "#fff", border: "none", borderRadius: 4, cursor: hasClaims ? "pointer" : "not-allowed" }}
-      >
-        Export Report (JSON)
-      </button>
+    <div className="space-y-3">
+      <div className="flex flex-wrap gap-2">
+        <button
+          onClick={handleGenerate}
+          disabled={busy || !hasClaims}
+          className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {busy ? "Generating..." : "Generate Shareable Report"}
+        </button>
+        <button
+          onClick={handleExport}
+          disabled={!hasClaims}
+          className="rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+        >
+          Export Report (JSON)
+        </button>
+      </div>
       {!hasClaims ? (
-        <p style={{ fontSize: 13, color: "#888", marginTop: 8 }}>
-          Run a check first — a report needs claims.
+        <p className="text-xs text-zinc-500 dark:text-zinc-400">
+          Run a check first &mdash; a report needs claims.
         </p>
       ) : null}
       {error ? (
-        <p style={{ color: "#ef4444", fontSize: 14, marginTop: 8 }}>{error}</p>
+        <p className="text-sm font-medium text-red-600 dark:text-red-400">{error}</p>
       ) : null}
       {permalink ? (
-        <div style={{ marginTop: 8 }}>
-          <a href={permalink} target="_blank" rel="noreferrer" style={{ color: "#22c55e" }}>
+        <div className="space-y-1">
+          <a
+            href={permalink}
+            target="_blank"
+            rel="noreferrer"
+            className="text-sm font-medium text-emerald-700 underline underline-offset-2 hover:text-emerald-600 dark:text-emerald-400 dark:hover:text-emerald-300"
+          >
             Open shareable report in new tab
           </a>
-          <p style={{ fontSize: 11, color: "#888", wordBreak: "break-all", fontFamily: "monospace", marginTop: 4 }}>
+          <p className="break-all font-mono text-[11px] leading-relaxed text-zinc-500 dark:text-zinc-400">
             {permalink}
           </p>
         </div>

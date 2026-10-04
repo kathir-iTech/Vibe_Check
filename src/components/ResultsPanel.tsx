@@ -1,45 +1,132 @@
 import { Claim } from "@/types";
-import { getVerdictColor } from "./ClaimInput";
+import { CheckIcon, QuestionIcon, WarningIcon } from "./icons";
 
 interface Props {
   claims: Claim[];
   evidence: Record<string, any>;
   driftFlags: any[];
+  loading?: boolean;
 }
 
-export function ResultsPanel({ claims, evidence, driftFlags }: Props) {
+interface VerdictStyle {
+  className: string;
+  Icon: (props: { className?: string }) => JSX.Element;
+}
+
+const VERDICT_STYLES: Record<string, VerdictStyle> = {
+  TRUE: {
+    className:
+      "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-400",
+    Icon: CheckIcon,
+  },
+  UNVERIFIED: {
+    className: "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400",
+    Icon: QuestionIcon,
+  },
+  "SPEC-DRIFT": {
+    className: "bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-400",
+    Icon: WarningIcon,
+  },
+};
+
+const FALLBACK_STYLE: VerdictStyle = {
+  className: "bg-zinc-200 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300",
+  Icon: QuestionIcon,
+};
+
+function VerdictBadge({ verdict }: { verdict: string }) {
+  const style = VERDICT_STYLES[verdict] || FALLBACK_STYLE;
+  const { Icon } = style;
+  return (
+    <span
+      className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold uppercase tracking-wide ${style.className}`}
+    >
+      <Icon className="h-3 w-3" />
+      {verdict}
+    </span>
+  );
+}
+
+function ResultsSkeleton() {
+  return (
+    <div role="status" className="space-y-3">
+      <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+        Checking claims against repo evidence&hellip;
+      </p>
+      {[0, 1, 2].map((i) => (
+        <div
+          key={i}
+          className="animate-pulse space-y-2 rounded-lg border border-zinc-100 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-800/50"
+        >
+          <div className="flex items-center gap-2">
+            <div className="h-5 w-20 rounded-full bg-zinc-200 dark:bg-zinc-700" />
+            <div className="h-4 flex-1 rounded bg-zinc-200 dark:bg-zinc-700" />
+          </div>
+          <div className="h-3 w-2/3 rounded bg-zinc-200/70 dark:bg-zinc-700/70" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function ResultsPanel({ claims, evidence, driftFlags, loading }: Props) {
+  if (loading) {
+    return <ResultsSkeleton />;
+  }
+
   if (!claims.length) {
-    return <p className="placeholder">Submit a claim to see verdicts.</p>;
+    return (
+      <p className="text-sm text-zinc-500 dark:text-zinc-400">
+        Submit a claim to see verdicts.
+      </p>
+    );
   }
 
   return (
-    <div>
+    <ul className="space-y-3">
       {claims.map((claim) => {
         const claimEvidence = evidence[claim.id || claim.text];
-        const driftFlag = driftFlags.find((d) => d.claimId === (claim.id || claim.text));
+        const driftFlag = driftFlags.find(
+          (d) => d.claimId === (claim.id || claim.text)
+        );
         const verdict = driftFlag?.verdict || "UNVERIFIED";
-        const color = getVerdictColor(verdict);
+        const hasFiles = Boolean(claimEvidence?.files?.length);
+        const hasCommits = Boolean(claimEvidence?.commits?.length);
 
         return (
-          <div key={claim.id || claim.text} style={{ borderLeft: `4px solid ${color}`, padding: "8px 12px", margin: "8px 0" }}>
-            <strong style={{ color }}>{verdict}</strong>: {claim.text}
-            {claimEvidence?.files?.length || claimEvidence?.commits?.length ? (
-              <div style={{ fontSize: 12, color: "#888", marginTop: 4 }}>
-                {claimEvidence.files?.length ? `Files: ${claimEvidence.files.join(", ")}` : ""}
-                {claimEvidence.commits?.length ? `${claimEvidence.files?.length ? " | " : ""}Commits: ${claimEvidence.commits.map((c: any) => c.sha?.slice(0, 7)).join(", ")}` : ""}
-              </div>
+          <li
+            key={claim.id || claim.text}
+            className="space-y-2 rounded-lg border border-zinc-100 bg-zinc-50 p-3.5 dark:border-zinc-800 dark:bg-zinc-800/50"
+          >
+            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+              <VerdictBadge verdict={verdict} />
+              <p className="min-w-0 flex-1 break-words text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                {claim.text}
+              </p>
+            </div>
+            {hasFiles || hasCommits ? (
+              <p className="break-all font-mono text-[11px] leading-relaxed text-zinc-500 dark:text-zinc-400">
+                {hasFiles ? `Files: ${claimEvidence.files.join(", ")}` : ""}
+                {hasCommits
+                  ? `${hasFiles ? " | " : ""}Commits: ${claimEvidence.commits
+                      .map((c: any) => c.sha?.slice(0, 7))
+                      .join(", ")}`
+                  : ""}
+              </p>
             ) : null}
             {driftFlag?.reason ? (
-              <div style={{ fontSize: 12, color: "#aaa", marginTop: 4 }}>{driftFlag.reason}</div>
+              <p className="text-xs leading-relaxed text-zinc-600 dark:text-zinc-300">
+                {driftFlag.reason}
+              </p>
             ) : null}
             {driftFlag?.specReference ? (
-              <div style={{ fontSize: 12, color: "#f59e0b", marginTop: 4, fontFamily: "monospace" }}>
+              <p className="break-all font-mono text-xs leading-relaxed text-amber-700 dark:text-amber-400">
                 &rarr; {driftFlag.specReference}
-              </div>
+              </p>
             ) : null}
-          </div>
+          </li>
         );
       })}
-    </div>
+    </ul>
   );
 }
