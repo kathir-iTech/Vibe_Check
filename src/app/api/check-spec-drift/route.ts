@@ -1,5 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { githubApi } from "@/lib/github";
+import { assessClaimsAgainstSpec, SpecDoc } from "@/lib/gemini";
+
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
+
+async function fetchDoc(base: string, file: string): Promise<string | null> {
+  try {
+    const data = await githubApi(`${base}/contents/${file}`);
+    return Buffer.from(data.content, "base64").toString();
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    if (/GitHub API error: 404\b/.test(msg)) return null;
+    throw error;
+  }
+}
+
+function hasRealEvidence(entry: any): boolean {
+  if (!entry || typeof entry !== "object") return false;
+  const files = Array.isArray(entry.files) ? entry.files : [];
+  const commits = Array.isArray(entry.commits) ? entry.commits : [];
+  return files.length > 0 || commits.length > 0;
+}
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
@@ -7,97 +28,110 @@ export async function POST(request: NextRequest) {
   const claims = Array.isArray(body.claims) ? body.claims : [];
   const evidence = body.evidence && typeof body.evidence === "object" ? body.evidence : {};
 
-  if (!repoUrl || !claims.length) {
+  if (!repoUrl) {
+    return NextResponse.json({ drift: [], error: "repoUrl required" }, { status: 400 });
+  }
+  if (!claims.length) {
     return NextResponse.json({ drift: [] });
   }
 
   const match = repoUrl.match(/github\.com\/([^/]+)\/([^/\s]+)/);
   if (!match) {
-    return NextResponse.json({ drift: [], error: "Invalid GitHub URL" });
+    return NextResponse.json({ drift: [], error: "Invalid GitHub URL" }, { status: 400 });
   }
 
   const [, owner, repo] = match;
   const cleanRepo = repo.replace(/\.git$/, "");
   const base = `https://api.github.com/repos/${owner}/${cleanRepo}`;
 
-  const driftFlags: any[] = [];
-
+  let docs: SpecDoc[];
   try {
-    const [scopeDoc, prdDoc, specDoc] = await Promise.all([
-      githubApi(`${base}/contents/devpost/scope.md`).catch(() => null),
-      githubApi(`${base}/contents/devpost/prd.md`).catch(() => null),
-      githubApi(`${base}/contents/devpost/spec.md`).catch(() => null),
+    const [scopeContent, prdContent, specContent] = await Promise.all([
+      fetchDoc(base, "devpost/scope.md"),
+      fetchDoc(base, "devpost/prd.md"),
+      fetchDoc(base, "devpost/spec.md"),
     ]);
-
-    const scopeContent = scopeDoc
-      ? Buffer.from(scopeDoc.content, "base64").toString()
-      : "";
-    const prdContent = prdDoc
-      ? Buffer.from(prdDoc.content, "base64").toString()
-      : "";
-    const specContent = specDoc
-      ? Buffer.from(specDoc.content, "base64").toString()
-      : "";
-
-    const allSpecText = `${scopeContent}\n${prdContent}\n${specContent}`;
-    const specKeywords = extractKeywords(allSpecText);
-
-    for (const claim of claims) {
-      const claimText = claim.text || claim;
-      const claimId = claim.id || claimText;
-      const evidenceFiles = evidence[claimId]?.files || [];
-      const hasEvidence = evidenceFiles.length > 0;
-
-      if (!hasEvidence) {
-        driftFlags.push({
-          claimId,
-          claimText,
-          verdict: "SPEC-DRIFT",
-          reason: "Claim references a feature not found in repo evidence and no supporting spec files match",
-          specReference: "No matching files found",
-        });
-      } else if (specKeywords.length > 0) {
-        const claimLower = claimText.toLowerCase();
-        const matchesSpec = specKeywords.some((kw: string) =>
-          claimLower.includes(kw.toLowerCase())
-        );
-        if (!matchesSpec) {
-          driftFlags.push({
-            claimId,
-            claimText,
-            verdict: "SPEC-DRIFT",
-            reason: "Claim appears to contradict repository spec files",
-            specReference: "Checked against devpost/scope.md, devpost/prd.md, devpost/spec.md",
-          });
-        }
-      }
-    }
+    docs = [
+      { file: "devpost/scope.md", text: scopeContent || "" },
+      { file: "devpost/prd.md", text: prdContent || "" },
+      { file: "devpost/spec.md", text: specContent || "" },
+    ].filter((d) => d.text.trim().length > 0);
   } catch (error) {
-    driftFlags.push({
-      claimId: "error",
-      claimText: "spec-drift-check",
-      verdict: "SPEC-DRIFT",
-      reason: `Could not fetch spec files from repo: ${error instanceof Error ? error.message : String(error)}`,
-      specReference: "N/A",
-    });
+    const msg = error instanceof Error ? error.message : String(error);
+    return NextResponse.json(
+      { drift: [], error: `Could not fetch spec documents: ${msg}` },
+      { status: 502 }
+    );
   }
 
-  return NextResponse.json({ drift: driftFlags });
-}
+  const outcomes = new Map<string, any>();
+  const toAssess: { id: string; text: string }[] = [];
 
-function extractKeywords(text: string): string[] {
-  const keywords: string[] = [];
-  const stopWords = new Set(["this", "that", "they", "have", "been", "will", "from", "with", "what", "when", "where", "how", "than", "over", "been", "their", "there", "would", "could", "should", "about", "into", "more", "some", "such"]);
-  const sections = text.split(/##+/);
-  for (const section of sections) {
-    const words = section.toLowerCase().split(/\s+/).filter((w: string) => w.length > 3);
-    for (const w of words) {
-      if (!keywords.includes(w) && !stopWords.has(w)) {
-        if (keywords.length < 20) keywords.push(w);
-      }
+  for (const claim of claims) {
+    const claimText = claim.text || claim;
+    const claimId = claim.id || claimText;
+    if (hasRealEvidence(evidence[claimId])) {
+      toAssess.push({ id: claimId, text: claimText });
+    } else {
+      outcomes.set(claimId, {
+        claimId,
+        claimText,
+        verdict: "UNVERIFIED",
+        reason: "No matching files or commits found in repo evidence",
+        specReference: "",
+      });
     }
   }
-  return keywords;
+
+  if (toAssess.length && !docs.length) {
+    for (const c of toAssess) {
+      outcomes.set(c.id, {
+        claimId: c.id,
+        claimText: c.text,
+        verdict: "TRUE",
+        reason: "Evidence found in repo; no spec documents available to contradict it",
+        specReference: "",
+      });
+    }
+  } else if (toAssess.length) {
+    let assessments;
+    try {
+      assessments = await assessClaimsAgainstSpec(toAssess, docs, GEMINI_API_KEY);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      return NextResponse.json(
+        { drift: [], error: `Gemini API error: ${msg}` },
+        { status: 502 }
+      );
+    }
+    for (const a of assessments) {
+      const claim = toAssess.find((c) => c.id === a.claimId);
+      outcomes.set(a.claimId, {
+        claimId: a.claimId,
+        claimText: claim?.text || a.claimId,
+        verdict: a.contradicts ? "SPEC-DRIFT" : "TRUE",
+        reason: a.reason,
+        specReference: a.contradicts
+          ? `${a.sourceDoc}:${a.lineNumber}: ${a.contradictingLine}`
+          : "",
+      });
+    }
+  }
+
+  const drift = claims.map((claim: any) => {
+    const claimId = claim.id || claim.text;
+    return (
+      outcomes.get(claimId) || {
+        claimId,
+        claimText: claim.text || claim,
+        verdict: "UNVERIFIED",
+        reason: "No assessment produced",
+        specReference: "",
+      }
+    );
+  });
+
+  return NextResponse.json({ drift });
 }
 
 export async function GET(request: NextRequest) {
