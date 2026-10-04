@@ -114,7 +114,7 @@ export default function Home() {
 
       <div style={{ border: "1px solid #333", borderRadius: 8, padding: 16, margin: 16 }}>
         <h2>Report</h2>
-        <ReportExport />
+        <ReportExport repoUrl={repoUrl} claims={claims} evidence={evidence} verdicts={driftFlags} />
       </div>
 
       <div style={{ border: "1px solid #333", borderRadius: 8, padding: 16, margin: 16 }}>

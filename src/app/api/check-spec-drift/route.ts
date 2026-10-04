@@ -88,8 +88,9 @@ export async function POST(request: NextRequest) {
       outcomes.set(c.id, {
         claimId: c.id,
         claimText: c.text,
-        verdict: "TRUE",
-        reason: "Evidence found in repo; no spec documents available to contradict it",
+        verdict: "UNVERIFIED",
+        reason:
+          "Evidence found in repo, but no spec documents to compare against — spec.md marks these UNVERIFIED",
         specReference: "",
       });
     }
