@@ -59,7 +59,7 @@ Build mode: fast — learner issues scoped Fix prompts, agent builds/verifies/co
   Learner check: Open the app in light and dark mode; confirm verdict colors and evidence styling match the spec.
   Commit: `Fix 5: UI/design pass`
 
-- [ ] **6. Self-audit (published number, scoped down)**
+- [x] **6. Self-audit (published number, scoped down)**
   Becomes usable: The homepage shows a Self-Audit card with a genuine recorded run of VibeCheck checking 3 fixed claims about itself against `github.com/kathir-iTech/Vibe_Check`, plus an on-demand "Re-run live" button; `/api/self-audit` performs that run server-side.
   Why now: `scope.md > What "Working" Looks Like` and `prd.md > Product Decisions` both require the tool to run on its own repo as the proof. The full published number (8 past build logs) stays deferred; this is the self-contained version of it.
   PRD ref: `prd.md > Product Decisions`, `prd.md > Deferred From the POC`
