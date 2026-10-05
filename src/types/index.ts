@@ -21,3 +21,19 @@ export interface Report {
   generatedAt: string;
   permalink?: string;
 }
+
+export interface SelfAuditClaim {
+  id: string;
+  text: string;
+  verdict: Verdict;
+  reason: string;
+  specReference: string;
+  files: string[];
+  commits: { sha: string; message: string; date: string }[];
+}
+
+export interface SelfAuditResult {
+  repoUrl: string;
+  runAt: string;
+  claims: SelfAuditClaim[];
+}

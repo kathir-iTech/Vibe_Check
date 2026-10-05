@@ -34,7 +34,7 @@ const FALLBACK_STYLE: VerdictStyle = {
   Icon: QuestionIcon,
 };
 
-function VerdictBadge({ verdict }: { verdict: string }) {
+export function VerdictBadge({ verdict }: { verdict: string }) {
   const style = VERDICT_STYLES[verdict] || FALLBACK_STYLE;
   const { Icon } = style;
   return (

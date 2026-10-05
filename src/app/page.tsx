@@ -3,6 +3,7 @@ import { useState } from "react";
 import { ResultsPanel } from "@/components/ResultsPanel";
 import { ReportExport } from "@/components/ReportExport";
 import { DemoMode } from "@/components/DemoMode";
+import { SelfAudit } from "@/components/SelfAudit";
 import { SpinnerIcon } from "@/components/icons";
 
 export default function Home() {
@@ -142,6 +143,13 @@ export default function Home() {
           Demo Mode
         </h2>
         <DemoMode />
+      </section>
+
+      <section className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+          Self-Audit
+        </h2>
+        <SelfAudit />
       </section>
     </main>
   );
