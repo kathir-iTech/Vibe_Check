@@ -2,15 +2,35 @@
 import { useState } from "react";
 import { SelfAuditResult } from "@/types";
 import { SELF_AUDIT_SEED } from "@/lib/self-audit-seed";
+import { cacheKey, formatStamp, readCached, writeCached } from "@/lib/result-cache";
 import { SpinnerIcon } from "./icons";
 import { VerdictBadge } from "./ResultsPanel";
 
+const SELF_AUDIT_KEY = cacheKey([
+  "self-audit",
+  "https://github.com/kathir-iTech/Vibe_Check",
+]);
+
 export function SelfAudit() {
   const [result, setResult] = useState<SelfAuditResult>(SELF_AUDIT_SEED);
+  const [source, setSource] = useState<"seed" | "live" | "cached">("seed");
+  const [savedAt, setSavedAt] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  async function rerun() {
+  async function rerun(forceLive = false) {
+    if (!forceLive) {
+      const cached = readCached<SelfAuditResult>(SELF_AUDIT_KEY);
+      if (cached) {
+        setResult(cached.data);
+        setSource("cached");
+        setSavedAt(cached.savedAt);
+        setError("");
+        console.info("[VibeCheck] self-audit cache hit — served from sessionStorage, 0 fetch calls");
+        return;
+      }
+    }
+
     setLoading(true);
     setError("");
     try {
@@ -19,7 +39,10 @@ export function SelfAudit() {
       if (!res.ok || data.error) {
         throw new Error(data.error || `self-audit failed (${res.status})`);
       }
-      setResult(data as SelfAuditResult);
+      const entry = writeCached<SelfAuditResult>(SELF_AUDIT_KEY, data as SelfAuditResult);
+      setResult(entry.data);
+      setSource("live");
+      setSavedAt(entry.savedAt);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -38,14 +61,24 @@ export function SelfAudit() {
           </span>
           . Seeded from a genuine run &mdash; nothing fires until you ask it to.
         </p>
-        <button
-          onClick={rerun}
-          disabled={loading}
-          className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-zinc-300 bg-zinc-50 px-3 py-1.5 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
-        >
-          {loading ? <SpinnerIcon className="h-3.5 w-3.5" /> : null}
-          {loading ? "Re-running..." : "Re-run live"}
-        </button>
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          <button
+            onClick={() => rerun(false)}
+            disabled={loading}
+            className="inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-zinc-50 px-3 py-1.5 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+          >
+            {loading ? <SpinnerIcon className="h-3.5 w-3.5" /> : null}
+            {loading ? "Re-running..." : "Re-run"}
+          </button>
+          <button
+            onClick={() => rerun(true)}
+            disabled={loading}
+            className="inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-zinc-50 px-3 py-1.5 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+          >
+            {loading ? <SpinnerIcon className="h-3.5 w-3.5" /> : null}
+            {loading ? "Re-running..." : "Re-run live"}
+          </button>
+        </div>
       </div>
 
       <p
@@ -54,7 +87,11 @@ export function SelfAudit() {
       >
         {loading
           ? "Running self-audit against the repo..."
-          : `Last run: ${result.runAt}`}
+          : source === "cached"
+            ? `Cached result (saved ${formatStamp(savedAt)}) \u2014 Re-run live for a fresh check. Last run: ${result.runAt}`
+            : source === "live"
+              ? `Last run: ${result.runAt} (live)`
+              : `Last run: ${result.runAt}`}
       </p>
 
       {error ? (

@@ -79,6 +79,16 @@ Build mode: fast — learner issues scoped Fix prompts, agent builds/verifies/co
   Learner check: Paste a real PR URL from any public repo (leave the message box empty), enter a repo URL, click Check Claims — confirm the fetched title/body appears and verdicts render.
   Commit: `Fix 7: PR/commit URL input`
 
+- [x] **8. Client-side result caching**
+  Becomes usable: A repeated identical submission (Check Claims or self-audit Re-run) is served from sessionStorage with zero network calls, visibly labeled "cached — Re-run live for a fresh check"; a force-live path always exists; storage failures fail open to a live call.
+  Why now: Learner-issued scope addition after Fix 7 — saves Gemini/GitHub quota on repeated checks without hiding freshness.
+  PRD ref: `prd.md > Features and Behavior` (re-checking the same claim)
+  Spec ref: `spec.md > Important Failure Modes` (fail open, never break the page)
+  Build: `src/lib/result-cache.ts` (FNV-1a key of message-or-PR-URL + repoUrl, try/catch read/write, fail open). Homepage `handleCheck(forceLive)` reads cache before any fetch, writes only on full success, renders a live/cached badge with an always-available "Re-run live" button; SelfAudit gets a cache-aware "Re-run" alongside the always-real "Re-run live". No new dependencies, no new services.
+  Verify (mechanical): `npm run lint` + `npm run build` clean; headless-browser console shows a second identical submission served with 0 fetch calls, and "Re-run live" issuing a real fetch.
+  Learner check: Run the same check twice — the second shows the amber "cached" badge; click "Re-run live" and confirm the "live" badge returns. Self-audit: "Re-run" hits cache, "Re-run live" always re-fetches.
+  Commit: `Fix 8: client-side result caching`
+
 ## Hands-on Checkpoints
 
 - [x] Early usable behavior explored — Fix 5 UI/design pass reviewed by the learner after push (build/lint/grep verification reported back, code confirmed to hold up)
@@ -103,3 +113,4 @@ Activity mode: [live app and editor, explicit static fallback, focused alternati
 ## Revisions
 
 - Fix 7 (learner-issued after Fix 6 verification): added slice 7 — PR/commit URL as an alternate claim source. New `lib/github.ts` helper + `/api/claim-source` route only; the three verified verdict routes are explicitly out of scope per the Fix 7 prompt.
+- Fix 8 (learner-issued after Fix 7 verification): added slice 8 — sessionStorage result caching for Check Claims and self-audit, with visible cached/live labels, an always-available force-live path, and fail-open storage handling. No new dependencies or services.

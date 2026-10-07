@@ -5,6 +5,14 @@ import { ReportExport } from "@/components/ReportExport";
 import { DemoMode } from "@/components/DemoMode";
 import { SelfAudit } from "@/components/SelfAudit";
 import { SpinnerIcon } from "@/components/icons";
+import { cacheKey, formatStamp, readCached, writeCached } from "@/lib/result-cache";
+
+interface CheckResult {
+  claimSource: string;
+  claims: any[];
+  evidence: Record<string, any>;
+  driftFlags: any[];
+}
 
 export default function Home() {
   const [message, setMessage] = useState("");
@@ -16,8 +24,11 @@ export default function Home() {
   const [driftFlags, setDriftFlags] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [resultSource, setResultSource] = useState<{ kind: "live" | "cached"; at: string } | null>(
+    null
+  );
 
-  async function handleCheck() {
+  async function handleCheck(forceLive = false) {
     const sourceUrl = prUrl.trim();
     if (!sourceUrl && !message.trim()) {
       setError("Paste an agent message first, or a PR/commit URL below.");
@@ -28,8 +39,25 @@ export default function Home() {
       return;
     }
 
+    const key = cacheKey([sourceUrl || message, repoUrl]);
+
+    if (!forceLive) {
+      const cached = readCached<CheckResult>(key);
+      if (cached) {
+        setClaimSource(cached.data.claimSource);
+        setClaims(cached.data.claims);
+        setEvidence(cached.data.evidence);
+        setDriftFlags(cached.data.driftFlags);
+        setResultSource({ kind: "cached", at: cached.savedAt });
+        setError("");
+        console.info("[VibeCheck] cache hit — served from sessionStorage, 0 fetch calls");
+        return;
+      }
+    }
+
     setLoading(true);
     setError("");
+    setResultSource(null);
     setClaimSource("");
     setClaims([]);
     setEvidence({});
@@ -90,6 +118,15 @@ export default function Home() {
         throw new Error(driftData.error || `check-spec-drift failed (${driftRes.status})`);
       }
       setDriftFlags(driftData.drift || []);
+
+      const entry = writeCached<CheckResult>(key, {
+        claimSource: sourceUrl ? claimText : "",
+        claims: extractedClaims,
+        evidence: evidenceData.evidence || {},
+        driftFlags: driftData.drift || [],
+      });
+      setResultSource({ kind: "live", at: entry.savedAt });
+      console.info("[VibeCheck] live run finished");
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -158,7 +195,7 @@ export default function Home() {
           />
           <div className="flex flex-wrap items-center gap-3 pt-1">
             <button
-              onClick={handleCheck}
+              onClick={() => handleCheck(false)}
               disabled={loading}
               className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 disabled:cursor-not-allowed disabled:opacity-60"
             >
@@ -176,6 +213,37 @@ export default function Home() {
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
           Results
         </h2>
+        {resultSource ? (
+          <div className="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+            {resultSource.kind === "cached" ? (
+              <>
+                <span className="rounded-full bg-amber-100 px-2 py-0.5 font-bold uppercase tracking-wide text-amber-800 dark:bg-amber-500/15 dark:text-amber-400">
+                  cached
+                </span>
+                <span className="text-zinc-500 dark:text-zinc-400">
+                  saved {formatStamp(resultSource.at)} &mdash;
+                </span>
+                <button
+                  onClick={() => handleCheck(true)}
+                  disabled={loading}
+                  className="font-semibold text-emerald-700 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 disabled:cursor-not-allowed disabled:opacity-60 dark:text-emerald-400"
+                >
+                  Re-run live
+                </button>
+                <span className="text-zinc-500 dark:text-zinc-400">for a fresh check</span>
+              </>
+            ) : (
+              <>
+                <span className="rounded-full bg-emerald-100 px-2 py-0.5 font-bold uppercase tracking-wide text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-400">
+                  live
+                </span>
+                <span className="text-zinc-500 dark:text-zinc-400">
+                  checked {formatStamp(resultSource.at)}
+                </span>
+              </>
+            )}
+          </div>
+        ) : null}
         <ResultsPanel
           claims={claims}
           evidence={evidence}
