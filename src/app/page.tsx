@@ -8,6 +8,8 @@ import { SpinnerIcon } from "@/components/icons";
 
 export default function Home() {
   const [message, setMessage] = useState("");
+  const [prUrl, setPrUrl] = useState("");
+  const [claimSource, setClaimSource] = useState("");
   const [repoUrl, setRepoUrl] = useState("");
   const [claims, setClaims] = useState<any[]>([]);
   const [evidence, setEvidence] = useState<Record<string, any>>({});
@@ -16,8 +18,9 @@ export default function Home() {
   const [error, setError] = useState("");
 
   async function handleCheck() {
-    if (!message.trim()) {
-      setError("Paste an agent message first.");
+    const sourceUrl = prUrl.trim();
+    if (!sourceUrl && !message.trim()) {
+      setError("Paste an agent message first, or a PR/commit URL below.");
       return;
     }
     if (!repoUrl.trim()) {
@@ -27,15 +30,34 @@ export default function Home() {
 
     setLoading(true);
     setError("");
+    setClaimSource("");
     setClaims([]);
     setEvidence({});
     setDriftFlags([]);
 
     try {
+      let claimText = message;
+      if (sourceUrl) {
+        const sourceRes = await fetch("/api/claim-source", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: sourceUrl }),
+        });
+        const sourceData = await sourceRes.json();
+        if (!sourceRes.ok || sourceData.error) {
+          throw new Error(sourceData.error || `claim-source failed (${sourceRes.status})`);
+        }
+        if (!sourceData.text) {
+          throw new Error("GitHub returned no text for that URL.");
+        }
+        claimText = sourceData.text;
+        setClaimSource(sourceData.text);
+      }
+
       const extractRes = await fetch("/api/extract-claims", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message, repoUrl }),
+        body: JSON.stringify({ message: claimText, repoUrl }),
       });
       const extractData = await extractRes.json();
       if (!extractRes.ok || extractData.error) {
@@ -79,7 +101,8 @@ export default function Home() {
     <main className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:py-12">
       <h1 className="sr-only">VibeCheck</h1>
       <p className="text-sm text-zinc-600 dark:text-zinc-400">
-        Paste your agent&rsquo;s last claim + a GitHub repo URL. Get verdicts with evidence.
+        Paste your agent&rsquo;s last claim (or a PR/commit URL) + a GitHub repo URL. Get verdicts with
+        evidence.
       </p>
 
       <section className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
@@ -87,14 +110,44 @@ export default function Home() {
           Input Panel
         </h2>
         <div className="space-y-3">
-          <textarea
-            id="agentMessage"
-            rows={4}
-            placeholder="Paste agent message here..."
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            className="block w-full min-h-[7rem] resize-y rounded-lg border border-zinc-300 bg-zinc-50 px-3 py-2.5 font-mono text-sm text-zinc-900 placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500"
+          {!prUrl.trim() ? (
+            <textarea
+              id="agentMessage"
+              rows={4}
+              placeholder="Paste agent message here..."
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              className="block w-full min-h-[7rem] resize-y rounded-lg border border-zinc-300 bg-zinc-50 px-3 py-2.5 font-mono text-sm text-zinc-900 placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500"
+            />
+          ) : null}
+          <div className="flex items-center gap-3">
+            <span className="h-px flex-1 bg-zinc-200 dark:bg-zinc-700" aria-hidden="true" />
+            <span className="text-xs uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+              or paste a PR/commit URL
+            </span>
+            <span className="h-px flex-1 bg-zinc-200 dark:bg-zinc-700" aria-hidden="true" />
+          </div>
+          <input
+            type="text"
+            id="prUrl"
+            placeholder="https://github.com/{owner}/{repo}/pull/123 or .../commit/abc1234"
+            value={prUrl}
+            onChange={(e) => {
+              setPrUrl(e.target.value);
+              setClaimSource("");
+            }}
+            className="block w-full rounded-lg border border-zinc-300 bg-zinc-50 px-3 py-2.5 font-mono text-sm text-zinc-900 placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500"
           />
+          {claimSource ? (
+            <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-800">
+              <p className="mb-1 text-xs uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                Fetched claim source
+              </p>
+              <p className="max-h-28 overflow-y-auto whitespace-pre-wrap break-words font-mono text-xs text-zinc-700 dark:text-zinc-300">
+                {claimSource}
+              </p>
+            </div>
+          ) : null}
           <input
             type="text"
             id="repoUrl"

@@ -69,6 +69,16 @@ Build mode: fast — learner issues scoped Fix prompts, agent builds/verifies/co
   Learner check: Load the homepage and confirm the Self-Audit card shows a real result immediately (no spinner), then click "Re-run live" and confirm the timestamp updates.
   Commit: `Fix 6: self-audit`
 
+- [x] **7. PR/commit URL claim source**
+  Becomes usable: Instead of typing the agent message, the builder can paste a GitHub PR or commit URL; the fetched title/body (or commit message) is fed into the existing extract-claims flow as the claim text.
+  Why now: Learner-issued scope addition after Fix 6 — a second, lower-friction way to populate the claim box without touching the verified verdict routes.
+  PRD ref: `prd.md > The Core Journey` (step 1, alternate input)
+  Spec ref: `spec.md > Components > ClaimExtractor`, `spec.md > Where It Runs and How Someone Tries It` (GitHub API calls stay server-side)
+  Build: `fetchClaimTextFromUrl` helper in `src/lib/github.ts` (parses PR/commit URL, fetches via GitHub API); new `/api/claim-source` route; homepage second input "or paste a PR/commit URL" that hides the free-text box and feeds the fetched text into `extract-claims` unchanged. `check-evidence`, `check-spec-drift`, `generate-report` untouched.
+  Verify (mechanical): `npm run lint` + `npm run build` clean; a real public PR URL POSTed to `/api/claim-source` returns its real title/body; full flow on that text returns a real verdict. Invalid URL returns an explicit inline error.
+  Learner check: Paste a real PR URL from any public repo (leave the message box empty), enter a repo URL, click Check Claims — confirm the fetched title/body appears and verdicts render.
+  Commit: `Fix 7: PR/commit URL input`
+
 ## Hands-on Checkpoints
 
 - [x] Early usable behavior explored — Fix 5 UI/design pass reviewed by the learner after push (build/lint/grep verification reported back, code confirmed to hold up)
@@ -91,3 +101,5 @@ Reflection: [offered/answered/declined/already covered — personal answer belon
 Activity mode: [live app and editor, explicit static fallback, focused alternative, prior practice, or recap]
 
 ## Revisions
+
+- Fix 7 (learner-issued after Fix 6 verification): added slice 7 — PR/commit URL as an alternate claim source. New `lib/github.ts` helper + `/api/claim-source` route only; the three verified verdict routes are explicitly out of scope per the Fix 7 prompt.
