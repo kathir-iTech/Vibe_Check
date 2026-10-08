@@ -29,15 +29,21 @@ export async function POST(request: NextRequest) {
   const evidence = body.evidence && typeof body.evidence === "object" ? body.evidence : {};
 
   if (!repoUrl) {
-    return NextResponse.json({ drift: [], error: "repoUrl required" }, { status: 400 });
+    return NextResponse.json(
+      { drift: [], error: "repoUrl required", model: null },
+      { status: 400 }
+    );
   }
   if (!claims.length) {
-    return NextResponse.json({ drift: [] });
+    return NextResponse.json({ drift: [], model: null });
   }
 
   const match = repoUrl.match(/github\.com\/([^/]+)\/([^/\s]+)/);
   if (!match) {
-    return NextResponse.json({ drift: [], error: "Invalid GitHub URL" }, { status: 400 });
+    return NextResponse.json(
+      { drift: [], error: "Invalid GitHub URL", model: null },
+      { status: 400 }
+    );
   }
 
   const [, owner, repo] = match;
@@ -59,7 +65,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
-      { drift: [], error: `Could not fetch spec documents: ${msg}` },
+      { drift: [], error: `Could not fetch spec documents: ${msg}`, model: null },
       { status: 502 }
     );
   }
@@ -83,6 +89,9 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  let model: string | null = null;
+  let modelFallback = false;
+
   if (toAssess.length && !docs.length) {
     for (const c of toAssess) {
       outcomes.set(c.id, {
@@ -95,17 +104,19 @@ export async function POST(request: NextRequest) {
       });
     }
   } else if (toAssess.length) {
-    let assessments;
+    let answer;
     try {
-      assessments = await assessClaimsAgainstSpec(toAssess, docs, GEMINI_API_KEY);
+      answer = await assessClaimsAgainstSpec(toAssess, docs, GEMINI_API_KEY);
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       return NextResponse.json(
-        { drift: [], error: `Gemini API error: ${msg}` },
+        { drift: [], error: `Gemini API error: ${msg}`, model: null, modelFallback: false },
         { status: 502 }
       );
     }
-    for (const a of assessments) {
+    model = answer.model;
+    modelFallback = answer.modelFallback;
+    for (const a of answer.data) {
       const claim = toAssess.find((c) => c.id === a.claimId);
       outcomes.set(a.claimId, {
         claimId: a.claimId,
@@ -132,7 +143,7 @@ export async function POST(request: NextRequest) {
     );
   });
 
-  return NextResponse.json({ drift });
+  return NextResponse.json({ drift, model, modelFallback });
 }
 
 export async function GET(request: NextRequest) {

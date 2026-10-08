@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { ResultsPanel } from "@/components/ResultsPanel";
+import { ResultsPanel, type ModelInfo, type ResultModels } from "@/components/ResultsPanel";
 import { ReportExport } from "@/components/ReportExport";
 import { DemoMode } from "@/components/DemoMode";
 import { SelfAudit } from "@/components/SelfAudit";
@@ -12,6 +12,11 @@ interface CheckResult {
   claims: any[];
   evidence: Record<string, any>;
   driftFlags: any[];
+  models?: ResultModels;
+}
+
+function toModelInfo(data: any): ModelInfo | undefined {
+  return data && data.model ? { model: String(data.model), modelFallback: Boolean(data.modelFallback) } : undefined;
 }
 
 export default function Home() {
@@ -27,6 +32,7 @@ export default function Home() {
   const [resultSource, setResultSource] = useState<{ kind: "live" | "cached"; at: string } | null>(
     null
   );
+  const [models, setModels] = useState<ResultModels>({});
 
   async function handleCheck(forceLive = false) {
     const sourceUrl = prUrl.trim();
@@ -48,6 +54,7 @@ export default function Home() {
         setClaims(cached.data.claims);
         setEvidence(cached.data.evidence);
         setDriftFlags(cached.data.driftFlags);
+        setModels(cached.data.models || {});
         setResultSource({ kind: "cached", at: cached.savedAt });
         setError("");
         console.info("[VibeCheck] cache hit — served from sessionStorage, 0 fetch calls");
@@ -62,6 +69,9 @@ export default function Home() {
     setClaims([]);
     setEvidence({});
     setDriftFlags([]);
+    setModels({});
+
+    const usedModels: ResultModels = {};
 
     try {
       let claimText = message;
@@ -96,6 +106,8 @@ export default function Home() {
         throw new Error("No claims were extracted from the message.");
       }
       setClaims(extractedClaims);
+      usedModels.extract = toModelInfo(extractData);
+      setModels({ ...usedModels });
 
       const evidenceRes = await fetch("/api/check-evidence", {
         method: "POST",
@@ -118,12 +130,15 @@ export default function Home() {
         throw new Error(driftData.error || `check-spec-drift failed (${driftRes.status})`);
       }
       setDriftFlags(driftData.drift || []);
+      usedModels.drift = toModelInfo(driftData);
+      setModels({ ...usedModels });
 
       const entry = writeCached<CheckResult>(key, {
         claimSource: sourceUrl ? claimText : "",
         claims: extractedClaims,
         evidence: evidenceData.evidence || {},
         driftFlags: driftData.drift || [],
+        models: usedModels,
       });
       setResultSource({ kind: "live", at: entry.savedAt });
       console.info("[VibeCheck] live run finished");
@@ -249,6 +264,7 @@ export default function Home() {
           evidence={evidence}
           driftFlags={driftFlags}
           loading={loading}
+          models={models}
         />
       </section>
 

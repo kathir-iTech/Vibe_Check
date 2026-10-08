@@ -1,9 +1,63 @@
 import { GoogleGenAI } from "@google/genai";
 
-const MODEL = "gemini-3-flash-preview";
+const PRIMARY_MODEL = "gemini-3-flash-preview";
+const FALLBACK_MODEL = "gemini-3.1-flash-lite";
+
+export interface GeminiAnswer<T> {
+  data: T;
+  model: string | null;
+  modelFallback: boolean;
+}
 
 function getClient(apiKey: string): GoogleGenAI {
   return new GoogleGenAI({ apiKey });
+}
+
+function httpStatusOf(error: unknown): number | null {
+  const direct = (error as { status?: unknown } | null | undefined)?.status;
+  if (typeof direct === "number") return direct;
+  if (typeof direct === "string" && /^\d{3}$/.test(direct)) return Number(direct);
+  const message = error instanceof Error ? error.message : "";
+  const match = message.match(/(?:\bstatus[:\s]+|"code"\s*:\s*)(\d{3})\b/);
+  return match ? Number(match[1]) : null;
+}
+
+function isFallbackWorthy(error: unknown): boolean {
+  const status = httpStatusOf(error);
+  return status === 429 || status === 503 || status === 404;
+}
+
+async function generateText(
+  ai: GoogleGenAI,
+  prompt: string,
+  temperature: number
+): Promise<{ text: string; model: string; modelFallback: boolean }> {
+  try {
+    const response = await ai.models.generateContent({
+      model: PRIMARY_MODEL,
+      contents: prompt,
+      config: { temperature },
+    });
+    const text = response.text;
+    if (!text) {
+      throw new Error("Gemini returned an empty response");
+    }
+    return { text, model: PRIMARY_MODEL, modelFallback: false };
+  } catch (error) {
+    if (!isFallbackWorthy(error)) {
+      throw error;
+    }
+    const response = await ai.models.generateContent({
+      model: FALLBACK_MODEL,
+      contents: prompt,
+      config: { temperature },
+    });
+    const text = response.text;
+    if (!text) {
+      throw new Error("Gemini returned an empty response");
+    }
+    return { text, model: FALLBACK_MODEL, modelFallback: true };
+  }
 }
 
 interface ParsedClaim {
@@ -45,7 +99,10 @@ function extractJson(text: string): unknown {
   }
 }
 
-export async function extractClaimsViaGemini(message: string, apiKey: string): Promise<ParsedClaim[]> {
+export async function extractClaimsViaGemini(
+  message: string,
+  apiKey: string
+): Promise<GeminiAnswer<ParsedClaim[]>> {
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY not set");
   }
@@ -53,19 +110,10 @@ export async function extractClaimsViaGemini(message: string, apiKey: string): P
   const prompt = `Extract discrete checkable claims from this AI coding agent message. Return only a JSON array of claim objects, each with "id", "text", and "evidenceType" fields. Be precise and specific. Message: "${message}"`;
 
   const ai = getClient(apiKey);
-  const response = await ai.models.generateContent({
-    model: MODEL,
-    contents: prompt,
-    config: { temperature: 0.1 },
-  });
-
-  const text = response.text;
-  if (!text) {
-    throw new Error("Gemini returned an empty response");
-  }
+  const { text, model, modelFallback } = await generateText(ai, prompt, 0.1);
 
   const parsed = extractJson(text);
-  return validateClaims(parsed);
+  return { data: validateClaims(parsed), model, modelFallback };
 }
 
 export interface SpecDoc {
@@ -158,19 +206,23 @@ export async function assessClaimsAgainstSpec(
   claims: { id: string; text: string }[],
   docs: SpecDoc[],
   apiKey: string
-): Promise<SpecAssessment[]> {
+): Promise<GeminiAnswer<SpecAssessment[]>> {
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY not set");
   }
   if (!claims.length || !docs.length) {
-    return claims.map((c) => ({
-      claimId: c.id,
-      contradicts: false,
-      sourceDoc: "",
-      lineNumber: 0,
-      contradictingLine: "",
-      reason: "",
-    }));
+    return {
+      data: claims.map((c) => ({
+        claimId: c.id,
+        contradicts: false,
+        sourceDoc: "",
+        lineNumber: 0,
+        contradictingLine: "",
+        reason: "",
+      })),
+      model: null,
+      modelFallback: false,
+    };
   }
 
   const docSections = docs
@@ -199,17 +251,8 @@ Return ONLY a JSON array:
 [{"claimId":"claim-1","contradicts":false,"sourceDoc":"","contradictingLine":"","reason":"..."}]`;
 
   const ai = getClient(apiKey);
-  const response = await ai.models.generateContent({
-    model: MODEL,
-    contents: prompt,
-    config: { temperature: 0 },
-  });
-
-  const text = response.text;
-  if (!text) {
-    throw new Error("Gemini returned an empty response");
-  }
+  const { text, model, modelFallback } = await generateText(ai, prompt, 0);
 
   const parsed = extractJson(text);
-  return validateAssessments(parsed, claims, docs);
+  return { data: validateAssessments(parsed, claims, docs), model, modelFallback };
 }

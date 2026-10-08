@@ -89,6 +89,16 @@ Build mode: fast — learner issues scoped Fix prompts, agent builds/verifies/co
   Learner check: Run the same check twice — the second shows the amber "cached" badge; click "Re-run live" and confirm the "live" badge returns. Self-audit: "Re-run" hits cache, "Re-run live" always re-fetches.
   Commit: `Fix 8: client-side result caching`
 
+- [x] **9. Gemini model fallback (quota doesn't dead-end the app)**
+  Becomes usable: The primary model is tried first; on 429 (free quota gone) or 503 (overload) the identical request is retried once on the stable `gemini-3.1-flash-lite`, so a first-time visitor still gets verdicts. Every `extract-claims` and `check-spec-drift` response carries a `model` field (plus `modelFallback`) naming the model that actually answered, `null` when none did; ResultsPanel shows a small "answered by gemini-3.1-flash-lite (fallback)" label; the sessionStorage entry stores the label with the results. Both models failing returns the existing explicit error — no demo or fake substitution.
+  Why now: Learner-issued scope addition after Fix 8 — `gemini-3-flash-preview`'s free tier is 20 calls/day and it 429'd mid-verification, so the Fix 8 session cache (per-browser) left every new visitor's first run to hit a quota wall for hours.
+  PRD ref: `prd.md > States and Boundaries` (Error — Gemini hiccups handled gracefully)
+  Spec ref: `spec.md > Important Failure Modes` (Gemini API error → retry once), `spec.md > External Services and Dependencies` (gemini-3.1-flash-lite as the stable option with no shutdown date)
+  Build: `src/lib/gemini.ts` — `generateText()` calls the primary, then `isFallbackWorthy(error)` (429 quota, 503 overload, 404 primary model missing/retired) decides one retry on `gemini-3.1-flash-lite`; both public functions return `{ data, model, modelFallback }`. Routes put `model` on every response; homepage tracks `{ extract, drift }` in state and in the cache entry; `ResultsPanel` renders the label. Prompts, verdict logic, and server-side quote verification untouched.
+  Verify (mechanical): `npm run lint` + `npm run build` clean, no `useEffect`; primary temporarily pointed at an invalid model name → real `POST /api/extract-claims` and `POST /api/check-spec-drift` return `"model": "gemini-3.1-flash-lite", "modelFallback": true`; primary reverted → `"model": "gemini-3-flash-preview", "modelFallback": false`; headless-Chrome DOM of the real `ResultsPanel` shows "answered by gemini-3.1-flash-lite (fallback)".
+  Learner check: After quota reset, run a check and confirm the small "answered by …" label under Results; while quota is exhausted the same check still completes on the lite model instead of erroring.
+  Commit: `Fix 9: model fallback`
+
 ## Hands-on Checkpoints
 
 - [x] Early usable behavior explored — Fix 5 UI/design pass reviewed by the learner after push (build/lint/grep verification reported back, code confirmed to hold up)
@@ -114,3 +124,4 @@ Activity mode: [live app and editor, explicit static fallback, focused alternati
 
 - Fix 7 (learner-issued after Fix 6 verification): added slice 7 — PR/commit URL as an alternate claim source. New `lib/github.ts` helper + `/api/claim-source` route only; the three verified verdict routes are explicitly out of scope per the Fix 7 prompt.
 - Fix 8 (learner-issued after Fix 7 verification): added slice 8 — sessionStorage result caching for Check Claims and self-audit, with visible cached/live labels, an always-available force-live path, and fail-open storage handling. No new dependencies or services.
+- Fix 9 (learner-issued after Fix 8 verification): added slice 9 — one retry on `gemini-3.1-flash-lite` when the primary answers 429/503/404, a `model` field on every `extract-claims`/`check-spec-drift` response, and an "answered by … (fallback)" label in ResultsPanel (stored in the cache too). Prompts, verdict logic, and quote verification unchanged; no new dependencies.

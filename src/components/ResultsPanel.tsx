@@ -6,6 +6,35 @@ interface Props {
   evidence: Record<string, any>;
   driftFlags: any[];
   loading?: boolean;
+  models?: ResultModels;
+}
+
+export interface ModelInfo {
+  model: string;
+  modelFallback?: boolean;
+}
+
+export interface ResultModels {
+  extract?: ModelInfo;
+  drift?: ModelInfo;
+}
+
+function answeredBy(info: ModelInfo): string {
+  return `answered by ${info.model}${info.modelFallback ? " (fallback)" : ""}`;
+}
+
+function modelLabel(models?: ResultModels): string {
+  const extract = models?.extract;
+  const drift = models?.drift;
+  if (extract && drift) {
+    const same = extract.model === drift.model && !!extract.modelFallback === !!drift.modelFallback;
+    return same
+      ? answeredBy(extract)
+      : `claims ${answeredBy(extract)} · drift ${answeredBy(drift)}`;
+  }
+  if (extract) return answeredBy(extract);
+  if (drift) return answeredBy(drift);
+  return "";
 }
 
 interface VerdictStyle {
@@ -69,7 +98,7 @@ function ResultsSkeleton() {
   );
 }
 
-export function ResultsPanel({ claims, evidence, driftFlags, loading }: Props) {
+export function ResultsPanel({ claims, evidence, driftFlags, loading, models }: Props) {
   if (loading) {
     return <ResultsSkeleton />;
   }
@@ -82,51 +111,60 @@ export function ResultsPanel({ claims, evidence, driftFlags, loading }: Props) {
     );
   }
 
-  return (
-    <ul className="space-y-3">
-      {claims.map((claim) => {
-        const claimEvidence = evidence[claim.id || claim.text];
-        const driftFlag = driftFlags.find(
-          (d) => d.claimId === (claim.id || claim.text)
-        );
-        const verdict = driftFlag?.verdict || "UNVERIFIED";
-        const hasFiles = Boolean(claimEvidence?.files?.length);
-        const hasCommits = Boolean(claimEvidence?.commits?.length);
+  const label = modelLabel(models);
 
-        return (
-          <li
-            key={claim.id || claim.text}
-            className="space-y-2 rounded-lg border border-zinc-100 bg-zinc-50 p-3.5 dark:border-zinc-800 dark:bg-zinc-800/50"
-          >
-            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-              <VerdictBadge verdict={verdict} />
-              <p className="min-w-0 flex-1 break-words text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                {claim.text}
-              </p>
-            </div>
-            {hasFiles || hasCommits ? (
-              <p className="break-all font-mono text-[11px] leading-relaxed text-zinc-500 dark:text-zinc-400">
-                {hasFiles ? `Files: ${claimEvidence.files.join(", ")}` : ""}
-                {hasCommits
-                  ? `${hasFiles ? " | " : ""}Commits: ${claimEvidence.commits
-                      .map((c: any) => c.sha?.slice(0, 7))
-                      .join(", ")}`
-                  : ""}
-              </p>
-            ) : null}
-            {driftFlag?.reason ? (
-              <p className="text-xs leading-relaxed text-zinc-600 dark:text-zinc-300">
-                {driftFlag.reason}
-              </p>
-            ) : null}
-            {driftFlag?.specReference ? (
-              <p className="break-all font-mono text-xs leading-relaxed text-amber-700 dark:text-amber-400">
-                &rarr; {driftFlag.specReference}
-              </p>
-            ) : null}
-          </li>
-        );
-      })}
-    </ul>
+  return (
+    <div className="space-y-3">
+      {label ? (
+        <p className="font-mono text-[11px] leading-relaxed text-zinc-500 dark:text-zinc-400">
+          {label}
+        </p>
+      ) : null}
+      <ul className="space-y-3">
+        {claims.map((claim) => {
+          const claimEvidence = evidence[claim.id || claim.text];
+          const driftFlag = driftFlags.find(
+            (d) => d.claimId === (claim.id || claim.text)
+          );
+          const verdict = driftFlag?.verdict || "UNVERIFIED";
+          const hasFiles = Boolean(claimEvidence?.files?.length);
+          const hasCommits = Boolean(claimEvidence?.commits?.length);
+
+          return (
+            <li
+              key={claim.id || claim.text}
+              className="space-y-2 rounded-lg border border-zinc-100 bg-zinc-50 p-3.5 dark:border-zinc-800 dark:bg-zinc-800/50"
+            >
+              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                <VerdictBadge verdict={verdict} />
+                <p className="min-w-0 flex-1 break-words text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                  {claim.text}
+                </p>
+              </div>
+              {hasFiles || hasCommits ? (
+                <p className="break-all font-mono text-[11px] leading-relaxed text-zinc-500 dark:text-zinc-400">
+                  {hasFiles ? `Files: ${claimEvidence.files.join(", ")}` : ""}
+                  {hasCommits
+                    ? `${hasFiles ? " | " : ""}Commits: ${claimEvidence.commits
+                        .map((c: any) => c.sha?.slice(0, 7))
+                        .join(", ")}`
+                    : ""}
+                </p>
+              ) : null}
+              {driftFlag?.reason ? (
+                <p className="text-xs leading-relaxed text-zinc-600 dark:text-zinc-300">
+                  {driftFlag.reason}
+                </p>
+              ) : null}
+              {driftFlag?.specReference ? (
+                <p className="break-all font-mono text-xs leading-relaxed text-amber-700 dark:text-amber-400">
+                  &rarr; {driftFlag.specReference}
+                </p>
+              ) : null}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }
