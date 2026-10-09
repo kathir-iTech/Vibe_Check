@@ -128,6 +128,11 @@ export interface SpecAssessment {
   lineNumber: number;
   contradictingLine: string;
   reason: string;
+  supported: boolean;
+  supportingFile: string;
+  supportingQuote: string;
+  supportingLine: number;
+  quoteRejected: boolean;
 }
 
 const normalize = (s: string) => s.replace(/\s+/g, " ").trim().toLowerCase();
@@ -145,7 +150,8 @@ function findLineNumber(docText: string, quote: string): number {
 function validateAssessments(
   data: unknown,
   claims: { id: string; text: string }[],
-  docs: SpecDoc[]
+  docs: SpecDoc[],
+  supportByClaim: Record<string, SpecDoc[]>
 ): SpecAssessment[] {
   if (!Array.isArray(data)) {
     throw new Error("Gemini returned a non-array response");
@@ -165,94 +171,157 @@ function validateAssessments(
     if (typeof item.contradicts !== "boolean") {
       throw new Error(`Gemini assessment for ${claim.id} has no boolean "contradicts"`);
     }
-    if (!item.contradicts) {
-      return {
-        claimId: claim.id,
-        contradicts: false,
-        sourceDoc: "",
-        lineNumber: 0,
-        contradictingLine: "",
-        reason:
-          typeof item.reason === "string" && item.reason
-            ? item.reason
-            : "Nothing in the spec documents contradicts this claim",
-      };
+
+    let contradicts = item.contradicts;
+    let sourceDoc = "";
+    let lineNumber = 0;
+    let contradictingLine = "";
+    let reason = typeof item.reason === "string" ? item.reason : "";
+
+    if (contradicts && docs.length === 0) {
+      contradicts = false;
     }
-    const sourceDoc = typeof item.sourceDoc === "string" ? item.sourceDoc : "";
-    const quote = typeof item.contradictingLine === "string" ? item.contradictingLine : "";
-    const doc = docs.find((d) => d.file === sourceDoc);
-    if (!doc) {
-      throw new Error(`Gemini cited unknown document "${sourceDoc}" for ${claim.id}`);
+
+    if (contradicts) {
+      sourceDoc = typeof item.sourceDoc === "string" ? item.sourceDoc : "";
+      contradictingLine = typeof item.contradictingLine === "string" ? item.contradictingLine : "";
+      const doc = docs.find((d) => d.file === sourceDoc);
+      if (!doc) {
+        throw new Error(`Gemini cited unknown document "${sourceDoc}" for ${claim.id}`);
+      }
+      lineNumber = findLineNumber(doc.text, contradictingLine);
+      if (lineNumber === -1) {
+        throw new Error(`Gemini quoted text not found in ${sourceDoc} for ${claim.id}: ${contradictingLine}`);
+      }
+      if (!reason) {
+        reason = "Claim contradicts the repo's planning documents";
+      }
     }
-    const lineNumber = findLineNumber(doc.text, quote);
-    if (lineNumber === -1) {
-      throw new Error(`Gemini quoted text not found in ${sourceDoc} for ${claim.id}: ${quote}`);
+
+    let supported = item.supported === true;
+    let supportingFile = typeof item.supportingFile === "string" ? item.supportingFile : "";
+    let supportingQuote = typeof item.supportingQuote === "string" ? item.supportingQuote : "";
+    let supportingLine = 0;
+    let quoteRejected = false;
+
+    if (supported) {
+      const allowed = supportByClaim[claim.id] || [];
+      const doc = allowed.find((d) => d.file === supportingFile);
+      const found = doc && supportingQuote ? findLineNumber(doc.text, supportingQuote) : -1;
+      if (found === -1) {
+        quoteRejected = Boolean(supportingQuote);
+        supported = false;
+        supportingLine = 0;
+      } else {
+        supportingLine = found;
+      }
     }
+
+    if (!reason && supported) {
+      reason = `Verified supporting line in ${supportingFile}`;
+    }
+
     return {
       claimId: claim.id,
-      contradicts: true,
+      contradicts,
       sourceDoc,
       lineNumber,
-      contradictingLine: quote,
-      reason:
-        typeof item.reason === "string" && item.reason
-          ? item.reason
-          : "Claim contradicts the repo's planning documents",
+      contradictingLine,
+      reason,
+      supported,
+      supportingFile,
+      supportingQuote,
+      supportingLine,
+      quoteRejected,
     };
   });
 }
 
+function emptyAssessments(claims: { id: string; text: string }[]): SpecAssessment[] {
+  return claims.map((c) => ({
+    claimId: c.id,
+    contradicts: false,
+    sourceDoc: "",
+    lineNumber: 0,
+    contradictingLine: "",
+    reason: "",
+    supported: false,
+    supportingFile: "",
+    supportingQuote: "",
+    supportingLine: 0,
+    quoteRejected: false,
+  }));
+}
+
+const numbered = (text: string) =>
+  text.split("\n").map((line, i) => `${i + 1}: ${line}`).join("\n");
+
 export async function assessClaimsAgainstSpec(
   claims: { id: string; text: string }[],
   docs: SpecDoc[],
+  supportByClaim: Record<string, SpecDoc[]>,
   apiKey: string
 ): Promise<GeminiAnswer<SpecAssessment[]>> {
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY not set");
   }
-  if (!claims.length || !docs.length) {
-    return {
-      data: claims.map((c) => ({
-        claimId: c.id,
-        contradicts: false,
-        sourceDoc: "",
-        lineNumber: 0,
-        contradictingLine: "",
-        reason: "",
-      })),
-      model: null,
-      modelFallback: false,
-    };
+  const hasSupport = claims.some((c) => (supportByClaim[c.id] || []).length > 0);
+  if (!claims.length || (!docs.length && !hasSupport)) {
+    return { data: emptyAssessments(claims), model: null, modelFallback: false };
   }
 
   const docSections = docs
-    .map(
-      (d) =>
-        `=== ${d.file} ===\n` +
-        d.text.split("\n").map((line, i) => `${i + 1}: ${line}`).join("\n")
-    )
+    .map((d) => `=== ${d.file} ===\n${numbered(d.text)}`)
     .join("\n\n");
 
-  const prompt = `You compare an AI coding agent's claims against a project's planning documents.
+  const fileSections = claims
+    .map((c) => {
+      const files = supportByClaim[c.id] || [];
+      const body = files.length
+        ? files.map((f) => `=== ${f.file} ===\n${numbered(f.text)}`).join("\n\n")
+        : "(no repository files were matched to this claim)";
+      return `--- ${c.id}: ${c.text}\n${body}`;
+    })
+    .join("\n\n");
 
-Documents:
+  const contradictionRules = docs.length
+    ? `Planning documents:
 ${docSections}
+
+Contradiction (checked against the planning documents):
+- "contradicts": true ONLY when a specific document line states something factually incompatible with the claim.
+- When contradicts is true, "contradictingLine" must be an EXACT verbatim copy of one numbered document line above (without the "N: " prefix), "sourceDoc" must be the document file (e.g. "devpost/scope.md"), and "reason" one short sentence naming the conflict.
+- When contradicts is false: "contradictingLine" and "sourceDoc" must be "" and "reason" must be one short sentence explaining why nothing conflicts (supportive or silence both count as false).`
+    : `No planning documents were provided for this repo, so the contradiction check is skipped:
+- "contradicts" must be false for every claim, and "contradictingLine" and "sourceDoc" must be "".`;
+
+  const prompt = `You verify an AI coding agent's claims against a GitHub repository.
+
+${contradictionRules}
+
+Matched repository files for each claim, every line numbered:
+${fileSections}
 
 Claims:
 ${JSON.stringify(claims.map((c) => ({ id: c.id, text: c.text })))}
 
-For each claim, decide whether any document DIRECTLY CONTRADICTS it.
-- "contradicts": true ONLY when a specific document line states something factually incompatible with the claim.
-- When contradicts is true, "contradictingLine" must be an EXACT verbatim copy of one numbered line above (without the "N: " prefix), "sourceDoc" must be the document file (e.g. "devpost/scope.md"), and "reason" one short sentence naming the conflict.
-- When contradicts is false: "contradictingLine" and "sourceDoc" must be "" and "reason" must be one short sentence explaining why nothing conflicts (supportive or silence both count as false).
+Support (checked against the matched repository files):
+- "supported": true ONLY when a line in one of that claim's matched repository files directly supports the claim.
+- When "supported" is true, "supportingFile" must be the file path exactly as given above, and "supportingQuote" an EXACT verbatim copy of one numbered line from that file (without the "N: " prefix).
+- When you are not certain the file supports the claim, return "supported": false with "supportingFile" and "supportingQuote" set to "".
+- When "supported" is false, "reason" must say what the matched files did not show.
 - Return exactly one object per claim, keyed by claim id.
 
 Return ONLY a JSON array:
-[{"claimId":"claim-1","contradicts":false,"sourceDoc":"","contradictingLine":"","reason":"..."}]`;
+[{"claimId":"claim-1","contradicts":false,"sourceDoc":"","contradictingLine":"","reason":"...","supported":false,"supportingFile":"","supportingQuote":""}]`;
 
   const ai = getClient(apiKey);
   const { text, model, modelFallback } = await generateText(ai, prompt, 0);
 
   const parsed = extractJson(text);
-  return { data: validateAssessments(parsed, claims, docs), model, modelFallback };
+  return {
+    data: validateAssessments(parsed, claims, docs, supportByClaim),
+    model,
+    modelFallback,
+  };
 }

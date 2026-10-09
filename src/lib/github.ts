@@ -79,3 +79,89 @@ export async function fetchClaimTextFromUrl(raw: string): Promise<string> {
     throw err;
   }
 }
+
+const MAX_FILES_PER_CLAIM = 5;
+const MAX_FILE_CHARS = 20 * 1024;
+const TRUNCATION_MARKER = "\n[VibeCheck truncated this file: over 20KB]";
+
+const SKIP_EXTENSIONS = new Set([
+  ".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".bmp", ".svg", ".psd",
+  ".pdf", ".zip", ".gz", ".tar", ".rar", ".7z", ".jar", ".exe", ".dll", ".bin",
+  ".so", ".dylib", ".class", ".o", ".a", ".woff", ".woff2", ".ttf", ".otf", ".eot",
+  ".mp3", ".mp4", ".mov", ".avi", ".wav", ".sqlite", ".db", ".wasm", ".pb",
+  ".lockb", ".map",
+]);
+
+const SKIP_NAMES = new Set([
+  "package-lock.json", "yarn.lock", "pnpm-lock.yaml", "pnpm-lock.json",
+  "npm-shrinkwrap.json", "cargo.lock", "go.sum", "gemfile.lock", "composer.lock",
+  "poetry.lock", "uv.lock", "pipfile.lock", "flake.lock", ".ds_store",
+]);
+
+const SKIP_DIR_PARTS = ["node_modules/", ".next/", "dist/", "build/", "coverage/", ".git/"];
+
+export interface RepoFileContent {
+  file: string;
+  text: string;
+  truncated: boolean;
+}
+
+function isSkippableFile(path: string): boolean {
+  const lower = path.toLowerCase();
+  if (SKIP_DIR_PARTS.some((part) => lower.includes(part))) return true;
+  if (lower.startsWith(".env") || lower.endsWith(".pem") || lower.endsWith(".key") || lower.endsWith(".p12")) {
+    return true;
+  }
+  const base = lower.split("/").pop() || lower;
+  if (SKIP_NAMES.has(base) || base.endsWith(".lock")) return true;
+  const dot = base.lastIndexOf(".");
+  if (dot !== -1 && SKIP_EXTENSIONS.has(base.slice(dot))) return true;
+  return false;
+}
+
+async function fetchRepoFile(base: string, path: string): Promise<RepoFileContent | null> {
+  try {
+    const data = await githubApi(`${base}/contents/${path}`);
+    if (!data || !data.content || data.encoding !== "base64") return null;
+    let text = Buffer.from(data.content, "base64").toString("utf8");
+    if (text.includes("\u0000")) return null;
+    let truncated = false;
+    if (text.length > MAX_FILE_CHARS) {
+      text = text.slice(0, MAX_FILE_CHARS) + TRUNCATION_MARKER;
+      truncated = true;
+    }
+    return { file: path, text, truncated };
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchFileContentsForClaims(
+  base: string,
+  filesByClaim: Record<string, string[]>
+): Promise<Record<string, RepoFileContent[]>> {
+  const cache = new Map<string, Promise<RepoFileContent | null>>();
+  const load = (path: string): Promise<RepoFileContent | null> => {
+    let pending = cache.get(path);
+    if (!pending) {
+      pending = fetchRepoFile(base, path);
+      cache.set(path, pending);
+    }
+    return pending;
+  };
+
+  const entries = Object.entries(filesByClaim);
+  const results = await Promise.all(
+    entries.map(async ([claimId, files]) => {
+      const eligible = (files || []).filter((f) => !isSkippableFile(f)).slice(0, MAX_FILES_PER_CLAIM);
+      const loaded = await Promise.all(eligible.map(load));
+      return [claimId, loaded.filter((f): f is RepoFileContent => f !== null)] as const;
+    })
+  );
+
+  const out: Record<string, RepoFileContent[]> = {};
+  for (const [claimId, files] of results) {
+    out[claimId] = files;
+  }
+  return out;
+}

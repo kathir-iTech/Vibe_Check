@@ -99,6 +99,16 @@ Build mode: fast — learner issues scoped Fix prompts, agent builds/verifies/co
   Learner check: After quota reset, run a check and confirm the small "answered by …" label under Results; while quota is exhausted the same check still completes on the lite model instead of erroring.
   Commit: `Fix 9: model fallback`
 
+- [x] **10. Verified-support TRUE**
+  Becomes usable: TRUE requires a supporting quote found verbatim in a real file fetched from the repo — the same normalize + line check SPEC-DRIFT already uses — so a false claim that merely shares vocabulary with file names can no longer pass, and a repo with no `devpost/` docs can still reach TRUE where a real line exists. Claims with no verified quote are UNVERIFIED; a cited quote that isn't in the file is rejected with that reason stated.
+  Why now: Learner-issued after Fix 9 — TRUE currently means "file names matched the claim's keywords and no spec doc contradicted it", which is absence of contradiction rather than support (self-audit claim 3 passed on exactly that wording).
+  PRD ref: `prd.md > Features and Behavior > Spec-Drift Detector`, `prd.md > States and Boundaries`
+  Spec ref: `spec.md > Important Failure Modes` (missing-spec line edited in this commit), `spec.md > Components > RepoEvidenceChecker`, `spec.md > Data Model`
+  Build: `lib/github.ts fetchFileContentsForClaims` — max 5 files per claim, ~20KB each, skips binaries/lockfiles/secrets, deduped across claims, visible truncation marker. `gemini.ts` assessment prompt returns `supported`, `supportingFile`, `supportingQuote` next to the unchanged contradiction fields; `validateAssessments` verifies the supporting quote with the existing `findLineNumber`. `check-spec-drift` verdict order: SPEC-DRIFT (verified contradiction, priority) → TRUE (verified supporting quote, no contradiction) → UNVERIFIED. ResultsPanel shows TRUE supporting `file:line: quote` in emerald. One batched Gemini call per check; the Fix 9 fallback chain unchanged. `self-audit-seed.ts` regenerated from a real run.
+  Verify (mechanical): `npm run lint` + `npm run build` clean, no `useEffect`; raw verdicts pasted for the Slack claim, the Tailwind claim (TRUE + real quote), a claim against a public repo with no `devpost/` docs (TRUE from a real line), and the regenerated self-audit verdicts.
+  Learner check: Run a check and confirm a TRUE card carries `→ file:line: <quoted line>` the way SPEC-DRIFT cards do; a claim with no supporting line reads UNVERIFIED instead of TRUE.
+  Commit: `Fix 10: verified-support TRUE`
+
 ## Hands-on Checkpoints
 
 - [x] Early usable behavior explored — Fix 5 UI/design pass reviewed by the learner after push (build/lint/grep verification reported back, code confirmed to hold up)
@@ -125,3 +135,4 @@ Activity mode: [live app and editor, explicit static fallback, focused alternati
 - Fix 7 (learner-issued after Fix 6 verification): added slice 7 — PR/commit URL as an alternate claim source. New `lib/github.ts` helper + `/api/claim-source` route only; the three verified verdict routes are explicitly out of scope per the Fix 7 prompt.
 - Fix 8 (learner-issued after Fix 7 verification): added slice 8 — sessionStorage result caching for Check Claims and self-audit, with visible cached/live labels, an always-available force-live path, and fail-open storage handling. No new dependencies or services.
 - Fix 9 (learner-issued after Fix 8 verification): added slice 9 — one retry on `gemini-3.1-flash-lite` when the primary answers 429/503/404, a `model` field on every `extract-claims`/`check-spec-drift` response, and an "answered by … (fallback)" label in ResultsPanel (stored in the cache too). Prompts, verdict logic, and quote verification unchanged; no new dependencies.
+- Fix 10 (learner-issued after Fix 9 verification): added slice 10 — TRUE now needs a supporting quote verified against fetched file content, so it means support rather than "nothing contradicted it". Deliberate, non-silent doc change: `spec.md > Important Failure Modes` (missing spec files) was rewritten in this commit to allow TRUE without `devpost/` docs; the self-audit seed was regenerated from a real run. One Gemini call per check and the fallback chain unchanged.

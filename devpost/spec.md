@@ -116,7 +116,7 @@ project/
 - **Gemini API error** → Retry once, then fall back to demo mode. Show a friendly error message.
 - **Repo not found / private repo** → Show UNVERIFIED for all claims with a "repo not accessible" note. Suggest making the repo public or using demo mode.
 - **Gemini misinterprets agent message** → Allow the builder to manually correct/edit extracted claims before verification begins.
-- **Spec files missing from repo** → Skip spec-drift detection, mark claims as UNVERIFIED if no spec to compare against.
+- **Spec files missing from repo** → Skip the contradiction (spec-drift) check, but still allow TRUE from a supporting quote verified against real fetched file text; any claim without a verified supporting quote stays UNVERIFIED. Changed in Fix 10 — this line previously forced UNVERIFIED for every claim when spec files were missing.
 
 ## What Was Simplified and Why
 - No sandboxed code execution — evidence checks are static/API-based only. This keeps the POC small, secure, and deployable on Vercel's free tier. The full version would run agent code in isolated containers, but that's out of scope for a hackathon POC.

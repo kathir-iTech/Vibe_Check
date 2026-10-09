@@ -1,17 +1,19 @@
 import { SelfAuditResult } from "@/types";
 
-// Captured from one real POST to /api/self-audit (Fix 6).
+// Captured from one real POST to /api/self-audit (Fix 6), regenerated after
+// Fix 10 (verified-support TRUE): all three claims now come back UNVERIFIED,
+// because none of them has a supporting quote verified against a matched file.
 // A genuine run against github.com/kathir-iTech/Vibe_Check, committed as the
 // initial state so the homepage shows a real result on first load, not a spinner.
 export const SELF_AUDIT_SEED: SelfAuditResult = {
   "repoUrl": "https://github.com/kathir-iTech/Vibe_Check",
-  "runAt": "2026-10-05T12:56:19.796Z",
+  "runAt": "2026-10-09T02:19:00.400Z",
   "claims": [
     {
       "id": "self-1",
       "text": "Evidence checks are static/API-based only — no sandboxed code execution.",
-      "verdict": "TRUE",
-      "reason": "Multiple documents explicitly state that evidence checks are static/API-based and that sandboxed code execution is deliberately excluded.",
+      "verdict": "UNVERIFIED",
+      "reason": "Matches the design boundary explicitly stated in the Technical Spec.",
       "specReference": "",
       "files": [
         ".agents/skills/5-build/references/code-tour.md",
@@ -24,14 +26,15 @@ export const SELF_AUDIT_SEED: SelfAuditResult = {
     {
       "id": "self-2",
       "text": "Every verdict is one of TRUE, UNVERIFIED, or SPEC-DRIFT — reachable from a real branch in check-spec-drift, never a UI default.",
-      "verdict": "TRUE",
-      "reason": "The documents consistently define TRUE, UNVERIFIED, and SPEC-DRIFT as the three verdict types and specify a dedicated API route for spec-drift detection.",
+      "verdict": "UNVERIFIED",
+      "reason": "Matches the verdict types defined in the Technical Spec.",
       "specReference": "",
       "files": [
         ".agents/skills/4-spec/SKILL.md",
         ".agents/skills/4-spec/references/spec-patterns.md",
         ".agents/skills/4-spec/templates/spec-template.md",
         ".agents/skills/5-build/templates/checklist-template.md",
+        "devpost/checklist.md",
         "devpost/spec.md",
         "src/app/api/check-evidence/route.ts",
         "src/app/api/check-spec-drift/route.ts"
@@ -41,8 +44,8 @@ export const SELF_AUDIT_SEED: SelfAuditResult = {
     {
       "id": "self-3",
       "text": "SPEC-DRIFT citations are verified against the real file content server-side before being shown — a quote that doesn't actually exist in the cited doc throws an error instead of displaying.",
-      "verdict": "TRUE",
-      "reason": "The documents confirm that the tool reads the repo's planning documents server-side to detect contradictions, and nothing in the text precludes verifying citations against file content.",
+      "verdict": "UNVERIFIED",
+      "reason": "The planning documents include citation validation as a requirement in the build checklist.",
       "specReference": "",
       "files": [
         ".agents/skills/1-start/templates/learner-profile-template.md",

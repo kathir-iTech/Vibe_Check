@@ -157,7 +157,13 @@ export function ResultsPanel({ claims, evidence, driftFlags, loading, models }: 
                 </p>
               ) : null}
               {driftFlag?.specReference ? (
-                <p className="break-all font-mono text-xs leading-relaxed text-amber-700 dark:text-amber-400">
+                <p
+                  className={`break-all font-mono text-xs leading-relaxed ${
+                    verdict === "TRUE"
+                      ? "text-emerald-700 dark:text-emerald-400"
+                      : "text-amber-700 dark:text-amber-400"
+                  }`}
+                >
                   &rarr; {driftFlag.specReference}
                 </p>
               ) : null}

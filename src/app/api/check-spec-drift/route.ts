@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { githubApi } from "@/lib/github";
+import { fetchFileContentsForClaims, githubApi } from "@/lib/github";
 import { assessClaimsAgainstSpec, SpecDoc } from "@/lib/gemini";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
@@ -92,21 +92,36 @@ export async function POST(request: NextRequest) {
   let model: string | null = null;
   let modelFallback = false;
 
-  if (toAssess.length && !docs.length) {
+  let supportFiles: Record<string, SpecDoc[]> = {};
+  if (toAssess.length) {
+    const filesByClaim: Record<string, string[]> = {};
+    for (const c of toAssess) {
+      const entry = evidence[c.id];
+      filesByClaim[c.id] = Array.isArray(entry?.files) ? entry.files : [];
+    }
+    try {
+      supportFiles = await fetchFileContentsForClaims(base, filesByClaim);
+    } catch {
+      supportFiles = {};
+    }
+  }
+
+  const hasSupport = toAssess.some((c) => (supportFiles[c.id] || []).length > 0);
+
+  if (toAssess.length && !docs.length && !hasSupport) {
     for (const c of toAssess) {
       outcomes.set(c.id, {
         claimId: c.id,
         claimText: c.text,
         verdict: "UNVERIFIED",
-        reason:
-          "Evidence found in repo, but no spec documents to compare against — spec.md marks these UNVERIFIED",
+        reason: "No planning documents and no readable matched files to verify this claim against",
         specReference: "",
       });
     }
   } else if (toAssess.length) {
     let answer;
     try {
-      answer = await assessClaimsAgainstSpec(toAssess, docs, GEMINI_API_KEY);
+      answer = await assessClaimsAgainstSpec(toAssess, docs, supportFiles, GEMINI_API_KEY);
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       return NextResponse.json(
@@ -118,15 +133,35 @@ export async function POST(request: NextRequest) {
     modelFallback = answer.modelFallback;
     for (const a of answer.data) {
       const claim = toAssess.find((c) => c.id === a.claimId);
-      outcomes.set(a.claimId, {
-        claimId: a.claimId,
-        claimText: claim?.text || a.claimId,
-        verdict: a.contradicts ? "SPEC-DRIFT" : "TRUE",
-        reason: a.reason,
-        specReference: a.contradicts
-          ? `${a.sourceDoc}:${a.lineNumber}: ${a.contradictingLine}`
-          : "",
-      });
+      const claimText = claim?.text || a.claimId;
+      if (a.contradicts) {
+        outcomes.set(a.claimId, {
+          claimId: a.claimId,
+          claimText,
+          verdict: "SPEC-DRIFT",
+          reason: a.reason,
+          specReference: `${a.sourceDoc}:${a.lineNumber}: ${a.contradictingLine}`,
+        });
+      } else if (a.supported && a.supportingLine > 0) {
+        outcomes.set(a.claimId, {
+          claimId: a.claimId,
+          claimText,
+          verdict: "TRUE",
+          reason: a.reason,
+          specReference: `${a.supportingFile}:${a.supportingLine}: ${a.supportingQuote}`,
+        });
+      } else {
+        const rejected = a.quoteRejected
+          ? `The quoted supporting line was not found in ${a.supportingFile}: "${a.supportingQuote.slice(0, 120)}" — claim left UNVERIFIED`
+          : "";
+        outcomes.set(a.claimId, {
+          claimId: a.claimId,
+          claimText,
+          verdict: "UNVERIFIED",
+          reason: rejected || a.reason || "No verified supporting line found in the matched files",
+          specReference: "",
+        });
+      }
     }
   }
 
