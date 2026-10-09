@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchRawFileTexts, githubApi, getDefaultBranch, selectContentCandidates } from "@/lib/github";
+import { createTimings, serverTimingHeader } from "@/lib/timings";
 
 const STOPWORDS = new Set([
   "this", "that", "they", "have", "been", "will", "from", "with", "what",
@@ -32,6 +33,7 @@ function isRelevant(candidate: string, keywords: string[], minMatches: number): 
 }
 
 export async function POST(request: NextRequest) {
+  const timings = createTimings();
   const body = await request.json();
   const repoUrl = body.repoUrl || "";
   const claims = Array.isArray(body.claims) ? body.claims : [];
@@ -78,13 +80,17 @@ export async function POST(request: NextRequest) {
     .filter((t: any) => t.type === "blob")
     .map((t: any) => t.path);
   const commitList: any[] = Array.isArray(commits) ? commits : [];
+  timings.lap("githubTree");
 
   let contentTexts: { file: string; text: string }[] = [];
   try {
-    contentTexts = await fetchRawFileTexts(owner, cleanRepo, branch, selectContentCandidates(fileNames));
+    if (claims.length) {
+      contentTexts = await fetchRawFileTexts(owner, cleanRepo, branch, selectContentCandidates(fileNames));
+    }
   } catch {
     contentTexts = [];
   }
+  timings.lap("rawFileFetch");
 
   const evidence: Record<string, any> = {};
 
@@ -159,7 +165,11 @@ export async function POST(request: NextRequest) {
     };
   }
 
-  return NextResponse.json({ evidence });
+  const finalTimings = timings.finish();
+  return NextResponse.json(
+    { evidence, timings: finalTimings },
+    { headers: { "Server-Timing": serverTimingHeader(finalTimings) } }
+  );
 }
 
 export async function GET(request: NextRequest) {

@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { POST as checkEvidence } from "../check-evidence/route";
 import { POST as checkSpecDrift } from "../check-spec-drift/route";
+import { createTimings, serverTimingHeader } from "@/lib/timings";
 import { Claim, SelfAuditResult, Verdict } from "@/types";
+
+export const maxDuration = 60;
 
 const REPO_URL = "https://github.com/kathir-iTech/Vibe_Check";
 
@@ -30,6 +33,7 @@ function fakeRequest(body: unknown): NextRequest {
 }
 
 export async function POST() {
+  const timings = createTimings();
   let evidenceData: any;
   try {
     const res = await checkEvidence(
@@ -49,6 +53,7 @@ export async function POST() {
       { status: 502 }
     );
   }
+  timings.lap("evidence");
 
   const evidence: Record<string, any> = evidenceData?.evidence || {};
 
@@ -71,6 +76,7 @@ export async function POST() {
       { status: 502 }
     );
   }
+  timings.lap("drift");
 
   const drift: any[] = Array.isArray(driftData?.drift) ? driftData.drift : [];
   const claims = [];
@@ -102,5 +108,18 @@ export async function POST() {
     claims,
   };
 
-  return NextResponse.json(result);
+  const finalTimings = timings.finish();
+  return NextResponse.json(
+    {
+      ...result,
+      timings: {
+        evidence: evidenceData.timings || {},
+        drift: driftData.timings || {},
+        selfAudit: finalTimings,
+        total: finalTimings.total,
+      },
+      usage: driftData.usage || null,
+    },
+    { headers: { "Server-Timing": serverTimingHeader(finalTimings) } }
+  );
 }

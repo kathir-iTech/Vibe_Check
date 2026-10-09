@@ -6,6 +6,7 @@ import { DemoMode } from "@/components/DemoMode";
 import { SelfAudit } from "@/components/SelfAudit";
 import { SpinnerIcon } from "@/components/icons";
 import { cacheKey, formatStamp, readCached, writeCached } from "@/lib/result-cache";
+import { fetchWithTimeout } from "@/lib/http";
 
 interface CheckResult {
   claimSource: string;
@@ -76,7 +77,7 @@ export default function Home() {
     try {
       let claimText = message;
       if (sourceUrl) {
-        const sourceRes = await fetch("/api/claim-source", {
+        const sourceRes = await fetchWithTimeout("/api/claim-source", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ url: sourceUrl }),
@@ -92,7 +93,7 @@ export default function Home() {
         setClaimSource(sourceData.text);
       }
 
-      const extractRes = await fetch("/api/extract-claims", {
+      const extractRes = await fetchWithTimeout("/api/extract-claims", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: claimText, repoUrl }),
@@ -109,7 +110,7 @@ export default function Home() {
       usedModels.extract = toModelInfo(extractData);
       setModels({ ...usedModels });
 
-      const evidenceRes = await fetch("/api/check-evidence", {
+      const evidenceRes = await fetchWithTimeout("/api/check-evidence", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ repoUrl, claims: extractedClaims }),
@@ -120,7 +121,7 @@ export default function Home() {
       }
       setEvidence(evidenceData.evidence || {});
 
-      const driftRes = await fetch("/api/check-spec-drift", {
+      const driftRes = await fetchWithTimeout("/api/check-spec-drift", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ repoUrl, claims: extractedClaims, evidence: evidenceData.evidence || {} }),

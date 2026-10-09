@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchFileContentsForClaims, githubApi } from "@/lib/github";
-import { assessClaimsAgainstSpec, SpecDoc } from "@/lib/gemini";
+import { assessClaimsAgainstSpec, GeminiUsage, SpecDoc } from "@/lib/gemini";
+import { createTimings, serverTimingHeader } from "@/lib/timings";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 
@@ -25,6 +26,7 @@ function hasRealEvidence(entry: any): boolean {
 }
 
 export async function POST(request: NextRequest) {
+  const timings = createTimings();
   const body = await request.json();
   const repoUrl = body.repoUrl || "";
   const claims = Array.isArray(body.claims) ? body.claims : [];
@@ -74,6 +76,7 @@ export async function POST(request: NextRequest) {
 
   const outcomes = new Map<string, any>();
   const toAssess: { id: string; text: string }[] = [];
+  timings.lap("specDocFetch");
 
   for (const claim of claims) {
     const claimText = claim.text || claim;
@@ -93,6 +96,7 @@ export async function POST(request: NextRequest) {
 
   let model: string | null = null;
   let modelFallback = false;
+  let usage: GeminiUsage | null = null;
 
   let supportFiles: Record<string, SpecDoc[]> = {};
   if (toAssess.length) {
@@ -109,6 +113,7 @@ export async function POST(request: NextRequest) {
   }
 
   const hasSupport = toAssess.some((c) => (supportFiles[c.id] || []).length > 0);
+  timings.lap("supportFileFetch");
 
   if (toAssess.length && !docs.length && !hasSupport) {
     for (const c of toAssess) {
@@ -133,6 +138,11 @@ export async function POST(request: NextRequest) {
     }
     model = answer.model;
     modelFallback = answer.modelFallback;
+    usage = answer.usage || null;
+    if (answer.timings) {
+      timings.set("gemini", answer.timings.gemini || 0);
+      timings.set("validation", answer.timings.validation || 0);
+    }
     for (const a of answer.data) {
       const claim = toAssess.find((c) => c.id === a.claimId);
       const claimText = claim?.text || a.claimId;
@@ -177,7 +187,11 @@ export async function POST(request: NextRequest) {
     );
   });
 
-  return NextResponse.json({ drift, model, modelFallback });
+  const finalTimings = timings.finish();
+  return NextResponse.json(
+    { drift, model, modelFallback, usage, timings: finalTimings },
+    { headers: { "Server-Timing": serverTimingHeader(finalTimings) } }
+  );
 }
 
 export async function GET(request: NextRequest) {

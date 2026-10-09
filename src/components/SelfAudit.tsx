@@ -3,6 +3,7 @@ import { useState } from "react";
 import { SelfAuditResult } from "@/types";
 import { SELF_AUDIT_SEED } from "@/lib/self-audit-seed";
 import { cacheKey, formatStamp, readCached, writeCached } from "@/lib/result-cache";
+import { fetchWithTimeout } from "@/lib/http";
 import { SpinnerIcon } from "./icons";
 import { VerdictBadge } from "./ResultsPanel";
 
@@ -17,6 +18,7 @@ export function SelfAudit() {
   const [savedAt, setSavedAt] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [elapsed, setElapsed] = useState(0);
 
   async function rerun(forceLive = false) {
     if (!forceLive) {
@@ -33,8 +35,11 @@ export function SelfAudit() {
 
     setLoading(true);
     setError("");
+    setElapsed(0);
+    const startedAt = Date.now();
+    const ticker = setInterval(() => setElapsed(Math.round((Date.now() - startedAt) / 1000)), 1000);
     try {
-      const res = await fetch("/api/self-audit", { method: "POST" });
+      const res = await fetchWithTimeout("/api/self-audit", { method: "POST" });
       const data = await res.json();
       if (!res.ok || data.error) {
         throw new Error(data.error || `self-audit failed (${res.status})`);
@@ -46,6 +51,7 @@ export function SelfAudit() {
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
+      clearInterval(ticker);
       setLoading(false);
     }
   }
@@ -86,7 +92,7 @@ export function SelfAudit() {
         className="font-mono text-[11px] text-zinc-500 dark:text-zinc-400"
       >
         {loading
-          ? "Running self-audit against the repo..."
+          ? `Running self-audit against the repo... (${elapsed}s elapsed)`
           : source === "cached"
             ? `Cached result (saved ${formatStamp(savedAt)}) \u2014 Re-run live for a fresh check. Last run: ${result.runAt}`
             : source === "live"

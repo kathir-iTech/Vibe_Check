@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { fetchWithTimeout } from "@/lib/http";
 
 interface Props {
   repoUrl: string;
@@ -18,7 +19,7 @@ export function ReportExport({ repoUrl, claims, evidence, verdicts }: Props) {
     setBusy(true);
     setError("");
     try {
-      const res = await fetch("/api/generate-report", {
+      const res = await fetchWithTimeout("/api/generate-report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ repoUrl, claims, evidence, verdicts }),
