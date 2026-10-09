@@ -1,23 +1,23 @@
 import { SelfAuditResult } from "@/types";
 
 // Captured from one real POST to /api/self-audit (Fix 6), regenerated after
-// Fix 11 (content-based retrieval): retrieval now scores file content as well
-// as file paths, so self-1 and self-2 reach TRUE on a supporting quote verified
-// against a real line, while self-3 stays UNVERIFIED because the quote it offered
-// was named against the wrong file and was rejected server-side. Committed exactly
-// as returned — no claim or prompt tuning.
-// A genuine run against github.com/kathir-iTech/Vibe_Check, committed as the
-// initial state so the homepage shows a real result on first load, not a spinner.
+// Fix 11 (content-based retrieval) from a run against the pushed state of
+// github.com/kathir-iTech/Vibe_Check: retrieval now scores file content as well
+// as file paths, so all three claims reach TRUE on a supporting quote verified
+// against a real line (README.md, check-spec-drift/route.ts, gemini.ts).
+// Committed exactly as returned — no claim or prompt tuning.
+// This is the initial state so the homepage shows a real result on first load,
+// not a spinner; "Re-run live" always re-fetches.
 export const SELF_AUDIT_SEED: SelfAuditResult = {
   "repoUrl": "https://github.com/kathir-iTech/Vibe_Check",
-  "runAt": "2026-10-09T03:18:27.126Z",
+  "runAt": "2026-10-09T03:27:04.111Z",
   "claims": [
     {
       "id": "self-1",
       "text": "Evidence checks are static/API-based only — no sandboxed code execution.",
       "verdict": "TRUE",
-      "reason": "The claim is consistent with the project's stated design boundaries.",
-      "specReference": "README.md:40: > **Design boundary:** no sandboxed code execution. Evidence checks are static/API-based only — a deliberate",
+      "reason": "The claim is consistent with the project's stated design boundaries in the planning documents.",
+      "specReference": "README.md:50: > **Design boundary:** no sandboxed code execution. Evidence checks are static/API-based only — a deliberate",
       "files": [
         "README.md",
         "src/lib/self-audit-seed.ts",
@@ -51,14 +51,14 @@ export const SELF_AUDIT_SEED: SelfAuditResult = {
     {
       "id": "self-3",
       "text": "SPEC-DRIFT citations are verified against the real file content server-side before being shown — a quote that doesn't actually exist in the cited doc throws an error instead of displaying.",
-      "verdict": "UNVERIFIED",
-      "reason": "The quoted supporting line was not found in src/app/api/check-spec-drift/route.ts: \"        throw new Error(\\u0060Gemini quoted text not found in \\${sourceDoc} for \\${claim.id}: \\${contradictingLine}\\u006\" — claim left UNVERIFIED",
-      "specReference": "",
+      "verdict": "TRUE",
+      "reason": "The implementation in gemini.ts verifies quotes against file content and throws an error if the line number is not found.",
+      "specReference": "src/lib/gemini.ts:194:         throw new Error(`Gemini quoted text not found in ${sourceDoc} for ${claim.id}: ${contradictingLine}`);",
       "files": [
         "src/lib/self-audit-seed.ts",
         "src/app/api/self-audit/route.ts",
-        "src/app/api/check-spec-drift/route.ts",
         "README.md",
+        "src/app/api/check-spec-drift/route.ts",
         "src/lib/gemini.ts"
       ],
       "commits": []
