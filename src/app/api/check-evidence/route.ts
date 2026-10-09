@@ -10,6 +10,8 @@ const STOPWORDS = new Set([
 const PATH_MATCH_BONUS = 2;
 const TOP_FILES_PER_CLAIM = 5;
 
+export const maxDuration = 60;
+
 function tokens(text: string): string[] {
   return text.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
 }

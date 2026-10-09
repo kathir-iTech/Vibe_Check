@@ -23,6 +23,13 @@ planning docs, then returns a verdict per claim.
 - **Retrieval is bounded.** Evidence lookup scores claim keywords against file paths, then against the content of up
   to 60 text files (20KB each, 10s budget, top 5 per claim). A file outside that window is never fetched, so its
   content cannot be cited as support.
+- **`TRUE` means at least one verified supporting line, not that every clause was verified.** A compound claim can be
+  marked `TRUE` on a single line that backs only part of it — read the cited line and check the rest yourself.
+- **Documentation can support a design-boundary claim but cannot prove runtime behavior.** A README, PRD, or spec line
+  states what the author intended; it is not evidence that the code does it at run time.
+- **Injection mitigations are best-effort.** Untrusted text is delimited with a per-request nonce and labelled as data,
+  quotes must exist verbatim in a fetched file, and lines that merely restate a claim are rejected — but a determined
+  prompt injection can still steer which *real* line gets cited. No mitigation here is a guarantee.
 
 ## Features
 

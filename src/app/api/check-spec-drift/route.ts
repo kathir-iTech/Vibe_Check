@@ -4,6 +4,8 @@ import { assessClaimsAgainstSpec, SpecDoc } from "@/lib/gemini";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 
+export const maxDuration = 60;
+
 async function fetchDoc(base: string, file: string): Promise<string | null> {
   try {
     const data = await githubApi(`${base}/contents/${file}`);
@@ -151,14 +153,11 @@ export async function POST(request: NextRequest) {
           specReference: `${a.supportingFile}:${a.supportingLine}: ${a.supportingQuote}`,
         });
       } else {
-        const rejected = a.quoteRejected
-          ? `The quoted supporting line was not found in ${a.supportingFile}: "${a.supportingQuote.slice(0, 120)}" — claim left UNVERIFIED`
-          : "";
         outcomes.set(a.claimId, {
           claimId: a.claimId,
           claimText,
           verdict: "UNVERIFIED",
-          reason: rejected || "No verified supporting line found in the matched files.",
+          reason: a.rejectionReason || "No verified supporting line found in the matched files.",
           specReference: "",
         });
       }
