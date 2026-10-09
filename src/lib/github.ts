@@ -136,6 +136,102 @@ async function fetchRepoFile(base: string, path: string): Promise<RepoFileConten
   }
 }
 
+const CONTENT_EXTENSIONS = new Set([
+  ".ts", ".tsx", ".js", ".jsx", ".py", ".go", ".rs", ".java", ".json", ".md",
+  ".css", ".html", ".yml", ".yaml",
+]);
+
+const CONTENT_EXCLUDED_DIRS = [".agents/", ".claude/", "devpost/"];
+
+const MAX_CONTENT_CANDIDATES = 60;
+const RAW_FETCH_CONCURRENCY = 10;
+const RAW_FETCH_BUDGET_MS = 10_000;
+const MAX_RAW_CHARS = 20 * 1024;
+
+export interface ContentFileText {
+  file: string;
+  text: string;
+}
+
+function isContentCandidate(path: string): boolean {
+  const lower = path.toLowerCase();
+  if (CONTENT_EXCLUDED_DIRS.some((d) => lower.startsWith(d) || lower.includes(`/${d}`))) return false;
+  if (isSkippableFile(path)) return false;
+  const base = lower.split("/").pop() || lower;
+  const dot = base.lastIndexOf(".");
+  if (dot === -1) return false;
+  return CONTENT_EXTENSIONS.has(base.slice(dot));
+}
+
+function isPreferredContentPath(path: string): boolean {
+  const lower = path.toLowerCase();
+  return lower.startsWith("src/") || lower.startsWith("app/") || lower.startsWith("lib/") || !path.includes("/");
+}
+
+export function selectContentCandidates(paths: string[]): string[] {
+  const candidates = paths.filter(isContentCandidate);
+  if (candidates.length <= MAX_CONTENT_CANDIDATES) return candidates;
+  return [...candidates]
+    .sort(
+      (a, b) =>
+        Number(!isPreferredContentPath(a)) - Number(!isPreferredContentPath(b)) ||
+        a.length - b.length ||
+        a.localeCompare(b)
+    )
+    .slice(0, MAX_CONTENT_CANDIDATES);
+}
+
+async function fetchRawFile(
+  owner: string,
+  repo: string,
+  branch: string,
+  path: string,
+  deadline: number
+): Promise<ContentFileText | null> {
+  const remaining = deadline - Date.now();
+  if (remaining <= 0) return null;
+  try {
+    const encoded = path.split("/").map(encodeURIComponent).join("/");
+    const headers: Record<string, string> = {
+      Accept: "text/plain",
+      "User-Agent": "VibeCheck",
+    };
+    if (process.env.GITHUB_TOKEN) {
+      headers["Authorization"] = `token ${process.env.GITHUB_TOKEN}`;
+    }
+    const response = await fetch(`https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${encoded}`, {
+      headers,
+      signal: AbortSignal.timeout(Math.min(remaining, RAW_FETCH_BUDGET_MS)),
+    });
+    if (!response.ok) return null;
+    let text = await response.text();
+    if (text.includes("\u0000")) return null;
+    if (text.length > MAX_RAW_CHARS) text = text.slice(0, MAX_RAW_CHARS);
+    return { file: path, text };
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchRawFileTexts(
+  owner: string,
+  repo: string,
+  branch: string,
+  paths: string[]
+): Promise<ContentFileText[]> {
+  const deadline = Date.now() + RAW_FETCH_BUDGET_MS;
+  const out: ContentFileText[] = [];
+  for (let i = 0; i < paths.length; i += RAW_FETCH_CONCURRENCY) {
+    if (Date.now() >= deadline) break;
+    const chunk = paths.slice(i, i + RAW_FETCH_CONCURRENCY);
+    const results = await Promise.all(chunk.map((p) => fetchRawFile(owner, repo, branch, p, deadline)));
+    for (const result of results) {
+      if (result) out.push(result);
+    }
+  }
+  return out;
+}
+
 export async function fetchFileContentsForClaims(
   base: string,
   filesByClaim: Record<string, string[]>

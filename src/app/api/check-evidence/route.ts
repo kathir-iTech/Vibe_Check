@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { githubApi, getDefaultBranch } from "@/lib/github";
+import { fetchRawFileTexts, githubApi, getDefaultBranch, selectContentCandidates } from "@/lib/github";
 
 const STOPWORDS = new Set([
   "this", "that", "they", "have", "been", "will", "from", "with", "what",
   "when", "where", "how", "than", "over", "their", "there", "would",
   "could", "should", "about", "into", "more", "some", "such", "the", "has",
 ]);
+
+const PATH_MATCH_BONUS = 2;
+const TOP_FILES_PER_CLAIM = 5;
 
 function tokens(text: string): string[] {
   return text.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
@@ -74,6 +77,13 @@ export async function POST(request: NextRequest) {
     .map((t: any) => t.path);
   const commitList: any[] = Array.isArray(commits) ? commits : [];
 
+  let contentTexts: { file: string; text: string }[] = [];
+  try {
+    contentTexts = await fetchRawFileTexts(owner, cleanRepo, branch, selectContentCandidates(fileNames));
+  } catch {
+    contentTexts = [];
+  }
+
   const evidence: Record<string, any> = {};
 
   for (const claim of claims) {
@@ -82,22 +92,67 @@ export async function POST(request: NextRequest) {
     const keywords = claimKeywords(claimText);
 
     const matchedFiles = fileNames.filter((f) => isRelevant(f, keywords, 1));
+    const pathMatched = new Set(matchedFiles);
     const matchedCommits = commitList.filter((c) =>
       isRelevant(c.commit?.message || "", keywords, Math.min(2, Math.max(1, Math.ceil(keywords.length / 2))))
     );
 
+    const contentHits = new Map<string, string[]>();
+    for (const { file, text } of contentTexts) {
+      const lower = text.toLowerCase();
+      const hits = keywords.filter((k) => lower.includes(k));
+      if (hits.length) contentHits.set(file, hits);
+    }
+
+    const scored = new Map<string, { file: string; hitCount: number; matchedTerms: string[]; pathMatched: boolean }>();
+    for (const file of matchedFiles) {
+      scored.set(file, { file, hitCount: 0, matchedTerms: [], pathMatched: true });
+    }
+    for (const [file, hits] of contentHits) {
+      const existing = scored.get(file);
+      scored.set(file, {
+        file,
+        hitCount: hits.length,
+        matchedTerms: hits,
+        pathMatched: existing ? existing.pathMatched : pathMatched.has(file),
+      });
+    }
+
+    const top = [...scored.values()]
+      .sort(
+        (a, b) =>
+          b.hitCount +
+          (b.pathMatched ? PATH_MATCH_BONUS : 0) -
+          (a.hitCount + (a.pathMatched ? PATH_MATCH_BONUS : 0)) ||
+          b.hitCount - a.hitCount ||
+          a.file.length - b.file.length ||
+          a.file.localeCompare(b.file)
+      )
+      .slice(0, TOP_FILES_PER_CLAIM);
+
+    const contentTerms = new Set<string>();
+    for (const hits of contentHits.values()) {
+      for (const hit of hits) contentTerms.add(hit);
+    }
+
     evidence[claimId] = {
-      files: matchedFiles.slice(0, 10),
+      files: top.map((t) => t.file),
+      fileMatches: top.map(({ file, hitCount, matchedTerms }) => ({ file, hitCount, matchedTerms })),
       commits: matchedCommits.slice(0, 5).map((c: any) => ({
         sha: c.sha,
         message: c.commit?.message,
         date: c.commit?.author?.date,
       })),
-      matchedTerms: keywords.filter(
-        (k) =>
-          matchedFiles.some((f) => tokensMatching(f, [k]).length) ||
-          matchedCommits.some((c) => tokensMatching(c.commit?.message || "", [k]).length)
-      ),
+      matchedTerms: [
+        ...new Set([
+          ...keywords.filter(
+            (k) =>
+              matchedFiles.some((f) => tokensMatching(f, [k]).length) ||
+              matchedCommits.some((c) => tokensMatching(c.commit?.message || "", [k]).length)
+          ),
+          ...contentTerms,
+        ]),
+      ],
       totalFilesInRepo: fileNames.length,
     };
   }

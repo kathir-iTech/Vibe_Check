@@ -14,10 +14,20 @@ planning docs, then returns a verdict per claim.
 | `UNVERIFIED` | No evidence found for the claim | red |
 | `SPEC-DRIFT` | Claim contradicts the repo's own `scope.md` / `prd.md` / `spec.md` | amber |
 
+## Known limitations
+
+- **`SPEC-DRIFT` proves the quote exists, not that it contradicts the claim.** The quoted line is verified against
+  the real file content server-side, but the judgment that a line contradicts the claim is the model's. A claim can
+  therefore be marked `SPEC-DRIFT` against a line that is real and unrelated — e.g. a Slack-webhook claim cited
+  against a line that only says the feature budget is hard-capped at 5.
+- **Retrieval is bounded.** Evidence lookup scores claim keywords against file paths, then against the content of up
+  to 60 text files (20KB each, 10s budget, top 5 per claim). A file outside that window is never fetched, so its
+  content cannot be cited as support.
+
 ## Features
 
 1. **Claim extractor** — turns an agent's free-text message into a structured list of checkable claims (Gemini).
-2. **Repo evidence checker** — cross-references each claim against GitHub REST API data (commits, files, diffs).
+2. **Repo evidence checker** — cross-references each claim against GitHub REST API data (commits, file paths, file contents).
 3. **Spec-drift detector** — compares claims against the repo's own planning docs and cites the contradicting line.
 4. **Demo mode** — preloaded example repo data at `/demo`, for when GitHub/Gemini hiccup or you just want the flow.
 5. **Shareable verdict report** — permalink (`/report/[id]`) plus JSON export.

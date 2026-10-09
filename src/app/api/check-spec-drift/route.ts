@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
           claimId: a.claimId,
           claimText,
           verdict: "UNVERIFIED",
-          reason: rejected || a.reason || "No verified supporting line found in the matched files",
+          reason: rejected || "No verified supporting line found in the matched files.",
           specReference: "",
         });
       }
