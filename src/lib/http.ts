@@ -1,4 +1,7 @@
-export const CLIENT_TIMEOUT_MS = 55_000;
+// One window above every route's server-side ceiling (self-audit has
+// maxDuration = 60s), so the client always waits out the server's own bound:
+// it either receives the terminal response or the server's own timeout/502.
+export const CLIENT_TIMEOUT_MS = 70_000;
 
 export async function fetchWithTimeout(
   url: string,
