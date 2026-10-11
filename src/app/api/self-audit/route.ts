@@ -3,6 +3,7 @@ import { POST as checkEvidence } from "../check-evidence/route";
 import { POST as checkSpecDrift } from "../check-spec-drift/route";
 import { createTimings, serverTimingHeader } from "@/lib/timings";
 import { Claim, SelfAuditResult, Verdict } from "@/types";
+import selfAuditClaims from "@/lib/self-audit-claims.json";
 
 export const maxDuration = 60;
 
@@ -10,23 +11,7 @@ const REPO_URL = "https://github.com/kathir-iTech/Vibe_Check";
 
 const VERDICTS = new Set<Verdict>(["TRUE", "UNVERIFIED", "SPEC-DRIFT"]);
 
-const SELF_CLAIMS: Claim[] = [
-  {
-    id: "self-1",
-    text: "Evidence checks are static/API-based only \u2014 no sandboxed code execution.",
-    evidenceType: ["file", "commit"],
-  },
-  {
-    id: "self-2",
-    text: "Every verdict is one of TRUE, UNVERIFIED, or SPEC-DRIFT \u2014 reachable from a real branch in check-spec-drift, never a UI default.",
-    evidenceType: ["file", "commit"],
-  },
-  {
-    id: "self-3",
-    text: "SPEC-DRIFT citations are verified against the real file content server-side before being shown \u2014 a quote that doesn't actually exist in the cited doc throws an error instead of displaying.",
-    evidenceType: ["file", "commit"],
-  },
-];
+const SELF_CLAIMS: Claim[] = selfAuditClaims as Claim[];
 
 function fakeRequest(body: unknown): NextRequest {
   return { json: () => Promise.resolve(body) } as unknown as NextRequest;

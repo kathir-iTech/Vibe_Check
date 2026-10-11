@@ -1,9 +1,10 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ResultsPanel, type ModelInfo, type ResultModels } from "@/components/ResultsPanel";
 import { ReportExport } from "@/components/ReportExport";
 import { DemoMode } from "@/components/DemoMode";
 import { SelfAudit } from "@/components/SelfAudit";
+import { BenchmarkCard } from "@/components/BenchmarkCard";
 import { SpinnerIcon } from "@/components/icons";
 import { cacheKey, formatStamp, readCached, writeCached } from "@/lib/result-cache";
 import { fetchWithTimeout } from "@/lib/http";
@@ -289,6 +290,8 @@ export default function Home() {
         </h2>
         <SelfAudit />
       </section>
+
+      <BenchmarkCard />
     </main>
   );
 }

@@ -1,0 +1,17 @@
+[
+  {
+    "id": "self-1",
+    "text": "Evidence checks are static/API-based only \u2014 no sandboxed code execution.",
+    "evidenceType": ["file", "commit"]
+  },
+  {
+    "id": "self-2",
+    "text": "Every verdict is one of TRUE, UNVERIFIED, or SPEC-DRIFT \u2014 reachable from a real branch in check-spec-drift, never a UI default.",
+    "evidenceType": ["file", "commit"]
+  },
+  {
+    "id": "self-3",
+    "text": "SPEC-DRIFT citations are verified against the real file content server-side before being shown \u2014 a quote that doesn't actually exist in the cited doc throws an error instead of displaying.",
+    "evidenceType": ["file", "commit"]
+  }
+]

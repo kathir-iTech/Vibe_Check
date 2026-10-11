@@ -141,7 +141,7 @@ const CONTENT_EXTENSIONS = new Set([
   ".css", ".html", ".yml", ".yaml",
 ]);
 
-const CONTENT_EXCLUDED_DIRS = [".agents/", ".claude/", "devpost/"];
+const CONTENT_EXCLUDED_DIRS = [".agents/", ".claude/", "devpost/", "benchmark/"];
 
 const MAX_CONTENT_CANDIDATES = 60;
 const RAW_FETCH_CONCURRENCY = 10;

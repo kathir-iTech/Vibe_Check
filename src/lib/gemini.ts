@@ -235,12 +235,20 @@ function isRestatement(claimText: string, quote: string, lineText: string): bool
   return shared.length / claimKeywords.length >= 0.8;
 }
 
+function normalizeForLineMatch(s: string): string {
+  return s
+    .replace(/\\\\/g, "\\")
+    .replace(/\\\$/g, "$")
+    .replace(/\\`/g, "`")
+    .replace(/\\u0060/g, "`");
+}
+
 function findLineNumber(docText: string, quote: string): number {
   const lines = docText.split("\n");
-  const nQuote = normalize(quote);
+  const nQuote = normalize(normalizeForLineMatch(quote));
   if (!nQuote) return -1;
   for (let i = 0; i < lines.length; i++) {
-    if (normalize(lines[i]).includes(nQuote)) return i + 1;
+    if (normalize(normalizeForLineMatch(lines[i])).includes(nQuote)) return i + 1;
   }
   return -1;
 }

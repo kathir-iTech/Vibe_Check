@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint src"
+    "lint": "eslint src",
+    "check-seed": "node scripts/check-seed.mjs",
+    "regenerate-seed": "node scripts/regenerate-seed.mjs",
+    "benchmark": "node scripts/benchmark.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.24.0",
