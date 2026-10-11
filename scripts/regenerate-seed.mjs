@@ -21,7 +21,7 @@ async function fetchSelfAudit() {
   return res.json();
 }
 
-function escapeForTsString(s: string): string {
+function escapeForTsString(s) {
   return s
     .replace(/\\/g, "\\\\")
     .replace(/'/g, "\\'")
@@ -30,7 +30,7 @@ function escapeForTsString(s: string): string {
     .replace(/\t/g, "\\t");
 }
 
-function generateSeedFile(data: any): string {
+function generateSeedFile(data) {
   const claimsJson = JSON.stringify(data.claims, null, 2);
   return `import { SelfAuditResult } from "@/types";
 

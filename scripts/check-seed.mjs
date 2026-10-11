@@ -12,9 +12,9 @@ const REPO_ROOT = resolve(__dirname, "..");
 const SEED_PATH = resolve(REPO_ROOT, "src/lib/self-audit-seed.ts");
 const CLAIMS_JSON_PATH = resolve(REPO_ROOT, "src/lib/self-audit-claims.json");
 
-function extractClaimsFromSeed(): any[] {
+function extractClaimsFromSeed() {
   const content = readFileSync(SEED_PATH, "utf8");
-  // Find the SELF_AUDIT_SEED object and parse the claims array
+  // Find the SELF_AUDIT_SEED array and parse it
   const match = content.match(/export const SELF_AUDIT_SEED: SelfAuditResult = (\[[\s\S]*?\]);/);
   if (!match) {
     throw new Error("Could not find SELF_AUDIT_SEED claims array in seed file");
@@ -22,7 +22,7 @@ function extractClaimsFromSeed(): any[] {
   return JSON.parse(match[1]);
 }
 
-function loadSourceClaims(): any[] {
+function loadSourceClaims() {
   const content = readFileSync(CLAIMS_JSON_PATH, "utf8");
   return JSON.parse(content);
 }

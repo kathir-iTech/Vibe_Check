@@ -1,1 +1,787 @@
-{"status":"not-run"}
+{
+  "headSha": "dcda614e99ac16641304198f5e440b7954598ec5",
+  "runs": [
+    [
+      {
+        "claimId": "t01",
+        "verdict": "TRUE",
+        "reason": "Verified supporting line in package.json",
+        "specReference": "package.json:17:     \"next\": \"16.3.5\",",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 4318,
+          "drift": 18996,
+          "total": 23314
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 41133,
+          "candidatesTokenCount": 1219,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "t02",
+        "verdict": "TRUE",
+        "reason": "Verified supporting line in tailwind.config.ts",
+        "specReference": "tailwind.config.ts:11: module.exports = config",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 4318,
+          "drift": 18996,
+          "total": 23314
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 41133,
+          "candidatesTokenCount": 1219,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "t03",
+        "verdict": "UNVERIFIED",
+        "reason": "The quoted supporting line was not found in LICENSE: \"1: MIT License\" — claim left UNVERIFIED",
+        "specReference": "",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 4318,
+          "drift": 18996,
+          "total": 23314
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 41133,
+          "candidatesTokenCount": 1219,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "t04",
+        "verdict": "TRUE",
+        "reason": "Verified supporting line in package.json",
+        "specReference": "package.json:15:     \"@google/genai\": \"^2.24.0\",",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 4318,
+          "drift": 18996,
+          "total": 23314
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 41133,
+          "candidatesTokenCount": 1219,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "t05",
+        "verdict": "TRUE",
+        "reason": "Verified supporting line in src/lib/result-cache.ts",
+        "specReference": "src/lib/result-cache.ts:22:     const raw = window.sessionStorage.getItem(key);",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 4318,
+          "drift": 18996,
+          "total": 23314
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 41133,
+          "candidatesTokenCount": 1219,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "t06",
+        "verdict": "TRUE",
+        "reason": "Verified supporting line in src/app/page.tsx",
+        "specReference": "src/app/page.tsx:10: import { fetchWithTimeout } from \"@/lib/http\";",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 4318,
+          "drift": 18996,
+          "total": 23314
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 41133,
+          "candidatesTokenCount": 1219,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "t07",
+        "verdict": "TRUE",
+        "reason": "Verified supporting line in src/app/api/check-evidence/route.ts",
+        "specReference": "src/app/api/check-evidence/route.ts:14: export const maxDuration = 60;",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 4318,
+          "drift": 18996,
+          "total": 23314
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 41133,
+          "candidatesTokenCount": 1219,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "t08",
+        "verdict": "TRUE",
+        "reason": "Verified supporting line in src/app/api/check-spec-drift/route.ts",
+        "specReference": "src/app/api/check-spec-drift/route.ts:8: export const maxDuration = 60;",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 4318,
+          "drift": 18996,
+          "total": 23314
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 41133,
+          "candidatesTokenCount": 1219,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "t09",
+        "verdict": "TRUE",
+        "reason": "Verified supporting line in src/app/api/self-audit/route.ts",
+        "specReference": "src/app/api/self-audit/route.ts:8: export const maxDuration = 60;",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 4318,
+          "drift": 18996,
+          "total": 23314
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 41133,
+          "candidatesTokenCount": 1219,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "t10",
+        "verdict": "TRUE",
+        "reason": "Verified supporting line in src/lib/http.ts",
+        "specReference": "src/lib/http.ts:6: export async function fetchWithTimeout(",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 4318,
+          "drift": 18996,
+          "total": 23314
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 41133,
+          "candidatesTokenCount": 1219,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "t11",
+        "verdict": "TRUE",
+        "reason": "The code in src/app/page.tsx calls writeCached only after the driftRes await completes successfully.",
+        "specReference": "src/app/page.tsx:138:       const entry = writeCached<CheckResult>(key, {",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 4318,
+          "drift": 18996,
+          "total": 23314
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 41133,
+          "candidatesTokenCount": 1219,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "t12",
+        "verdict": "TRUE",
+        "reason": "The restatement guard logic in src/lib/gemini.ts is only invoked within the supported branch of the assessment validation.",
+        "specReference": "src/lib/gemini.ts:314:     if (supported) {",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 4318,
+          "drift": 18996,
+          "total": 23314
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 41133,
+          "candidatesTokenCount": 1219,
+          "thoughtsTokenCount": null
+        }
+      }
+    ],
+    [
+      {
+        "claimId": "t01",
+        "verdict": "TRUE",
+        "reason": "Verified supporting line in package.json",
+        "specReference": "package.json:17: \"next\": \"16.3.5\",",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 3970,
+          "drift": 17718,
+          "total": 21688
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 37944,
+          "candidatesTokenCount": 1193,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "t02",
+        "verdict": "TRUE",
+        "reason": "Verified supporting line in postcss.config.js",
+        "specReference": "postcss.config.js:2:   plugins: [\"tailwindcss\", \"autoprefixer\"],",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 3970,
+          "drift": 17718,
+          "total": 21688
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 37944,
+          "candidatesTokenCount": 1193,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "t03",
+        "verdict": "UNVERIFIED",
+        "reason": "The cited line restates the claim; a restatement is not evidence.",
+        "specReference": "",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 3970,
+          "drift": 17718,
+          "total": 21688
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 37944,
+          "candidatesTokenCount": 1193,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "t04",
+        "verdict": "TRUE",
+        "reason": "Verified supporting line in package.json",
+        "specReference": "package.json:15:     \"@google/genai\": \"^2.24.0\",",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 3970,
+          "drift": 17718,
+          "total": 21688
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 37944,
+          "candidatesTokenCount": 1193,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "t05",
+        "verdict": "TRUE",
+        "reason": "Verified supporting line in src/lib/result-cache.ts",
+        "specReference": "src/lib/result-cache.ts:38:     window.sessionStorage.setItem(key, JSON.stringify(entry));",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 3970,
+          "drift": 17718,
+          "total": 21688
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 37944,
+          "candidatesTokenCount": 1193,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "t06",
+        "verdict": "TRUE",
+        "reason": "Verified supporting line in src/app/page.tsx",
+        "specReference": "src/app/page.tsx:10: import { fetchWithTimeout } from \"@/lib/http\";",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 3970,
+          "drift": 17718,
+          "total": 21688
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 37944,
+          "candidatesTokenCount": 1193,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "t07",
+        "verdict": "TRUE",
+        "reason": "Verified supporting line in src/app/api/check-evidence/route.ts",
+        "specReference": "src/app/api/check-evidence/route.ts:14: export const maxDuration = 60;",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 3970,
+          "drift": 17718,
+          "total": 21688
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 37944,
+          "candidatesTokenCount": 1193,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "t08",
+        "verdict": "UNVERIFIED",
+        "reason": "No verified supporting line found in the matched files.",
+        "specReference": "",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 3970,
+          "drift": 17718,
+          "total": 21688
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 37944,
+          "candidatesTokenCount": 1193,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "t09",
+        "verdict": "TRUE",
+        "reason": "Verified supporting line in src/app/api/self-audit/route.ts",
+        "specReference": "src/app/api/self-audit/route.ts:8: export const maxDuration = 60;",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 3970,
+          "drift": 17718,
+          "total": 21688
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 37944,
+          "candidatesTokenCount": 1193,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "t10",
+        "verdict": "UNVERIFIED",
+        "reason": "No verified supporting line found in the matched files.",
+        "specReference": "",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 3970,
+          "drift": 17718,
+          "total": 21688
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 37944,
+          "candidatesTokenCount": 1193,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "t11",
+        "verdict": "TRUE",
+        "reason": "The code in src/app/page.tsx calls writeCached after the drift step completes.",
+        "specReference": "src/app/page.tsx:138:       const entry = writeCached<CheckResult>(key, {",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 3970,
+          "drift": 17718,
+          "total": 21688
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 37944,
+          "candidatesTokenCount": 1193,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "t12",
+        "verdict": "TRUE",
+        "reason": "The restatement guard logic in src/lib/gemini.ts is only applied to supporting quotes, not contradiction quotes.",
+        "specReference": "src/lib/gemini.ts:327:     if (isRestatement(claim.text, supportingQuote, lineText)) {",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 3970,
+          "drift": 17718,
+          "total": 21688
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 37944,
+          "candidatesTokenCount": 1193,
+          "thoughtsTokenCount": null
+        }
+      }
+    ],
+    [
+      {
+        "claimId": "t01",
+        "verdict": "TRUE",
+        "reason": "Verified supporting line in package.json",
+        "specReference": "package.json:17: \"next\": \"16.3.5\",",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 3788,
+          "drift": 15254,
+          "total": 19042
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 40899,
+          "candidatesTokenCount": 1292,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "t02",
+        "verdict": "TRUE",
+        "reason": "Verified supporting line in tailwind.config.ts",
+        "specReference": "tailwind.config.ts:1: /** @type {import('tailwindcss').Config} */",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 3788,
+          "drift": 15254,
+          "total": 19042
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 40899,
+          "candidatesTokenCount": 1292,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "t03",
+        "verdict": "UNVERIFIED",
+        "reason": "The cited line restates the claim; a restatement is not evidence.",
+        "specReference": "",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 3788,
+          "drift": 15254,
+          "total": 19042
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 40899,
+          "candidatesTokenCount": 1292,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "t04",
+        "verdict": "TRUE",
+        "reason": "Verified supporting line in package.json",
+        "specReference": "package.json:15: \"@google/genai\": \"^2.24.0\",",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 3788,
+          "drift": 15254,
+          "total": 19042
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 40899,
+          "candidatesTokenCount": 1292,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "t05",
+        "verdict": "TRUE",
+        "reason": "Verified supporting line in src/lib/result-cache.ts",
+        "specReference": "src/lib/result-cache.ts:22:     const raw = window.sessionStorage.getItem(key);",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 3788,
+          "drift": 15254,
+          "total": 19042
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 40899,
+          "candidatesTokenCount": 1292,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "t06",
+        "verdict": "TRUE",
+        "reason": "Verified supporting line in src/app/page.tsx",
+        "specReference": "src/app/page.tsx:10: import { fetchWithTimeout } from \"@/lib/http\";",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 3788,
+          "drift": 15254,
+          "total": 19042
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 40899,
+          "candidatesTokenCount": 1292,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "t07",
+        "verdict": "TRUE",
+        "reason": "Verified supporting line in src/app/api/check-evidence/route.ts",
+        "specReference": "src/app/api/check-evidence/route.ts:14: export const maxDuration = 60;",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 3788,
+          "drift": 15254,
+          "total": 19042
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 40899,
+          "candidatesTokenCount": 1292,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "t08",
+        "verdict": "TRUE",
+        "reason": "Verified supporting line in src/app/api/check-spec-drift/route.ts",
+        "specReference": "src/app/api/check-spec-drift/route.ts:8: export const maxDuration = 60;",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 3788,
+          "drift": 15254,
+          "total": 19042
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 40899,
+          "candidatesTokenCount": 1292,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "t09",
+        "verdict": "TRUE",
+        "reason": "Verified supporting line in src/app/api/self-audit/route.ts",
+        "specReference": "src/app/api/self-audit/route.ts:8: export const maxDuration = 60;",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 3788,
+          "drift": 15254,
+          "total": 19042
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 40899,
+          "candidatesTokenCount": 1292,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "t10",
+        "verdict": "TRUE",
+        "reason": "Verified supporting line in src/lib/http.ts",
+        "specReference": "src/lib/http.ts:6: export async function fetchWithTimeout(",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 3788,
+          "drift": 15254,
+          "total": 19042
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 40899,
+          "candidatesTokenCount": 1292,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "t11",
+        "verdict": "SPEC-DRIFT",
+        "reason": "The spec defines the flow as sequential and does not condition caching on the drift step.",
+        "specReference": "devpost/spec.md:14: The builder pastes an agent message and repo URL → the frontend sends this to a Next.js API route → Gemini extracts claims → for each claim, the API calls GitHub REST API to gather evidence → claims are compared against the repo's scope.md/prd.md/spec.md → verdicts are returned → the frontend displays them with evidence → the builder can export or share the report.",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 3788,
+          "drift": 15254,
+          "total": 19042
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 40899,
+          "candidatesTokenCount": 1292,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "t12",
+        "verdict": "TRUE",
+        "reason": "The code in src/lib/gemini.ts applies the restatement guard specifically to supporting quotes, not contradiction quotes.",
+        "specReference": "src/lib/gemini.ts:327:         if (isRestatement(claim.text, supportingQuote, lineText)) {",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 3788,
+          "drift": 15254,
+          "total": 19042
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 40899,
+          "candidatesTokenCount": 1292,
+          "thoughtsTokenCount": null
+        }
+      }
+    ]
+  ],
+  "summary": {
+    "falseClaimsReturnedTrue": {
+      "count": 0,
+      "total": 30,
+      "details": []
+    },
+    "unverifiableClaimsReturnedTrue": {
+      "count": 0,
+      "total": 6,
+      "details": []
+    },
+    "trueClaimsReturnedTrue": {
+      "count": 12,
+      "total": 36,
+      "details": [
+        "t01: \"Next.js is used as the framework\" — cited: package.json:17:     \"next\": \"16.3.5\",",
+        "t02: \"Tailwind CSS is configured\" — cited: tailwind.config.ts:11: module.exports = config",
+        "t03: \"Project is MIT licensed\" — cited: N/A",
+        "t04: \"@google/genai is a dependency\" — cited: package.json:15:     \"@google/genai\": \"^2.24.0\",",
+        "t05: \"Client uses sessionStorage as a cache\" — cited: src/lib/result-cache.ts:22:     const raw = window.sessionStorage.getItem(key);",
+        "t06: \"Client uses fetchWithTimeout for network calls\" — cited: src/app/page.tsx:10: import { fetchWithTimeout } from \"@/lib/http\";",
+        "t07: \"/api/check-evidence route sets maxDuration\" — cited: src/app/api/check-evidence/route.ts:14: export const maxDuration = 60;",
+        "t08: \"/api/check-spec-drift route sets maxDuration\" — cited: src/app/api/check-spec-drift/route.ts:8: export const maxDuration = 60;",
+        "t09: \"/api/self-audit route sets maxDuration\" — cited: src/app/api/self-audit/route.ts:8: export const maxDuration = 60;",
+        "t10: \"fetchWithTimeout helper exists\" — cited: src/lib/http.ts:6: export async function fetchWithTimeout(",
+        "t11: \"Results are cached only after the drift step succeeds\" — cited: src/app/page.tsx:138:       const entry = writeCached<CheckResult>(key, {",
+        "t12: \"The restatement guard applies to supporting quotes only, not contradiction quotes\" — cited: src/lib/gemini.ts:314:     if (supported) {"
+      ]
+    },
+    "verdictChangedBetweenRuns": {
+      "count": 12,
+      "total": 24,
+      "details": [
+        "t01: TRUE → UNVERIFIED → SPEC-DRIFT (label: true)",
+        "t02: TRUE → UNVERIFIED → SPEC-DRIFT (label: true)",
+        "t03: TRUE → UNVERIFIED → SPEC-DRIFT (label: true)",
+        "t04: TRUE → UNVERIFIED → SPEC-DRIFT (label: true)",
+        "t05: TRUE → UNVERIFIED → SPEC-DRIFT (label: true)",
+        "t06: TRUE → UNVERIFIED → SPEC-DRIFT (label: true)",
+        "t07: TRUE → UNVERIFIED → SPEC-DRIFT (label: true)",
+        "t08: TRUE → UNVERIFIED → SPEC-DRIFT (label: true)",
+        "t09: TRUE → UNVERIFIED → SPEC-DRIFT (label: true)",
+        "t10: TRUE → UNVERIFIED → SPEC-DRIFT (label: true)",
+        "t11: TRUE → UNVERIFIED → SPEC-DRIFT (label: true)",
+        "t12: TRUE → UNVERIFIED → SPEC-DRIFT (label: true)"
+      ]
+    },
+    "medianLatencyMs": 21688,
+    "p95LatencyMs": 23314
+  },
+  "fallbackRuns": [
+    0,
+    1,
+    2
+  ],
+  "createdAt": "2026-10-11T15:01:41.870Z"
+}
