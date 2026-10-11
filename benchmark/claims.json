@@ -4,147 +4,171 @@
   "claims": [
     {
       "id": "t01",
-      "text": "Next.js is used as the framework (Next.js app)",
+      "text": "Next.js is used as the framework",
       "label": "true",
-      "groundTruth": "package.json contains 'next'"
+      "groundTruth": "package.json:14",
+      "verifiedWith": "git grep -n '\"next\"' 8e350af -- package.json"
     },
     {
       "id": "t02",
       "text": "Tailwind CSS is configured",
       "label": "true",
-      "groundTruth": "tailwind.config.* or postcss.config.* present"
+      "groundTruth": "tailwind.config.ts:1",
+      "verifiedWith": "git grep -n 'tailwindcss' 8e350af -- tailwind.config.ts postcss.config.js"
     },
     {
       "id": "t03",
       "text": "Project is MIT licensed",
       "label": "true",
-      "groundTruth": "LICENSE file exists with 'MIT'"
+      "groundTruth": "LICENSE:1",
+      "verifiedWith": "git grep -n 'MIT' 8e350af -- LICENSE"
     },
     {
       "id": "t04",
       "text": "@google/genai is a dependency",
       "label": "true",
-      "groundTruth": "package.json contains '@google/genai'"
+      "groundTruth": "package.json:12",
+      "verifiedWith": "git grep -n '\"@google/genai\"' 8e350af -- package.json"
     },
     {
       "id": "t05",
-      "text": "Client uses sessionStorage as a cache (sessionStorage.getItem/setItem)",
+      "text": "Client uses sessionStorage as a cache",
       "label": "true",
-      "groundTruth": "client code uses sessionStorage"
+      "groundTruth": "src/lib/result-cache.ts:22",
+      "verifiedWith": "git grep -n 'sessionStorage' 8e350af -- src/lib/result-cache.ts"
     },
     {
       "id": "t06",
-      "text": "Client uses fetchWithTimeout for network calls (no bare fetch in client)",
+      "text": "Client uses fetchWithTimeout for network calls",
       "label": "true",
-      "groundTruth": "client uses fetchWithTimeout; no bare 'fetch(' in client code"
+      "groundTruth": "src/app/page.tsx:80",
+      "verifiedWith": "git grep -n 'fetchWithTimeout' 8e350af -- src/app/page.tsx"
     },
     {
       "id": "t07",
       "text": "/api/check-evidence route sets maxDuration",
       "label": "true",
-      "groundTruth": "app/api/check-evidence/route.* sets maxDuration"
+      "groundTruth": "src/app/api/check-evidence/route.ts:14",
+      "verifiedWith": "git grep -n 'maxDuration' 8e350af -- src/app/api/check-evidence/route.ts"
     },
     {
       "id": "t08",
       "text": "/api/check-spec-drift route sets maxDuration",
       "label": "true",
-      "groundTruth": "app/api/check-spec-drift/route.* sets maxDuration"
+      "groundTruth": "src/app/api/check-spec-drift/route.ts:8",
+      "verifiedWith": "git grep -n 'maxDuration' 8e350af -- src/app/api/check-spec-drift/route.ts"
     },
     {
       "id": "t09",
       "text": "/api/self-audit route sets maxDuration",
       "label": "true",
-      "groundTruth": "app/api/self-audit/route.* sets maxDuration"
+      "groundTruth": "src/app/api/self-audit/route.ts:7",
+      "verifiedWith": "git grep -n 'maxDuration' 8e350af -- src/app/api/self-audit/route.ts"
     },
     {
       "id": "t10",
       "text": "fetchWithTimeout helper exists",
       "label": "true",
-      "groundTruth": "lib/fetchWithTimeout.* exists"
+      "groundTruth": "src/lib/http.ts:6",
+      "verifiedWith": "git grep -n 'fetchWithTimeout' 8e350af -- src/lib/http.ts"
     },
     {
       "id": "t11",
-      "text": "Self-audit uses shared claims module",
+      "text": "Results are cached only after the drift step succeeds",
       "label": "true",
-      "groundTruth": "self-audit imports shared claims from shared module (post-Fix 14)"
+      "groundTruth": "src/app/page.tsx:137",
+      "verifiedWith": "git grep -n 'writeCached' 8e350af -- src/app/page.tsx"
     },
     {
       "id": "t12",
-      "text": "Seed generator writes UTF-8 via fs (no shell redirection)",
+      "text": "The restatement guard applies to supporting quotes only, not contradiction quotes",
       "label": "true",
-      "groundTruth": "scripts/generate-self-audit-seed.* uses fs.writeFileSync"
+      "groundTruth": "src/lib/gemini.ts:319",
+      "verifiedWith": "git grep -n 'isRestatement' 8e350af -- src/lib/gemini.ts"
     },
     {
       "id": "f01",
       "text": "Redis cache is used",
       "label": "false",
-      "groundTruth": "absent"
+      "groundTruth": "grep -riE 'redis' src/ returns no matches (absent at 8e350af)",
+      "verifiedWith": "git grep -niE 'redis' 8e350af -- src/"
     },
     {
       "id": "f02",
-      "text": "Python backend (FastAPI/Flask) is used",
+      "text": "/api/check-spec-drift sets maxDuration to 120",
       "label": "false",
-      "groundTruth": "absent"
+      "groundTruth": "src/app/api/check-spec-drift/route.ts:8 (maxDuration = 60)",
+      "verifiedWith": "git grep -n 'maxDuration' 8e350af -- src/app/api/check-spec-drift/route.ts"
     },
     {
       "id": "f03",
       "text": "Slack webhook integration exists",
       "label": "false",
-      "groundTruth": "absent"
+      "groundTruth": "grep -riE 'slack' src/ returns no matches (absent at 8e350af; only README.md and devpost/ docs mention it)",
+      "verifiedWith": "git grep -niE 'slack' 8e350af -- src/"
     },
     {
       "id": "f04",
-      "text": "OAuth login (Google/GitHub OAuth) is implemented",
+      "text": "The client result cache uses localStorage",
       "label": "false",
-      "groundTruth": "absent"
+      "groundTruth": "src/lib/result-cache.ts:22 (sessionStorage, not localStorage)",
+      "verifiedWith": "git grep -n 'sessionStorage' 8e350af -- src/lib/result-cache.ts"
     },
     {
       "id": "f05",
-      "text": "Postgres database/storage is used",
+      "text": "Evidence files are fetched via a git clone of the repo",
       "label": "false",
-      "groundTruth": "absent"
+      "groundTruth": "src/lib/github.ts:202 (per-file raw.githubusercontent fetches, no clone)",
+      "verifiedWith": "git grep -n 'raw.githubusercontent' 8e350af -- src/lib/github.ts"
     },
     {
       "id": "f06",
       "text": "Docker sandbox that executes code exists",
       "label": "false",
-      "groundTruth": "absent"
+      "groundTruth": "grep -riE 'docker' src/ returns no matches (absent at 8e350af)",
+      "verifiedWith": "git grep -niE 'docker' 8e350af -- src/"
     },
     {
       "id": "f07",
-      "text": "GitLab URL support is present",
+      "text": "The primary Gemini model is gemini-2.5-flash",
       "label": "false",
-      "groundTruth": "absent"
+      "groundTruth": "src/lib/gemini.ts:3 (PRIMARY_MODEL = gemini-3-flash-preview)",
+      "verifiedWith": "git grep -n 'PRIMARY_MODEL' 8e350af -- src/lib/gemini.ts"
     },
     {
       "id": "f08",
-      "text": "Stripe payments are implemented",
+      "text": "Self-audit runs automatically on page load",
       "label": "false",
-      "groundTruth": "absent"
+      "groundTruth": "src/components/SelfAudit.tsx:72 (button onClick only; no useEffect)",
+      "verifiedWith": "git grep -n 'useEffect' 8e350af -- src/components/SelfAudit.tsx"
     },
     {
       "id": "f09",
-      "text": "MongoDB is used",
+      "text": "Shareable reports are stored in a database keyed by report id",
       "label": "false",
-      "groundTruth": "absent"
+      "groundTruth": "src/app/api/generate-report/route.ts:22 (base64url JSON embedded in the URL)",
+      "verifiedWith": "git grep -n 'base64url' 8e350af -- src/app/api/generate-report/route.ts"
     },
     {
       "id": "f10",
       "text": "Prisma ORM is configured",
       "label": "false",
-      "groundTruth": "absent"
+      "groundTruth": "grep -riE 'prisma' src/ returns no matches (absent at 8e350af)",
+      "verifiedWith": "git grep -niE 'prisma' 8e350af -- src/"
     },
     {
       "id": "f11",
-      "text": "GraphQL API is implemented",
-      "label": "false",
-      "groundTruth": "absent"
+      "text": "All unit tests pass.",
+      "label": "unverifiable",
+      "groundTruth": "No test suite at 8e350af: no *.test/*.spec files and no \"test\" script in package.json",
+      "verifiedWith": "git grep -n '\"test\"' 8e350af -- package.json"
     },
     {
       "id": "f12",
-      "text": "Sentry error tracking is configured",
-      "label": "false",
-      "groundTruth": "absent"
+      "text": "The UI meets WCAG AA contrast requirements.",
+      "label": "unverifiable",
+      "groundTruth": "Requires a visual/manual contrast audit; not decidable from source lines (no wcag/contrast artifact at 8e350af)",
+      "verifiedWith": "git grep -niE 'wcag|contrast' 8e350af -- src/"
     }
   ]
 }
