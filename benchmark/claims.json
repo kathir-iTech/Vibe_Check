@@ -1,0 +1,150 @@
+{
+  "pinnedCommitSHA": "8e350af",
+  "generatedAt": "2026-10-11T00:00:00Z",
+  "claims": [
+    {
+      "id": "t01",
+      "text": "Next.js is used as the framework (Next.js app)",
+      "label": "true",
+      "groundTruth": "package.json contains 'next'"
+    },
+    {
+      "id": "t02",
+      "text": "Tailwind CSS is configured",
+      "label": "true",
+      "groundTruth": "tailwind.config.* or postcss.config.* present"
+    },
+    {
+      "id": "t03",
+      "text": "Project is MIT licensed",
+      "label": "true",
+      "groundTruth": "LICENSE file exists with 'MIT'"
+    },
+    {
+      "id": "t04",
+      "text": "@google/genai is a dependency",
+      "label": "true",
+      "groundTruth": "package.json contains '@google/genai'"
+    },
+    {
+      "id": "t05",
+      "text": "Client uses sessionStorage as a cache (sessionStorage.getItem/setItem)",
+      "label": "true",
+      "groundTruth": "client code uses sessionStorage"
+    },
+    {
+      "id": "t06",
+      "text": "Client uses fetchWithTimeout for network calls (no bare fetch in client)",
+      "label": "true",
+      "groundTruth": "client uses fetchWithTimeout; no bare 'fetch(' in client code"
+    },
+    {
+      "id": "t07",
+      "text": "/api/check-evidence route sets maxDuration",
+      "label": "true",
+      "groundTruth": "app/api/check-evidence/route.* sets maxDuration"
+    },
+    {
+      "id": "t08",
+      "text": "/api/check-spec-drift route sets maxDuration",
+      "label": "true",
+      "groundTruth": "app/api/check-spec-drift/route.* sets maxDuration"
+    },
+    {
+      "id": "t09",
+      "text": "/api/self-audit route sets maxDuration",
+      "label": "true",
+      "groundTruth": "app/api/self-audit/route.* sets maxDuration"
+    },
+    {
+      "id": "t10",
+      "text": "fetchWithTimeout helper exists",
+      "label": "true",
+      "groundTruth": "lib/fetchWithTimeout.* exists"
+    },
+    {
+      "id": "t11",
+      "text": "Self-audit uses shared claims module",
+      "label": "true",
+      "groundTruth": "self-audit imports shared claims from shared module (post-Fix 14)"
+    },
+    {
+      "id": "t12",
+      "text": "Seed generator writes UTF-8 via fs (no shell redirection)",
+      "label": "true",
+      "groundTruth": "scripts/generate-self-audit-seed.* uses fs.writeFileSync"
+    },
+    {
+      "id": "f01",
+      "text": "Redis cache is used",
+      "label": "false",
+      "groundTruth": "absent"
+    },
+    {
+      "id": "f02",
+      "text": "Python backend (FastAPI/Flask) is used",
+      "label": "false",
+      "groundTruth": "absent"
+    },
+    {
+      "id": "f03",
+      "text": "Slack webhook integration exists",
+      "label": "false",
+      "groundTruth": "absent"
+    },
+    {
+      "id": "f04",
+      "text": "OAuth login (Google/GitHub OAuth) is implemented",
+      "label": "false",
+      "groundTruth": "absent"
+    },
+    {
+      "id": "f05",
+      "text": "Postgres database/storage is used",
+      "label": "false",
+      "groundTruth": "absent"
+    },
+    {
+      "id": "f06",
+      "text": "Docker sandbox that executes code exists",
+      "label": "false",
+      "groundTruth": "absent"
+    },
+    {
+      "id": "f07",
+      "text": "GitLab URL support is present",
+      "label": "false",
+      "groundTruth": "absent"
+    },
+    {
+      "id": "f08",
+      "text": "Stripe payments are implemented",
+      "label": "false",
+      "groundTruth": "absent"
+    },
+    {
+      "id": "f09",
+      "text": "MongoDB is used",
+      "label": "false",
+      "groundTruth": "absent"
+    },
+    {
+      "id": "f10",
+      "text": "Prisma ORM is configured",
+      "label": "false",
+      "groundTruth": "absent"
+    },
+    {
+      "id": "f11",
+      "text": "GraphQL API is implemented",
+      "label": "false",
+      "groundTruth": "absent"
+    },
+    {
+      "id": "f12",
+      "text": "Sentry error tracking is configured",
+      "label": "false",
+      "groundTruth": "absent"
+    }
+  ]
+}
