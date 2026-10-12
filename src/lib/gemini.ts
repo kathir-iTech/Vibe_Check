@@ -1,6 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 
-const PRIMARY_MODEL = "gemini-3-flash-preview";
+const PRIMARY_MODEL = process.env.GEMINI_PRIMARY_MODEL || "gemini-3-flash-preview";
 const FALLBACK_MODEL = "gemini-3.1-flash-lite";
 
 const MAX_MESSAGE_CHARS = 8 * 1024;
@@ -223,6 +223,16 @@ const normalize = (s: string) => s.replace(/\s+/g, " ").trim().toLowerCase();
 
 const tokenize = (s: string) => s.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
 
+function hasContradictionKeywords(claimText: string, contradictingLine: string): boolean {
+  // A contradiction quote must share >=2 non-stopword keywords with the claim
+  // using the same tokenizer as the restatement guard.
+  const claimKeywords = [...new Set(tokenize(claimText).filter((w) => w.length > 3))];
+  if (!claimKeywords.length) return false;
+  const lineTokens = new Set(tokenize(contradictingLine || ""));
+  const shared = claimKeywords.filter((k) => lineTokens.has(k));
+  return shared.length >= 2;
+}
+
 function isRestatement(claimText: string, quote: string, lineText: string): boolean {
   const nClaim = normalize(claimText);
   const nQuote = normalize(quote);
@@ -286,6 +296,17 @@ export function validateAssessments(
 
     if (contradicts && docs.length === 0) {
       contradicts = false;
+    }
+
+    // SPEC-DRIFT keyword guard: if the contradicting line doesn't mention the
+    // claim's subject (fewer than 2 shared non-stopword keywords), treat it as
+    // no contradiction. Reason: "The cited spec line does not mention the claim's
+    // subject; not treated as a contradiction."
+    if (contradicts && hasContradictionKeywords(claim.text, contradictingLine)) {
+      // keep contradicts=true
+    } else if (contradicts) {
+      contradicts = false;
+      reason = "The cited spec line does not mention the claim's subject; not treated as a contradiction.";
     }
 
     if (contradicts) {

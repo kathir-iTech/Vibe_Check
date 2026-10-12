@@ -30,7 +30,9 @@ planning docs, then returns a verdict per claim.
 - **Injection mitigations are best-effort.** Untrusted text is delimited with a per-request nonce and labelled as data,
   quotes must exist verbatim in a fetched file, and lines that merely restate a claim are rejected — but a determined
   prompt injection can still steer which *real* line gets cited. No mitigation here is a guarantee.
-
+- **SPEC-DRIFT keyword guard.** A contradicting line must share >=2 non-stopword keywords with the claim (using the same
+  tokenizer as the restatement guard); otherwise it is treated as no contradiction. Reason: "The cited spec line does not
+  mention the claim's subject; not treated as a contradiction."
 ## Features
 
 1. **Claim extractor** — turns an agent's free-text message into a structured list of checkable claims (Gemini).

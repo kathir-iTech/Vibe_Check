@@ -48,6 +48,7 @@ function main() {
       { name: "falseClaimsReturnedTrue", key: "count", totalKey: "total" },
       { name: "unverifiableClaimsReturnedTrue", key: "count", totalKey: "total" },
       { name: "trueClaimsReturnedTrue", key: "count", totalKey: "total" },
+      { name: "trueClaimsReturnedSPEC_DRIFT", key: "count", totalKey: "total" }, // NEW
       { name: "verdictChangedBetweenRuns", key: "count", totalKey: "total" },
       { name: "medianLatencyMs", key: "a", totalKey: "b" },
       { name: "p95LatencyMs", key: "a", totalKey: "b" },
@@ -59,6 +60,14 @@ function main() {
 
       if (b === null) {
         console.log(`[check-benchmark]  ${name}: not available in committed summary`);
+        continue;
+      }
+
+      // FAIL if either value is undefined
+      if (a === undefined || b === undefined) {
+        console.log(`[check-benchmark]  ${name}: undefined vs ${b !== undefined ? b : 'null'} FAIL`);
+        hasError = true;
+        console.error(`[check-benchmark] FAIL: ${name} has undefined value`);
         continue;
       }
 
@@ -92,12 +101,23 @@ function main() {
         }
       }
     }
+
+    // Details-level check for trueClaimsReturnedSPEC_DRIFT (NEW)
+    if (computed.trueClaimsReturnedSPEC_DRIFT && committedSummary?.trueClaimsReturnedSPEC_DRIFT) {
+      const sdriftDetailsMatch = JSON.stringify(computed.trueClaimsReturnedSPEC_DRIFT.details) ===
+        JSON.stringify(committedSummary.trueClaimsReturnedSPEC_DRIFT.details);
+      console.log(`[check-benchmark]  trueClaimsReturnedSPEC_DRIFT details ${sdriftDetailsMatch ? "OK" : "MISMATCH"}`);
+      if (!sdriftDetailsMatch) {
+        hasError = true;
+        console.error("[check-benchmark] FAIL: trueClaimsReturnedSPEC_DRIFT details differ");
+      }
+    }
   }
 
-  // Coverage check - report but don't necessarily fail for partial data
+  // Coverage check - fail if partial data
   if (totalRunsFlat < expectedEntries) {
     console.log(`[check-benchmark] Coverage: ${totalRunsFlat}/${expectedEntries} entries (${totalClaims} claims x ${REPEATS} repeats)`);
-    console.log("[check-benchmark] FAIL: Full benchmark requires all ${totalClaims} claims x ${REPEATS} repeats");
+    console.log("[check-benchmark] FAIL: Full benchmark requires all ${totalClaims} claims x ${REPEATS} repeats".replace("${totalClaims}", totalClaims));
     hasError = true;
   }
 
