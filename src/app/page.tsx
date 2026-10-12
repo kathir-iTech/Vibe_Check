@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { ResultsPanel, type ModelInfo, type ResultModels } from "@/components/ResultsPanel";
 import { ReportExport } from "@/components/ReportExport";
 import { DemoMode } from "@/components/DemoMode";
@@ -8,6 +8,7 @@ import { BenchmarkCard } from "@/components/BenchmarkCard";
 import { SpinnerIcon } from "@/components/icons";
 import { cacheKey, formatStamp, readCached, writeCached } from "@/lib/result-cache";
 import { fetchWithTimeout } from "@/lib/http";
+import benchmarkResults from "benchmark/results.json";
 
 interface CheckResult {
   claimSource: string;
@@ -159,7 +160,7 @@ export default function Home() {
         evidence.
       </p>
 
-      <section className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+      <section className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-100">
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
           Input Panel
         </h2>
@@ -291,7 +292,25 @@ export default function Home() {
         <SelfAudit />
       </section>
 
-      <BenchmarkCard />
+      <BenchmarkCard data={benchmarkResults} fallback={
+        <section className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+            Benchmark
+          </h2>
+          <div className="space-y-3">
+            <p className="text-sm text-zinc-600 dark:text-zinc-400">
+              <span className="font-semibold">Status:</span> not yet run
+            </p>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              Run <code className="font-mono bg-zinc-100 dark:bg-zinc-800 px-1 rounded">npm run benchmark</code>
+              against a live dev server to generate results.
+            </p>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              benchmark/ and devpost/ are excluded from evidence.
+            </p>
+          </div>
+        </section>
+      } />
     </main>
   );
 }

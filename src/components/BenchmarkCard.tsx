@@ -1,5 +1,14 @@
 "use client";
 
+import { useState } from "react";
+
+import BenchmarkResults from "benchmark/results.json";
+
+interface BenchmarkCardProps {
+  data: BenchmarkResults | null;
+  fallback: JSX.Element;
+}
+
 interface BenchmarkResults {
   status?: "not-run";
   headSha?: string;
@@ -16,61 +25,16 @@ interface BenchmarkResults {
   createdAt?: string;
 }
 
-export function BenchmarkCard() {
-  const [results, setResults] = useState<BenchmarkResults | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function loadResults() {
-      try {
-        const res = await fetch("/benchmark/results.json");
-        if (res.ok) {
-          const data = await res.json();
-          setResults(data);
-        }
-      } catch {
-        // Ignore errors, show not-run state
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadResults();
-  }, []);
-
-  if (loading) {
-    return (
-      <section className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-          Benchmark
-        </h2>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">Loading benchmark results...</p>
-      </section>
-    );
+export function BenchmarkCard({ data, fallback }: BenchmarkCardProps) {
+  if (data?.status === "not-run") {
+    return fallback;
   }
 
-  if (!results || results.status === "not-run") {
-    return (
-      <section className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-          Benchmark
-        </h2>
-        <div className="space-y-3">
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">
-            <span className="font-semibold">Status:</span> not yet run
-          </p>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">
-            Run <code className="font-mono bg-zinc-100 dark:bg-zinc-800 px-1 rounded">npm run benchmark</code>
-            against a live dev server to generate results.
-          </p>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">
-            benchmark/ and devpost/ are excluded from evidence.
-          </p>
-        </div>
-      </section>
-    );
+  if (!data) {
+    return fallback;
   }
 
-  const { headSha, summary, createdAt } = results;
+  const { headSha, summary, createdAt } = data;
   const shortSha = headSha?.slice(0, 7) || "unknown";
 
   return (
@@ -172,5 +136,3 @@ function StatCard({ label, value, details, color }: StatCardProps) {
     </div>
   );
 }
-
-import { useState, useEffect } from "react";

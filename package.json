@@ -9,7 +9,9 @@
     "lint": "eslint src",
     "check-seed": "node scripts/check-seed.mjs",
     "regenerate-seed": "node scripts/regenerate-seed.mjs",
-    "benchmark": "node scripts/benchmark.mjs"
+    "benchmark": "node scripts/benchmark.mjs",
+    "verify": "npm run lint && npm run check-seed && npm run build",
+    "check-benchmark": "node scripts/check-benchmark.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.24.0",

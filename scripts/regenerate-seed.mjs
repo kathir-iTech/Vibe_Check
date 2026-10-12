@@ -30,7 +30,7 @@ function escapeForTsString(s) {
     .replace(/\t/g, "\\t");
 }
 
-function generateSeedFile(data) {
+function generateSeedFile(data, repoUrl) {
   const claimsJson = JSON.stringify(data.claims, null, 2);
   return `import { SelfAuditResult } from "@/types";
 
@@ -43,16 +43,19 @@ function generateSeedFile(data) {
 // the flip is model output variance, never tuned. Committed exactly as returned.
 // This is the initial state so the homepage shows a real result on first load,
 // not a spinner; "Re-run live" always re-fetches.
-export const SELF_AUDIT_SEED: SelfAuditResult = ${claimsJson};
+export const SELF_AUDIT_SEED: SelfAuditResult = {
+  repoUrl: "${repoUrl}",
+  runAt: new Date().toISOString(),
+  claims: ${claimsJson}
+};
 `;
-}
 
 async function main() {
   console.log(`[regenerate-seed] Fetching from ${BASE_URL}/api/self-audit...`);
   const data = await fetchSelfAudit();
   console.log(`[regenerate-seed] Got result with ${data.claims?.length ?? 0} claims`);
   
-  const fileContent = generateSeedFile(data);
+  const fileContent = generateSeedFile(data, "https://github.com/kathir-iTech/Vibe_Check");
   writeFileSync(SEED_PATH, fileContent, "utf8");
   console.log(`[regenerate-seed] Wrote ${SEED_PATH}`);
   
