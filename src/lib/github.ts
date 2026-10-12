@@ -143,6 +143,8 @@ const CONTENT_EXTENSIONS = new Set([
 
 const CONTENT_EXCLUDED_DIRS = [".agents/", ".claude/", "devpost/", "benchmark/"];
 
+const WELL_KNOWN_EXTENSIONLESS = new Set(["license", "copying", "readme", "dockerfile", "makefile"]);
+
 const MAX_CONTENT_CANDIDATES = 60;
 const RAW_FETCH_CONCURRENCY = 10;
 const RAW_FETCH_BUDGET_MS = 10_000;
@@ -159,7 +161,10 @@ function isContentCandidate(path: string): boolean {
   if (isSkippableFile(path)) return false;
   const base = lower.split("/").pop() || lower;
   const dot = base.lastIndexOf(".");
-  if (dot === -1) return false;
+  if (dot === -1) {
+    // Well-known extensionless files are allowed through the content pass
+    return WELL_KNOWN_EXTENSIONLESS.has(base);
+  }
   return CONTENT_EXTENSIONS.has(base.slice(dot));
 }
 
