@@ -221,7 +221,9 @@ export interface SpecAssessment {
 
 const normalize = (s: string) => s.replace(/\s+/g, " ").trim().toLowerCase();
 
-const tokenize = (s: string) => s.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+const STOPWORDS = new Set(['the','and','for','are','not','this','that','with','from','into',
+  'been','will','have','does','just','also','more','than','then']);
+const tokenize = (s: string) => s.toLowerCase().split(/[^a-z0-9]+/).filter(w=> w && !STOPWORDS.has(w)) ?? [];
 
 function hasContradictionKeywords(claimText: string, contradictingLine: string): boolean {
   // A contradiction quote must share >=2 non-stopword keywords with the claim
