@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VibeCheck — App Map &amp; Code Tour</title>
+  <style>
+    :root {
+      --bg: #fafafa;
+      --surface: #ffffff;
+      --border: #e4e4e7;
+      --text: #18181b;
+      --muted: #52525b;
+      --emerald: #059669;
+      --emerald-bg: #ecfdf5;
+      --amber: #d97706;
+      --amber-bg: #fffbeb;
+      --red: #dc2626;
+      --red-bg: #fef2f2;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #09090b;
+        --surface: #18181b;
+        --border: #27272a;
+        --text: #f4f4f5;
+        --muted: #a1a1aa;
+        --emerald: #34d399;
+        --emerald-bg: rgba(16, 185, 129, 0.12);
+        --amber: #fbbf24;
+        --amber-bg: rgba(245, 158, 11, 0.12);
+        --red: #f87171;
+        --red-bg: rgba(239, 68, 68, 0.12);
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 2rem 1rem 4rem;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      line-height: 1.6;
+    }
+    main {
+      max-width: 56rem;
+      margin: 0 auto;
+    }
+    header {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1.25rem;
+      margin-bottom: 1.75rem;
+    }
+    .badge {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.15rem 0.55rem;
+      border-radius: 999px;
+      background: var(--emerald-bg);
+      color: var(--emerald);
+      border: 1px solid var(--emerald);
+    }
+    h1 {
+      margin: 0.5rem 0 0.25rem;
+      font-size: 1.65rem;
+      letter-spacing: -0.02em;
+    }
+    h2 {
+      font-size: 1.05rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      margin: 2rem 0 0.75rem;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+    }
+    code {
+      font-family: var(--mono);
+      font-size: 0.85em;
+      background: rgba(128, 128, 128, 0.12);
+      padding: 0.1rem 0.35rem;
+      border-radius: 0.25rem;
+    }
+    pre {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      background: rgba(128, 128, 128, 0.08);
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      padding: 0.85rem;
+      overflow-x: auto;
+      margin: 0.5rem 0;
+    }
+    details {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      padding: 0.85rem 1.1rem;
+      margin-bottom: 0.75rem;
+    }
+    summary {
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .grid {
+      display: grid;
+      gap: 0.85rem;
+      grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+    }
+    .verdict-row {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-top: 0.5rem;
+    }
+    .pill {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+    }
+    .pill-true { background: var(--emerald-bg); color: var(--emerald); }
+    .pill-drift { background: var(--amber-bg); color: var(--amber); }
+    .pill-unv { background: var(--red-bg); color: var(--red); }
+    svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <span class="badge">Devpost Learn &middot; 5-build App Map</span>
+      <h1>VibeCheck &mdash; Architecture &amp; Code Tour Guide</h1>
+      <p style="color: var(--muted); margin: 0.25rem 0 0;">
+        Plain-language guide to how VibeCheck extracts coding-agent claims, checks real GitHub repository files and commit diffs, and enforces server-side quote verification.
+        Snapshot anchored at commit <code>a7fac7b</code> (static offline HTML, zero external dependencies).
+      </p>
+    </header>
+
+    <h2>1. Plain-Language Overview</h2>
+    <div class="card">
+      <p style="margin-top: 0;">
+        <strong>VibeCheck</strong> catches false &ldquo;done / fixed / tested&rdquo; claims from AI coding agents before a solo builder discovers the gap at 2am.
+        It consists of four main pieces:
+      </p>
+      <ul>
+        <li><strong>The Inspector Page (<code>src/app/page.tsx</code>):</strong> Collects the agent message (or a GitHub PR/commit URL) and target repository URL, checks <code>sessionStorage</code> cache first, and runs the 3-step verification pipeline.</li>
+        <li><strong>The GitHub Evidence Engine (<code>src/app/api/check-evidence/route.ts</code> &amp; <code>src/lib/github.ts</code>):</strong> Fetches the repo file tree, scores up to 60 source files by keyword hits, and inspects recent commit diffs/patches.</li>
+        <li><strong>The Spec-Drift &amp; Quote Verifier (<code>src/app/api/check-spec-drift/route.ts</code> &amp; <code>src/lib/gemini.ts</code>):</strong> Compares claims against <code>devpost/scope.md</code>, <code>prd.md</code>, and <code>spec.md</code> plus matched repo files, then verifies every cited quote verbatim in server code.</li>
+        <li><strong>The Verdict &amp; Report Surface (<code>src/components/ResultsPanel.tsx</code> &amp; <code>ReportExport.tsx</code>):</strong> Renders the Build Honesty Scorecard, deep-linked GitHub citations, and exports self-contained Base64URL permalinks or PR Markdown tables.</li>
+      </ul>
+      <div class="verdict-row">
+        <span class="pill pill-true">&#10003; TRUE: Verbatim supporting line verified in repo file</span>
+        <span class="pill pill-drift">&#9888; SPEC-DRIFT: Verbatim contradiction in scope/prd/spec</span>
+        <span class="pill pill-unv">? UNVERIFIED: No verified supporting line or restatement rejected</span>
+      </div>
+    </div>
+
+    <h2>2. Action-to-Result Data Flow Diagram</h2>
+    <div class="card">
+      <svg viewBox="0 0 820 210" role="img" aria-label="Architecture diagram showing data flow from Home UI through API routes and verification guards to ResultsPanel">
+        <rect x="10" y="25" width="175" height="155" rx="10" fill="none" stroke="#059669" stroke-width="2" />
+        <text x="24" y="52" font-family="monospace" font-size="12" font-weight="bold" fill="#059669">1. Browser UI</text>
+        <text x="24" y="74" font-family="sans-serif" font-size="12" fill="currentColor">src/app/page.tsx</text>
+        <text x="24" y="96" font-family="monospace" font-size="11" fill="#71717a">handleCheck()</text>
+        <text x="24" y="118" font-family="monospace" font-size="11" fill="#71717a">result-cache.ts</text>
+        <text x="24" y="142" font-family="sans-serif" font-size="11" fill="#71717a">Checks sessionStorage</text>
+        <text x="24" y="158" font-family="sans-serif" font-size="11" fill="#71717a">before firing network</text>
+
+        <line x1="185" y1="102" x2="220" y2="102" stroke="#71717a" stroke-width="2" />
+        <polygon points="220,97 230,102 220,107" fill="#71717a" />
+
+        <rect x="230" y="25" width="185" height="155" rx="10" fill="none" stroke="#71717a" stroke-width="2" />
+        <text x="244" y="52" font-family="monospace" font-size="12" font-weight="bold" fill="#059669">2. Next.js API Routes</text>
+        <text x="244" y="75" font-family="monospace" font-size="11" fill="currentColor">/api/extract-claims</text>
+        <text x="244" y="97" font-family="monospace" font-size="11" fill="currentColor">/api/check-evidence</text>
+        <text x="244" y="119" font-family="monospace" font-size="11" fill="currentColor">/api/check-spec-drift</text>
+        <text x="244" y="145" font-family="sans-serif" font-size="11" fill="#71717a">Server-side keys +</text>
+        <text x="244" y="161" font-family="sans-serif" font-size="11" fill="#71717a">Server-Timing headers</text>
+
+        <line x1="415" y1="102" x2="450" y2="102" stroke="#71717a" stroke-width="2" />
+        <polygon points="450,97 460,102 450,107" fill="#71717a" />
+
+        <rect x="460" y="25" width="175" height="155" rx="10" fill="none" stroke="#d97706" stroke-width="2" />
+        <text x="474" y="52" font-family="monospace" font-size="12" font-weight="bold" fill="#d97706">3.Deterministic Gates</text>
+        <text x="474" y="74" font-family="monospace" font-size="11" fill="currentColor">src/lib/gemini.ts</text>
+        <text x="474" y="96" font-family="monospace" font-size="11" fill="#71717a">findLineNumber()</text>
+        <text x="474" y="116" font-family="monospace" font-size="11" fill="#71717a">isRestatement()</text>
+        <text x="474" y="136" font-family="monospace" font-size="11" fill="#71717a">hasContradiction</text>
+        <text x="474" y="152" font-family="monospace" font-size="11" fill="#71717a">Keywords()</text>
+
+        <line x1="635" y1="102" x2="665" y2="102" stroke="#71717a" stroke-width="2" />
+        <polygon points="665,97 675,102 665,107" fill="#71717a" />
+
+        <rect x="675" y="25" width="135" height="155" rx="10" fill="none" stroke="#059669" stroke-width="2" />
+        <text x="687" y="52" font-family="monospace" font-size="12" font-weight="bold" fill="#059669">4. Output UI</text>
+        <text x="687" y="76" font-family="monospace" font-size="11" fill="currentColor">ResultsPanel</text>
+        <text x="687" y="98" font-family="monospace" font-size="11" fill="currentColor">ReportExport</text>
+        <text x="687" y="122" font-family="sans-serif" font-size="11" fill="#71717a">Honesty Score</text>
+        <text x="687" y="140" font-family="sans-serif" font-size="11" fill="#71717a">Deep GitHub</text>
+        <text x="687" y="158" font-family="sans-serif" font-size="11" fill="#71717a">file:line links</text>
+      </svg>
+    </div>
+
+    <h2>3. Three-Stop Reference Code Route (Tracing One Check)</h2>
+    <details open>
+      <summary>Stop 1 &mdash; Entry &amp; Orchestration: <code>src/app/page.tsx</code> &rarr; <code>handleCheck()</code></summary>
+      <p>
+        When you click <strong>Check Claims</strong>, <code>handleCheck(forceLive)</code> hashes the input message/PR URL and repository URL via <code>cacheKey()</code>.
+        On a cache miss, it chains three sequential POST requests using <code>fetchWithTimeout()</code>:
+        <code>/api/extract-claims</code> &rarr; <code>/api/check-evidence</code> &rarr; <code>/api/check-spec-drift</code>, storing the result in <code>sessionStorage</code> only after all three succeed.
+      </p>
+    </details>
+
+    <details open>
+      <summary>Stop 2 &mdash; Content-Based Evidence Retrieval: <code>src/app/api/check-evidence/route.ts</code> &rarr; <code>POST()</code></summary>
+      <p>
+        Resolves the repository&rsquo;s default branch via <code>getDefaultBranch()</code>, fetches the recursive Git tree and recent commits, and runs <code>selectContentCandidates()</code> + <code>fetchRawFileTexts()</code> in <code>src/lib/github.ts</code>.
+        Each file is scored by how many distinct claim keywords appear in its content plus a path-match bonus, returning the top 5 files per claim along with matched commit diffs.
+      </p>
+    </details>
+
+    <details open>
+      <summary>Stop 3 &mdash; Server-Side Quote &amp; Keyword Guards: <code>src/lib/gemini.ts</code> &rarr; <code>validateAssessments()</code></summary>
+      <p>
+        Even after Gemini proposes a supporting or contradicting quote, VibeCheck never trusts the model&rsquo;s word alone.
+        <code>validateAssessments()</code> runs three deterministic code checks:
+      </p>
+      <pre>1. hasContradictionKeywords(claim.text, contradictingLine)  // Requires &ge;2 shared non-stopword keywords for SPEC-DRIFT
+2. findLineNumber(doc.text, quote)                         // Verifies the quoted line exists verbatim in the fetched file
+3. isRestatement(claim.text, supportingQuote, lineText)    // Rejects lines that merely repeat the claim text</pre>
+    </details>
+
+    <h2>4. &ldquo;To Change This, Start Here&rdquo;</h2>
+    <div class="grid">
+      <div class="card">
+        <strong>Change the 3 Self-Audit Claims</strong>
+        <p style="font-size: 0.9rem; color: var(--muted); margin-bottom: 0;">
+          Edit <code>src/lib/self-audit-claims.json</code>, then run <code>npm run regenerate-seed</code> and <code>npm run check-seed</code> so the homepage seed stays in sync.
+        </p>
+      </div>
+      <div class="card">
+        <strong>Adjust Retrieval File Caps or Excluded Folders</strong>
+        <p style="font-size: 0.9rem; color: var(--muted); margin-bottom: 0;">
+          Open <code>src/lib/github.ts</code> and inspect <code>CONTENT_EXCLUDED_DIRS</code>, <code>MAX_CONTENT_CANDIDATES</code> (60), and <code>MAX_FILES_PER_CLAIM</code> (5).
+        </p>
+      </div>
+      <div class="card">
+        <strong>Tune Verdict Guards or Model Fallback</strong>
+        <p style="font-size: 0.9rem; color: var(--muted); margin-bottom: 0;">
+          Open <code>src/lib/gemini.ts</code> and inspect <code>PRIMARY_MODEL</code>, <code>FALLBACK_MODEL</code>, <code>isRestatement()</code>, and <code>hasContradictionKeywords()</code>.
+        </p>
+      </div>
+      <div class="card">
+        <strong>Add or Edit Scenario Presets</strong>
+        <p style="font-size: 0.9rem; color: var(--muted); margin-bottom: 0;">
+          Open <code>src/lib/demo-data.ts</code> and edit <code>SCENARIO_PRESETS</code> or <code>RETROACTIVE_AUDIT_CASEBOOK</code>.
+        </p>
+      </div>
+    </div>
+
+    <h2>5. A Practice to Reuse</h2>
+    <div class="card">
+      <p style="margin-top: 0;">
+        <strong>Pair AI judgment with a deterministic post-condition in code (<code>src/lib/gemini.ts &gt; validateAssessments</code>).</strong>
+      </p>
+      <p style="margin-bottom: 0; font-size: 0.92rem; color: var(--muted);">
+        Early in the build (Fixes 3&ndash;9), a claim could be marked <code>TRUE</code> whenever file names matched its keywords and Gemini reported no spec contradiction &mdash; meaning absence of contradiction was treated as proof.
+        In Fix 10 and Fix 16, we changed the contract: the model must return an exact line from a fetched file, and server code deterministically checks <code>findLineNumber()</code>, <code>isRestatement()</code>, and <code>hasContradictionKeywords()</code> before assigning a verdict.
+        On any future AI project, let the model propose structured candidates, but enforce the acceptance rule in deterministic code tested by fast offline unit tests (<code>npm run test</code>).
+      </p>
+    </div>
+
+    <h2>6. How to Run &amp; Verify Again</h2>
+    <div class="card">
+      <pre>npm install
+npm run verify            # Runs eslint + check-seed + unit tests + next build
+npm run check-benchmark   # Verifies 72/72 benchmark coverage and summary math
+npm run dev               # Starts local server at http://localhost:3000</pre>
+    </div>
+  </main>
+</body>
+</html>

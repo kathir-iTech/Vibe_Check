@@ -1,1 +1,0 @@
-﻿src/lib/self-audit-seed.ts(12,14): error TS2739: Type '{ id: string; text: string; verdict: string; reason: string; specReference: string; files: string[]; commits: { sha: string; message: string; date: string; }[]; }[]' is missing the following properties from type 'SelfAuditResult': repoUrl, runAt, claims
