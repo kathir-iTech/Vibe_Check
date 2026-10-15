@@ -6,10 +6,34 @@ export interface Claim {
   evidence?: ClaimEvidence;
 }
 
+export interface CommitDetail {
+  sha: string;
+  message: string;
+  date: string;
+  author?: string;
+  filesChanged?: string[];
+  additions?: number;
+  deletions?: number;
+  patchPreview?: string;
+}
+
+export interface FileMatchDetail {
+  file: string;
+  hitCount: number;
+  matchedTerms: string[];
+  pathMatched?: boolean;
+  lineNumber?: number;
+  previewLine?: string;
+}
+
 export interface ClaimEvidence {
-  commits: string[];
+  commits: (string | CommitDetail)[];
   files: string[];
-  lines: number[];
+  lines?: number[];
+  fileMatches?: FileMatchDetail[];
+  matchedTerms?: string[];
+  totalFilesInRepo?: number;
+  defaultBranch?: string;
   specDrift?: boolean;
 }
 
@@ -36,4 +60,17 @@ export interface SelfAuditResult {
   repoUrl: string;
   runAt: string;
   claims: SelfAuditClaim[];
+}
+
+export interface RetroactiveAuditEntry {
+  id: string;
+  buildNumber: number;
+  projectName: string;
+  event: string;
+  agentModel: string;
+  agentClaim: string;
+  vibeCheckVerdict: Verdict;
+  failureModeCode: string;
+  caughtEvidence: string;
+  impactSummary: string;
 }

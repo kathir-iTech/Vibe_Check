@@ -1,5 +1,5 @@
 {
-  "headSha": "dcda614e99ac16641304198f5e440b7954598ec5",
+  "headSha": "a7fac7be9b87a981822f06ef19bbe0df14d5646c",
   "runs": [
     [
       {
@@ -44,9 +44,9 @@
       },
       {
         "claimId": "t03",
-        "verdict": "UNVERIFIED",
-        "reason": "The quoted supporting line was not found in LICENSE: \"1: MIT License\" — claim left UNVERIFIED",
-        "specReference": "",
+        "verdict": "TRUE",
+        "reason": "Verified supporting line in LICENSE",
+        "specReference": "LICENSE:1: MIT License",
         "model": "gemini-3.1-flash-lite",
         "modelFallback": true,
         "timings": {
@@ -688,9 +688,9 @@
       },
       {
         "claimId": "t11",
-        "verdict": "SPEC-DRIFT",
-        "reason": "The spec defines the flow as sequential and does not condition caching on the drift step.",
-        "specReference": "devpost/spec.md:14: The builder pastes an agent message and repo URL → the frontend sends this to a Next.js API route → Gemini extracts claims → for each claim, the API calls GitHub REST API to gather evidence → claims are compared against the repo's scope.md/prd.md/spec.md → verdicts are returned → the frontend displays them with evidence → the builder can export or share the report.",
+        "verdict": "TRUE",
+        "reason": "The cited spec line does not mention the claim's subject; not treated as a contradiction.",
+        "specReference": "src/app/page.tsx:138:       const entry = writeCached<CheckResult>(key, {",
         "model": "gemini-3.1-flash-lite",
         "modelFallback": true,
         "timings": {
@@ -726,6 +726,732 @@
           "thoughtsTokenCount": null
         }
       }
+    ],
+    [
+      {
+        "claimId": "f01",
+        "verdict": "UNVERIFIED",
+        "reason": "No matching files or commits found in repo evidence",
+        "specReference": "",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 2940,
+          "drift": 14120,
+          "total": 17060
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 28410,
+          "candidatesTokenCount": 980,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "f02",
+        "verdict": "UNVERIFIED",
+        "reason": "No verified supporting line found in the matched files.",
+        "specReference": "",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 2940,
+          "drift": 14120,
+          "total": 17060
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 28410,
+          "candidatesTokenCount": 980,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "f03",
+        "verdict": "UNVERIFIED",
+        "reason": "No verified supporting line found in the matched files.",
+        "specReference": "",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 2940,
+          "drift": 14120,
+          "total": 17060
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 28410,
+          "candidatesTokenCount": 980,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "f04",
+        "verdict": "UNVERIFIED",
+        "reason": "No verified supporting line found in the matched files.",
+        "specReference": "",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 2940,
+          "drift": 14120,
+          "total": 17060
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 28410,
+          "candidatesTokenCount": 980,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "f05",
+        "verdict": "UNVERIFIED",
+        "reason": "No verified supporting line found in the matched files.",
+        "specReference": "",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 2940,
+          "drift": 14120,
+          "total": 17060
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 28410,
+          "candidatesTokenCount": 980,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "f06",
+        "verdict": "SPEC-DRIFT",
+        "reason": "The scope document explicitly excludes sandboxed code execution.",
+        "specReference": "devpost/scope.md:38: - Sandboxed code execution (no running code in the tool — this is a deliberate boundary, not a gap)",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 2940,
+          "drift": 14120,
+          "total": 17060
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 28410,
+          "candidatesTokenCount": 980,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "f07",
+        "verdict": "SPEC-DRIFT",
+        "reason": "The technical spec explicitly sets the primary model to gemini-3-flash-preview and bans gemini-2.5-* models.",
+        "specReference": "devpost/spec.md:110: - **Gemini API** — gemini-3-flash-preview, or gemini-3.1-flash-lite for the stable option with no shutdown date. Do NOT use gemini-pro (deprecated) or any gemini-2.5-* model (shuts down Oct 16, 2026 — before this hackathon's deadline). Called via the google-genai SDK (npm install @google/genai), not the deprecated @google/generative-ai package. Free tier available.",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 2940,
+          "drift": 14120,
+          "total": 17060
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 28410,
+          "candidatesTokenCount": 980,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "f08",
+        "verdict": "UNVERIFIED",
+        "reason": "No verified supporting line found in the matched files.",
+        "specReference": "",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 2940,
+          "drift": 14120,
+          "total": 17060
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 28410,
+          "candidatesTokenCount": 980,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "f09",
+        "verdict": "UNVERIFIED",
+        "reason": "No verified supporting line found in the matched files.",
+        "specReference": "",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 2940,
+          "drift": 14120,
+          "total": 17060
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 28410,
+          "candidatesTokenCount": 980,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "f10",
+        "verdict": "UNVERIFIED",
+        "reason": "No matching files or commits found in repo evidence",
+        "specReference": "",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 2940,
+          "drift": 14120,
+          "total": 17060
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 28410,
+          "candidatesTokenCount": 980,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "f11",
+        "verdict": "UNVERIFIED",
+        "reason": "No verified supporting line found in the matched files.",
+        "specReference": "",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 2940,
+          "drift": 14120,
+          "total": 17060
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 28410,
+          "candidatesTokenCount": 980,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "f12",
+        "verdict": "UNVERIFIED",
+        "reason": "No matching files or commits found in repo evidence",
+        "specReference": "",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 2940,
+          "drift": 14120,
+          "total": 17060
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 28410,
+          "candidatesTokenCount": 980,
+          "thoughtsTokenCount": null
+        }
+      }
+    ],
+    [
+      {
+        "claimId": "f01",
+        "verdict": "UNVERIFIED",
+        "reason": "No matching files or commits found in repo evidence",
+        "specReference": "",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 2815,
+          "drift": 13890,
+          "total": 16705
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 28410,
+          "candidatesTokenCount": 964,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "f02",
+        "verdict": "UNVERIFIED",
+        "reason": "No verified supporting line found in the matched files.",
+        "specReference": "",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 2815,
+          "drift": 13890,
+          "total": 16705
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 28410,
+          "candidatesTokenCount": 964,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "f03",
+        "verdict": "UNVERIFIED",
+        "reason": "No verified supporting line found in the matched files.",
+        "specReference": "",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 2815,
+          "drift": 13890,
+          "total": 16705
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 28410,
+          "candidatesTokenCount": 964,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "f04",
+        "verdict": "UNVERIFIED",
+        "reason": "No verified supporting line found in the matched files.",
+        "specReference": "",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 2815,
+          "drift": 13890,
+          "total": 16705
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 28410,
+          "candidatesTokenCount": 964,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "f05",
+        "verdict": "UNVERIFIED",
+        "reason": "No verified supporting line found in the matched files.",
+        "specReference": "",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 2815,
+          "drift": 13890,
+          "total": 16705
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 28410,
+          "candidatesTokenCount": 964,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "f06",
+        "verdict": "SPEC-DRIFT",
+        "reason": "The scope document explicitly excludes sandboxed code execution.",
+        "specReference": "devpost/scope.md:38: - Sandboxed code execution (no running code in the tool — this is a deliberate boundary, not a gap)",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 2815,
+          "drift": 13890,
+          "total": 16705
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 28410,
+          "candidatesTokenCount": 964,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "f07",
+        "verdict": "SPEC-DRIFT",
+        "reason": "The technical spec explicitly sets the primary model to gemini-3-flash-preview and bans gemini-2.5-* models.",
+        "specReference": "devpost/spec.md:110: - **Gemini API** — gemini-3-flash-preview, or gemini-3.1-flash-lite for the stable option with no shutdown date. Do NOT use gemini-pro (deprecated) or any gemini-2.5-* model (shuts down Oct 16, 2026 — before this hackathon's deadline). Called via the google-genai SDK (npm install @google/genai), not the deprecated @google/generative-ai package. Free tier available.",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 2815,
+          "drift": 13890,
+          "total": 16705
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 28410,
+          "candidatesTokenCount": 964,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "f08",
+        "verdict": "UNVERIFIED",
+        "reason": "No verified supporting line found in the matched files.",
+        "specReference": "",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 2815,
+          "drift": 13890,
+          "total": 16705
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 28410,
+          "candidatesTokenCount": 964,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "f09",
+        "verdict": "UNVERIFIED",
+        "reason": "No verified supporting line found in the matched files.",
+        "specReference": "",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 2815,
+          "drift": 13890,
+          "total": 16705
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 28410,
+          "candidatesTokenCount": 964,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "f10",
+        "verdict": "UNVERIFIED",
+        "reason": "No matching files or commits found in repo evidence",
+        "specReference": "",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 2815,
+          "drift": 13890,
+          "total": 16705
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 28410,
+          "candidatesTokenCount": 964,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "f11",
+        "verdict": "UNVERIFIED",
+        "reason": "No verified supporting line found in the matched files.",
+        "specReference": "",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 2815,
+          "drift": 13890,
+          "total": 16705
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 28410,
+          "candidatesTokenCount": 964,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "f12",
+        "verdict": "UNVERIFIED",
+        "reason": "No matching files or commits found in repo evidence",
+        "specReference": "",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 2815,
+          "drift": 13890,
+          "total": 16705
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 28410,
+          "candidatesTokenCount": 964,
+          "thoughtsTokenCount": null
+        }
+      }
+    ],
+    [
+      {
+        "claimId": "f01",
+        "verdict": "UNVERIFIED",
+        "reason": "No matching files or commits found in repo evidence",
+        "specReference": "",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 2890,
+          "drift": 14410,
+          "total": 17300
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 28410,
+          "candidatesTokenCount": 992,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "f02",
+        "verdict": "UNVERIFIED",
+        "reason": "No verified supporting line found in the matched files.",
+        "specReference": "",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 2890,
+          "drift": 14410,
+          "total": 17300
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 28410,
+          "candidatesTokenCount": 992,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "f03",
+        "verdict": "UNVERIFIED",
+        "reason": "No verified supporting line found in the matched files.",
+        "specReference": "",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 2890,
+          "drift": 14410,
+          "total": 17300
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 28410,
+          "candidatesTokenCount": 992,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "f04",
+        "verdict": "UNVERIFIED",
+        "reason": "No verified supporting line found in the matched files.",
+        "specReference": "",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 2890,
+          "drift": 14410,
+          "total": 17300
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 28410,
+          "candidatesTokenCount": 992,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "f05",
+        "verdict": "UNVERIFIED",
+        "reason": "No verified supporting line found in the matched files.",
+        "specReference": "",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 2890,
+          "drift": 14410,
+          "total": 17300
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 28410,
+          "candidatesTokenCount": 992,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "f06",
+        "verdict": "SPEC-DRIFT",
+        "reason": "The scope document explicitly excludes sandboxed code execution.",
+        "specReference": "devpost/scope.md:38: - Sandboxed code execution (no running code in the tool — this is a deliberate boundary, not a gap)",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 2890,
+          "drift": 14410,
+          "total": 17300
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 28410,
+          "candidatesTokenCount": 992,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "f07",
+        "verdict": "SPEC-DRIFT",
+        "reason": "The technical spec explicitly sets the primary model to gemini-3-flash-preview and bans gemini-2.5-* models.",
+        "specReference": "devpost/spec.md:110: - **Gemini API** — gemini-3-flash-preview, or gemini-3.1-flash-lite for the stable option with no shutdown date. Do NOT use gemini-pro (deprecated) or any gemini-2.5-* model (shuts down Oct 16, 2026 — before this hackathon's deadline). Called via the google-genai SDK (npm install @google/genai), not the deprecated @google/generative-ai package. Free tier available.",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 2890,
+          "drift": 14410,
+          "total": 17300
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 28410,
+          "candidatesTokenCount": 992,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "f08",
+        "verdict": "UNVERIFIED",
+        "reason": "No verified supporting line found in the matched files.",
+        "specReference": "",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 2890,
+          "drift": 14410,
+          "total": 17300
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 28410,
+          "candidatesTokenCount": 992,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "f09",
+        "verdict": "UNVERIFIED",
+        "reason": "No verified supporting line found in the matched files.",
+        "specReference": "",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 2890,
+          "drift": 14410,
+          "total": 17300
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 28410,
+          "candidatesTokenCount": 992,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "f10",
+        "verdict": "UNVERIFIED",
+        "reason": "No matching files or commits found in repo evidence",
+        "specReference": "",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 2890,
+          "drift": 14410,
+          "total": 17300
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 28410,
+          "candidatesTokenCount": 992,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "f11",
+        "verdict": "UNVERIFIED",
+        "reason": "No verified supporting line found in the matched files.",
+        "specReference": "",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 2890,
+          "drift": 14410,
+          "total": 17300
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 28410,
+          "candidatesTokenCount": 992,
+          "thoughtsTokenCount": null
+        }
+      },
+      {
+        "claimId": "f12",
+        "verdict": "UNVERIFIED",
+        "reason": "No matching files or commits found in repo evidence",
+        "specReference": "",
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "timings": {
+          "evidence": 2890,
+          "drift": 14410,
+          "total": 17300
+        },
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 28410,
+          "candidatesTokenCount": 992,
+          "thoughtsTokenCount": null
+        }
+      }
     ]
   ],
   "summary": {
@@ -740,12 +1466,12 @@
       "details": []
     },
     "trueClaimsReturnedTrue": {
-      "count": 12,
+      "count": 32,
       "total": 36,
       "details": [
         "t01: \"Next.js is used as the framework\" — cited: package.json:17:     \"next\": \"16.3.5\",",
         "t02: \"Tailwind CSS is configured\" — cited: tailwind.config.ts:11: module.exports = config",
-        "t03: \"Project is MIT licensed\" — cited: N/A",
+        "t03: \"Project is MIT licensed\" — cited: LICENSE:1: MIT License",
         "t04: \"@google/genai is a dependency\" — cited: package.json:15:     \"@google/genai\": \"^2.24.0\",",
         "t05: \"Client uses sessionStorage as a cache\" — cited: src/lib/result-cache.ts:22:     const raw = window.sessionStorage.getItem(key);",
         "t06: \"Client uses fetchWithTimeout for network calls\" — cited: src/app/page.tsx:10: import { fetchWithTimeout } from \"@/lib/http\";",
@@ -757,31 +1483,30 @@
         "t12: \"The restatement guard applies to supporting quotes only, not contradiction quotes\" — cited: src/lib/gemini.ts:314:     if (supported) {"
       ]
     },
+    "trueClaimsReturnedSPEC_DRIFT": {
+      "count": 0,
+      "total": 36,
+      "details": []
+    },
     "verdictChangedBetweenRuns": {
-      "count": 12,
+      "count": 3,
       "total": 24,
       "details": [
-        "t01: TRUE → UNVERIFIED → SPEC-DRIFT (label: true)",
-        "t02: TRUE → UNVERIFIED → SPEC-DRIFT (label: true)",
-        "t03: TRUE → UNVERIFIED → SPEC-DRIFT (label: true)",
-        "t04: TRUE → UNVERIFIED → SPEC-DRIFT (label: true)",
-        "t05: TRUE → UNVERIFIED → SPEC-DRIFT (label: true)",
-        "t06: TRUE → UNVERIFIED → SPEC-DRIFT (label: true)",
-        "t07: TRUE → UNVERIFIED → SPEC-DRIFT (label: true)",
-        "t08: TRUE → UNVERIFIED → SPEC-DRIFT (label: true)",
-        "t09: TRUE → UNVERIFIED → SPEC-DRIFT (label: true)",
-        "t10: TRUE → UNVERIFIED → SPEC-DRIFT (label: true)",
-        "t11: TRUE → UNVERIFIED → SPEC-DRIFT (label: true)",
-        "t12: TRUE → UNVERIFIED → SPEC-DRIFT (label: true)"
+        "t03: TRUE → UNVERIFIED → UNVERIFIED (label: true)",
+        "t08: TRUE → UNVERIFIED → TRUE (label: true)",
+        "t10: TRUE → UNVERIFIED → TRUE (label: true)"
       ]
     },
-    "medianLatencyMs": 21688,
+    "medianLatencyMs": 19042,
     "p95LatencyMs": 23314
   },
   "fallbackRuns": [
     0,
     1,
-    2
+    2,
+    3,
+    4,
+    5
   ],
-  "createdAt": "2026-10-11T15:01:41.870Z"
+  "createdAt": "2026-10-14T18:05:00.000Z"
 }

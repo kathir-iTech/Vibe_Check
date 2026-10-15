@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { fetchRawFileTexts, githubApi, getDefaultBranch, selectContentCandidates } from "@/lib/github";
+import {
+  fetchCommitDiffDetails,
+  fetchRawFileTexts,
+  githubApi,
+  getDefaultBranch,
+  selectContentCandidates,
+} from "@/lib/github";
 import { createTimings, serverTimingHeader } from "@/lib/timings";
 
 const STOPWORDS = new Set([
@@ -30,6 +36,26 @@ function tokensMatching(candidate: string, keywords: string[]): string[] {
 
 function isRelevant(candidate: string, keywords: string[], minMatches: number): boolean {
   return tokensMatching(candidate, keywords).length >= minMatches;
+}
+
+function findBestLinePreview(text: string, hits: string[]): { lineNumber?: number; previewLine?: string } {
+  if (!text || !hits.length) return {};
+  const lines = text.split("\n");
+  let bestLine = -1;
+  let bestScore = 0;
+  for (let i = 0; i < lines.length; i++) {
+    const lower = lines[i].toLowerCase();
+    const score = hits.filter((h) => lower.includes(h)).length;
+    if (score > bestScore && lines[i].trim().length > 2) {
+      bestScore = score;
+      bestLine = i + 1;
+    }
+  }
+  if (bestLine === -1) return {};
+  return {
+    lineNumber: bestLine,
+    previewLine: lines[bestLine - 1].trim().slice(0, 140),
+  };
 }
 
 export async function POST(request: NextRequest) {
@@ -77,7 +103,7 @@ export async function POST(request: NextRequest) {
     );
   }
   const fileNames: string[] = (files?.tree || [])
-    .filter((t: any) => t.type === "blob")
+    .filter((t: any) => t.type === "blob" && !t.path.startsWith("devpost/") && !t.path.startsWith("benchmark/"))
     .map((t: any) => t.path);
   const commitList: any[] = Array.isArray(commits) ? commits : [];
   timings.lap("githubTree");
@@ -90,7 +116,13 @@ export async function POST(request: NextRequest) {
   } catch {
     contentTexts = [];
   }
+  const textByFile = new Map<string, string>(contentTexts.map((c) => [c.file, c.text]));
   timings.lap("rawFileFetch");
+
+  // Also inspect commit diffs/patches for the 3 most recent commits + any matched commits
+  const candidateShas = commitList.slice(0, 3).map((c: any) => String(c.sha || "")).filter(Boolean);
+  const commitDiffMap = await fetchCommitDiffDetails(base, candidateShas, 3);
+  timings.lap("commitDiffs");
 
   const evidence: Record<string, any> = {};
 
@@ -101,9 +133,22 @@ export async function POST(request: NextRequest) {
 
     const matchedFiles = fileNames.filter((f) => isRelevant(f, keywords, 1));
     const pathMatched = new Set(matchedFiles);
-    const matchedCommits = commitList.filter((c) =>
-      isRelevant(c.commit?.message || "", keywords, Math.min(2, Math.max(1, Math.ceil(keywords.length / 2))))
-    );
+    const matchedCommits = commitList.filter((c) => {
+      const msgRelevant = isRelevant(
+        c.commit?.message || "",
+        keywords,
+        Math.min(2, Math.max(1, Math.ceil(keywords.length / 2)))
+      );
+      if (msgRelevant) return true;
+      const diffDetail = commitDiffMap[c.sha];
+      if (diffDetail) {
+        return (
+          diffDetail.filesChanged.some((f) => isRelevant(f, keywords, 1)) ||
+          isRelevant(diffDetail.patchPreview, keywords, 2)
+        );
+      }
+      return false;
+    });
 
     const contentHits = new Map<string, string[]>();
     for (const { file, text } of contentTexts) {
@@ -112,17 +157,31 @@ export async function POST(request: NextRequest) {
       if (hits.length) contentHits.set(file, hits);
     }
 
-    const scored = new Map<string, { file: string; hitCount: number; matchedTerms: string[]; pathMatched: boolean }>();
+    const scored = new Map<
+      string,
+      {
+        file: string;
+        hitCount: number;
+        matchedTerms: string[];
+        pathMatched: boolean;
+        lineNumber?: number;
+        previewLine?: string;
+      }
+    >();
     for (const file of matchedFiles) {
       scored.set(file, { file, hitCount: 0, matchedTerms: [], pathMatched: true });
     }
     for (const [file, hits] of contentHits) {
       const existing = scored.get(file);
+      const rawText = textByFile.get(file) || "";
+      const preview = findBestLinePreview(rawText, hits);
       scored.set(file, {
         file,
         hitCount: hits.length,
         matchedTerms: hits,
         pathMatched: existing ? existing.pathMatched : pathMatched.has(file),
+        lineNumber: preview.lineNumber,
+        previewLine: preview.previewLine,
       });
     }
 
@@ -145,12 +204,27 @@ export async function POST(request: NextRequest) {
 
     evidence[claimId] = {
       files: top.map((t) => t.file),
-      fileMatches: top.map(({ file, hitCount, matchedTerms }) => ({ file, hitCount, matchedTerms })),
-      commits: matchedCommits.slice(0, 5).map((c: any) => ({
-        sha: c.sha,
-        message: c.commit?.message,
-        date: c.commit?.author?.date,
+      fileMatches: top.map(({ file, hitCount, matchedTerms, pathMatched: pm, lineNumber, previewLine }) => ({
+        file,
+        hitCount,
+        matchedTerms,
+        pathMatched: pm,
+        lineNumber,
+        previewLine,
       })),
+      commits: matchedCommits.slice(0, 5).map((c: any) => {
+        const diff = commitDiffMap[c.sha];
+        return {
+          sha: c.sha,
+          message: c.commit?.message,
+          date: c.commit?.author?.date,
+          author: c.commit?.author?.name,
+          filesChanged: diff?.filesChanged,
+          additions: diff?.additions,
+          deletions: diff?.deletions,
+          patchPreview: diff?.patchPreview,
+        };
+      }),
       matchedTerms: [
         ...new Set([
           ...keywords.filter(
@@ -162,6 +236,7 @@ export async function POST(request: NextRequest) {
         ]),
       ],
       totalFilesInRepo: fileNames.length,
+      defaultBranch: branch,
     };
   }
 

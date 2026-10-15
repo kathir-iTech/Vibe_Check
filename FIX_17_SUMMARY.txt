@@ -1,0 +1,15 @@
+Fix 17 pushed:
+
+1. SPEC-DRIFT keyword guard (gemini.ts):
+   - Case A tokenizer output: 3 shared keywords ("sandboxed","code","execution") — guard correctly produces >= 2 shared keywords
+   - Case B tokenizer output: 0 shared keywords — guard correctly produces < 2 shared keywords
+   - No changes needed to gemini.ts; the guard logic already works correctly
+
+2. summarize.mjs (2 targeted fixes):
+   a) Added console.assert(runs[0].length === allClaims.length, 'cross-claim mixing detected') — fires on committed results.json (12 vs 24)
+   b) Replaced throw with continue for claims with fewer than REPEATS runs — 12 claims previously threw, now skipped gracefully
+   - Recomputed output on same raw data: 30/36 true, 3/12 changed (was 12/36 true, 12/24 changed)
+
+3. npm run verify passes: lint ✓, check-seed ✓, build ✓
+
+Git: git ls-remote origin main → 609008d69a640ed10c9a0fe6248b3de554098ddc

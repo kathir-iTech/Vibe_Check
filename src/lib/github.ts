@@ -15,7 +15,7 @@ export async function getDefaultBranch(owner: string, repo: string): Promise<str
   return data.default_branch || "main";
 }
 
-export async function githubApi(url: string): Promise<any> {
+export async function githubApi(url: string, timeoutMs = 8000): Promise<any> {
   const headers: Record<string, string> = {
     Accept: "application/vnd.github.v3+json",
     "User-Agent": "VibeCheck",
@@ -23,7 +23,10 @@ export async function githubApi(url: string): Promise<any> {
   if (process.env.GITHUB_TOKEN) {
     headers["Authorization"] = `token ${process.env.GITHUB_TOKEN}`;
   }
-  const response = await fetch(url, { headers });
+  const response = await fetch(url, {
+    headers,
+    signal: AbortSignal.timeout(timeoutMs),
+  });
   if (!response.ok) {
     throw new Error(`GitHub API error: ${response.status}`);
   }
@@ -80,6 +83,61 @@ export async function fetchClaimTextFromUrl(raw: string): Promise<string> {
   }
 }
 
+export interface CommitPatchSummary {
+  sha: string;
+  filesChanged: string[];
+  additions: number;
+  deletions: number;
+  patchPreview: string;
+}
+
+export async function fetchCommitDiffDetails(
+  base: string,
+  shas: string[],
+  maxCommits = 3
+): Promise<Record<string, CommitPatchSummary>> {
+  const uniqueShas = [...new Set(shas.filter(Boolean))].slice(0, maxCommits);
+  const out: Record<string, CommitPatchSummary> = {};
+  if (!uniqueShas.length) return out;
+
+  await Promise.all(
+    uniqueShas.map(async (sha) => {
+      try {
+        const detail = await githubApi(`${base}/commits/${sha}`, 4000);
+        const files = Array.isArray(detail?.files) ? detail.files : [];
+        const eligibleFiles = files.filter(
+          (f: any) => f && typeof f.filename === "string" && !isSkippableFile(f.filename)
+        );
+        const filesChanged = eligibleFiles.map((f: any) => String(f.filename)).slice(0, 8);
+        const additions = typeof detail?.stats?.additions === "number" ? detail.stats.additions : 0;
+        const deletions = typeof detail?.stats?.deletions === "number" ? detail.stats.deletions : 0;
+        const firstWithPatch = eligibleFiles.find(
+          (f: any) => typeof f.patch === "string" && f.patch.trim().length > 0
+        );
+        const rawPatch = firstWithPatch ? String(firstWithPatch.patch) : "";
+        const addedLines = rawPatch
+          .split("\n")
+          .filter((line) => line.startsWith("+") && !line.startsWith("+++"))
+          .slice(0, 3)
+          .join(" ");
+        const patchPreview = (addedLines || rawPatch.split("\n").slice(0, 2).join(" ")).slice(0, 220);
+
+        out[sha] = {
+          sha,
+          filesChanged,
+          additions,
+          deletions,
+          patchPreview,
+        };
+      } catch {
+        // Fail open if rate-limited or timed out
+      }
+    })
+  );
+
+  return out;
+}
+
 const MAX_FILES_PER_CLAIM = 5;
 const MAX_FILE_CHARS = 20 * 1024;
 const TRUNCATION_MARKER = "\n[VibeCheck truncated this file: over 20KB]";
@@ -106,7 +164,7 @@ export interface RepoFileContent {
   truncated: boolean;
 }
 
-function isSkippableFile(path: string): boolean {
+export function isSkippableFile(path: string): boolean {
   const lower = path.toLowerCase();
   if (SKIP_DIR_PARTS.some((part) => lower.includes(part))) return true;
   if (lower.startsWith(".env") || lower.endsWith(".pem") || lower.endsWith(".key") || lower.endsWith(".p12")) {
@@ -155,14 +213,13 @@ export interface ContentFileText {
   text: string;
 }
 
-function isContentCandidate(path: string): boolean {
+export function isContentCandidate(path: string): boolean {
   const lower = path.toLowerCase();
   if (CONTENT_EXCLUDED_DIRS.some((d) => lower.startsWith(d) || lower.includes(`/${d}`))) return false;
   if (isSkippableFile(path)) return false;
   const base = lower.split("/").pop() || lower;
   const dot = base.lastIndexOf(".");
   if (dot === -1) {
-    // Well-known extensionless files are allowed through the content pass
     return WELL_KNOWN_EXTENSIONLESS.has(base);
   }
   return CONTENT_EXTENSIONS.has(base.slice(dot));

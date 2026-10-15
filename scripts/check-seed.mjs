@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// Check that the self-audit seed claim texts match the source JSON.
-// Exits non-zero if any seed claim text differs from self-audit-claims.json.
-// Usage: node scripts/check-seed.mjs
+// Check that the self-audit seed claim texts match the source JSON and that every
+// cited specReference (file:line: quote) exists on that exact line in the repo.
+// Exits non-zero if any seed claim text or cited line differs.
 
 import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
@@ -14,8 +14,9 @@ const CLAIMS_JSON_PATH = resolve(REPO_ROOT, "src/lib/self-audit-claims.json");
 
 function extractClaimsFromSeed() {
   const content = readFileSync(SEED_PATH, "utf8");
-  // Find the SELF_AUDIT_SEED object and extract the claims array
-  const match = content.match(/export const SELF_AUDIT_SEED: SelfAuditResult = \{[\s\S]*?claims: (\[[\s\S]*?\])\s*\};/);
+  const match = content.match(
+    /export const SELF_AUDIT_SEED: SelfAuditResult = \{[\s\S]*?claims: (\[[\s\S]*?\])\s*\};/
+  );
   if (!match) {
     throw new Error("Could not find SELF_AUDIT_SEED claims array in seed file");
   }
@@ -27,15 +28,29 @@ function loadSourceClaims() {
   return JSON.parse(content);
 }
 
+function verifySpecRef(specReference) {
+  if (!specReference) return true;
+  const m = specReference.match(/^([^:\s]+):(\d+):\s*([\s\S]+)$/);
+  if (!m) return false;
+  const [, relFile, lineStr, quote] = m;
+  const lineNum = Number(lineStr);
+  const fileText = readFileSync(resolve(REPO_ROOT, relFile), "utf8");
+  const lines = fileText.split("\n");
+  const actualLine = lines[lineNum - 1] || "";
+  return actualLine.trim().includes(quote.trim());
+}
+
 function main() {
   const seedClaims = extractClaimsFromSeed();
   const sourceClaims = loadSourceClaims();
-  
+
   if (seedClaims.length !== sourceClaims.length) {
-    console.error(`[check-seed] FAIL: Claim count mismatch (seed: ${seedClaims.length}, source: ${sourceClaims.length})`);
+    console.error(
+      `[check-seed] FAIL: Claim count mismatch (seed: ${seedClaims.length}, source: ${sourceClaims.length})`
+    );
     process.exit(1);
   }
-  
+
   let hasError = false;
   for (let i = 0; i < seedClaims.length; i++) {
     const seedText = seedClaims[i].text;
@@ -45,16 +60,24 @@ function main() {
       console.error(`  Seed:   "${seedText}"`);
       console.error(`  Source: "${sourceText}"`);
       hasError = true;
+    } else if (!verifySpecRef(seedClaims[i].specReference)) {
+      console.error(
+        `[check-seed] FAIL: Claim ${i} (${sourceClaims[i].id}) specReference does not match repo file:line:`
+      );
+      console.error(`  Ref: "${seedClaims[i].specReference}"`);
+      hasError = true;
     } else {
-      console.log(`[check-seed] OK: Claim ${i} (${sourceClaims[i].id}) matches`);
+      console.log(
+        `[check-seed] OK: Claim ${i} (${sourceClaims[i].id}) text and line citation verified`
+      );
     }
   }
-  
+
   if (hasError) {
     console.error("[check-seed] Seed verification FAILED");
     process.exit(1);
   } else {
-    console.log("[check-seed] All seed claim texts match source JSON");
+    console.log("[check-seed] All seed claim texts and citations match source files");
     process.exit(0);
   }
 }

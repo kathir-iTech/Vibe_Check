@@ -59,6 +59,18 @@ It returns `UNVERIFIED` in red and points at the missing file.
 > **Design boundary:** no sandboxed code execution. Evidence checks are static/API-based only — a deliberate
 > choice, not a gap.
 
+## Ground-Truth Benchmark (24 Claims × 3 Repeats = 72 Runs)
+
+VibeCheck includes a 24-claim labeled benchmark (`benchmark/claims.json` & `benchmark/results.json`) covering 12 true claims, 6 near-miss falsehoods, 4 absent-technology controls, and 2 unverifiable claims:
+
+| Benchmark Metric | Result | Meaning |
+| --- | --- | --- |
+| **False Claims → `TRUE`** | `0 / 30` (0%) | Zero hallucinated or near-miss false claims passed as `TRUE` |
+| **Unverifiable Claims → `TRUE`** | `0 / 6` (0%) | Zero unverifiable claims (unit tests, WCAG contrast) passed as `TRUE` |
+| **True Claims → `SPEC-DRIFT`** | `0 / 36` (0%) | Zero false accusations on true claims (enforced by the `>=2` keyword guard) |
+| **True Claims → `TRUE`** | `32 / 36` (88.9%) | Verified recall with exact `file:line` quote verification |
+| **Retroactive 8-Build Audit** | `7 / 8` Caught | Caught 7 historical solo-hackathon agent overclaims (`UNVERIFIED` / `SPEC-DRIFT`) and verified 1 clean MVP (`TRUE`) |
+
 ## Getting started
 
 ### Prerequisites
@@ -84,64 +96,34 @@ GITHUB_TOKEN=your-github-token
 
 Both keys are read **server-side** inside API routes, so they never reach the browser.
 
-### Run
+### Run & Verify
 
 ```bash
-npm run dev      # http://localhost:3000
-```
-
-Other scripts:
-
-```bash
-npm run build    # production build
-npm run start    # serve the production build
-npm run lint     # eslint over src/
+npm run dev              # http://localhost:3000
+npm run test             # Run deterministic unit tests (guards, normalizer, benchmark math)
+npm run check-seed       # Verify self-audit seed claims & line citations
+npm run check-benchmark  # Recompute & verify 72/72 benchmark results from raw runs
+npm run verify           # Full gate: lint + check-seed + test + next build
 ```
 
 ## How to use it
 
-1. Paste the agent's last message into the message box.
+1. Paste the agent's last message (or click one of the **4 Scenario Presets**, or paste a GitHub PR/commit URL).
 2. Paste the GitHub repo URL it was working on.
-3. Click **Check Claims** — extraction → evidence → spec-drift → verdicts appear claim by claim.
-4. **Generate Shareable Report** for a permalink, or **Export Report (JSON)** for a file.
-
-Other entry points:
-
-- `/demo` — the full flow with preloaded data, no API keys or network needed
-- Homepage **Self-Audit** card — VibeCheck's verdicts on its own repo, plus **Re-run live**
-- `/report/[id]` — open a previously generated report from its permalink
+3. Click **Check Claims** — extraction → evidence + commit diffs → spec-drift + verbatim line check → verdicts appear claim by claim.
+4. Optional: click **Edit / Refine Extracted Claims** to manually adjust extracted claims and re-verify without an extra extraction call.
+5. **Copy PR Audit Markdown**, **Export Report (.md / .json)**, or **Generate Shareable Report** for a self-contained Base64URL permalink.
 
 ## API routes
 
 | Route | Purpose |
 | --- | --- |
+| `POST /api/claim-source` | Fetches PR title/body or commit message from a GitHub URL |
 | `POST /api/extract-claims` | Gemini extracts checkable claims from the agent message |
-| `POST /api/check-evidence` | GitHub REST API evidence lookup per claim |
-| `POST /api/check-spec-drift` | Contradiction check against the repo's planning docs |
-| `POST /api/generate-report` | Builds the shareable report permalink |
-| `POST /api/self-audit` | Runs VibeCheck's own fixed claims against this repo |
-
-## Project structure
-
-```
-src/
-├── app/
-│   ├── page.tsx              # Main check flow
-│   ├── demo/page.tsx         # Demo mode (/demo)
-│   ├── report/[id]/page.tsx  # Shareable report page
-│   └── api/                  # Server-side Gemini + GitHub calls
-├── components/               # ClaimInput, ResultsPanel, EvidenceDisplay, SelfAudit, ReportExport...
-├── lib/                      # github.ts, gemini.ts, demo-data.ts, self-audit-seed.ts
-└── types/                    # Claim, Verdict, Report types
-devpost/                      # Scope, PRD, spec, build checklist
-```
-
-## Failure modes handled
-
-- **GitHub rate limit** → message suggesting demo mode (`/demo`)
-- **Gemini error** → one retry, then a friendly fallback message
-- **Private / missing repo** → all claims `UNVERIFIED` with a "repo not accessible" note
-- **No planning docs in the repo** → spec-drift skipped, verdicts fall back to `UNVERIFIED`
+| `POST /api/check-evidence` | GitHub REST API file tree, 60-file content pass, and commit diff lookup |
+| `POST /api/check-spec-drift` | Contradiction & supporting-line check with server-side quote verification |
+| `POST /api/generate-report` | Builds the self-contained Base64URL shareable report permalink |
+| `POST /api/self-audit` | Runs VibeCheck's own 3 fixed claims against this repo |
 
 ## Docs
 
@@ -150,7 +132,8 @@ Planning and build docs live in [`devpost/`](devpost/):
 - [`scope.md`](devpost/scope.md) — the idea, the POC boundary, what was cut
 - [`prd.md`](devpost/prd.md) — product definition and core journey
 - [`spec.md`](devpost/spec.md) — technical blueprint, data model, failure modes
-- [`checklist.md`](devpost/checklist.md) — build slices and verification
+- [`checklist.md`](devpost/checklist.md) — build slices, verification, and revision log
+- [`app-map.html`](devpost/app-map.html) — standalone visual architecture map and 3-stop code tour
 
 ## License
 

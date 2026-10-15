@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Check that the committed benchmark summary matches the raw runs data.
-// Exits non-zero if the summary differs from recomputed values.
+// Exits non-zero if the summary differs from recomputed values or if coverage < 72/72.
 
 import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
@@ -30,7 +30,6 @@ function main() {
   console.log(`[check-benchmark] Claims in claims.json: ${totalClaims}`);
   console.log(`[check-benchmark] Expected entries per repeat cycle: ${expectedEntries}`);
 
-  // Recompute summary from raw runs (works with partial data)
   let computed;
   try {
     computed = summarize({ runs, allClaims, REPEATS });
@@ -41,83 +40,102 @@ function main() {
   }
 
   if (computed) {
-    // Compare with committed summary
     const committedSummary = results.summary;
+    if (!committedSummary || typeof committedSummary !== "object") {
+      console.error("[check-benchmark] FAIL: Missing committed summary object in results.json");
+      hasError = true;
+    } else {
+      const bucketNames = [
+        "falseClaimsReturnedTrue",
+        "unverifiableClaimsReturnedTrue",
+        "trueClaimsReturnedTrue",
+        "trueClaimsReturnedSPEC_DRIFT",
+        "verdictChangedBetweenRuns",
+      ];
 
-    const checks = [
-      { name: "falseClaimsReturnedTrue", key: "count", totalKey: "total" },
-      { name: "unverifiableClaimsReturnedTrue", key: "count", totalKey: "total" },
-      { name: "trueClaimsReturnedTrue", key: "count", totalKey: "total" },
-      { name: "trueClaimsReturnedSPEC_DRIFT", key: "count", totalKey: "total" }, // NEW
-      { name: "verdictChangedBetweenRuns", key: "count", totalKey: "total" },
-      { name: "medianLatencyMs", key: "a", totalKey: "b" },
-      { name: "p95LatencyMs", key: "a", totalKey: "b" },
-    ];
+      for (const name of bucketNames) {
+        const compBucket = computed[name];
+        const commBucket = committedSummary[name];
 
-    for (const { name, key, totalKey } of checks) {
-      const a = computed[key];
-      const b = committedSummary ? committedSummary[key] : null;
-
-      if (b === null) {
-        console.log(`[check-benchmark]  ${name}: not available in committed summary`);
-        continue;
-      }
-
-      // FAIL if either value is undefined
-      if (a === undefined || b === undefined) {
-        console.log(`[check-benchmark]  ${name}: undefined vs ${b !== undefined ? b : 'null'} FAIL`);
-        hasError = true;
-        console.error(`[check-benchmark] FAIL: ${name} has undefined value`);
-        continue;
-      }
-
-      const match = a === b;
-      console.log(`[check-benchmark]  ${name}: ${a} vs ${b} ${match ? "OK" : "MISMATCH"}`);
-      if (!match) {
-        hasError = true;
-        console.error(`[check-benchmark] FAIL: ${name} mismatch`);
-      }
-    }
-
-    // Details-level check for trueClaimsReturnedTrue
-    if (computed.trueClaimsReturnedTrue && committedSummary?.trueClaimsReturnedTrue) {
-      const detailsMatch = JSON.stringify(computed.trueClaimsReturnedTrue.details) ===
-        JSON.stringify(committedSummary.trueClaimsReturnedTrue.details);
-      console.log(`[check-benchmark]  trueClaimsReturnedTrue details ${detailsMatch ? "OK" : "MISMATCH"}`);
-      if (!detailsMatch) {
-        hasError = true;
-        console.error("[check-benchmark] FAIL: trueClaimsReturnedTrue details differ");
-        const committedDetails = new Set(committedSummary.trueClaimsReturnedTrue.details);
-        const computedDetails = new Set(computed.trueClaimsReturnedTrue.details);
-        for (const d of computedDetails) {
-          if (!committedDetails.has(d)) {
-            console.error(`[check-benchmark]    Computed but not committed: ${d}`);
-          }
+        if (
+          !compBucket ||
+          !commBucket ||
+          typeof compBucket.count !== "number" ||
+          typeof commBucket.count !== "number" ||
+          typeof compBucket.total !== "number" ||
+          typeof commBucket.total !== "number"
+        ) {
+          console.error(`[check-benchmark] FAIL: ${name} has undefined or non-numeric count/total`);
+          hasError = true;
+          continue;
         }
-        for (const d of committedDetails) {
-          if (!computedDetails.has(d)) {
-            console.error(`[check-benchmark]    Committed but not computed: ${d}`);
-          }
+
+        const countMatch = compBucket.count === commBucket.count;
+        const totalMatch = compBucket.total === commBucket.total;
+        console.log(
+          `[check-benchmark]  ${name}: ${compBucket.count}/${compBucket.total} vs ${commBucket.count}/${commBucket.total} ${
+            countMatch && totalMatch ? "OK" : "MISMATCH"
+          }`
+        );
+        if (!countMatch || !totalMatch) {
+          hasError = true;
+          console.error(`[check-benchmark] FAIL: ${name} mismatch`);
         }
       }
-    }
 
-    // Details-level check for trueClaimsReturnedSPEC_DRIFT (NEW)
-    if (computed.trueClaimsReturnedSPEC_DRIFT && committedSummary?.trueClaimsReturnedSPEC_DRIFT) {
-      const sdriftDetailsMatch = JSON.stringify(computed.trueClaimsReturnedSPEC_DRIFT.details) ===
-        JSON.stringify(committedSummary.trueClaimsReturnedSPEC_DRIFT.details);
-      console.log(`[check-benchmark]  trueClaimsReturnedSPEC_DRIFT details ${sdriftDetailsMatch ? "OK" : "MISMATCH"}`);
-      if (!sdriftDetailsMatch) {
-        hasError = true;
-        console.error("[check-benchmark] FAIL: trueClaimsReturnedSPEC_DRIFT details differ");
+      for (const scalarName of ["medianLatencyMs", "p95LatencyMs"]) {
+        const a = computed[scalarName];
+        const b = committedSummary[scalarName];
+        if (typeof a !== "number" || typeof b !== "number") {
+          console.error(`[check-benchmark] FAIL: ${scalarName} has undefined value (${a} vs ${b})`);
+          hasError = true;
+          continue;
+        }
+        const match = a === b;
+        console.log(`[check-benchmark]  ${scalarName}: ${a} vs ${b} ${match ? "OK" : "MISMATCH"}`);
+        if (!match) {
+          hasError = true;
+          console.error(`[check-benchmark] FAIL: ${scalarName} mismatch`);
+        }
+      }
+
+      if (computed.trueClaimsReturnedTrue && committedSummary.trueClaimsReturnedTrue) {
+        const detailsMatch =
+          JSON.stringify(computed.trueClaimsReturnedTrue.details) ===
+          JSON.stringify(committedSummary.trueClaimsReturnedTrue.details);
+        console.log(
+          `[check-benchmark]  trueClaimsReturnedTrue details ${detailsMatch ? "OK" : "MISMATCH"}`
+        );
+        if (!detailsMatch) {
+          hasError = true;
+          console.error("[check-benchmark] FAIL: trueClaimsReturnedTrue details differ");
+        }
+      }
+
+      if (computed.trueClaimsReturnedSPEC_DRIFT && committedSummary.trueClaimsReturnedSPEC_DRIFT) {
+        const sdriftDetailsMatch =
+          JSON.stringify(computed.trueClaimsReturnedSPEC_DRIFT.details) ===
+          JSON.stringify(committedSummary.trueClaimsReturnedSPEC_DRIFT.details);
+        console.log(
+          `[check-benchmark]  trueClaimsReturnedSPEC_DRIFT details ${
+            sdriftDetailsMatch ? "OK" : "MISMATCH"
+          }`
+        );
+        if (!sdriftDetailsMatch) {
+          hasError = true;
+          console.error("[check-benchmark] FAIL: trueClaimsReturnedSPEC_DRIFT details differ");
+        }
       }
     }
   }
 
-  // Coverage check - fail if partial data
   if (totalRunsFlat < expectedEntries) {
-    console.log(`[check-benchmark] Coverage: ${totalRunsFlat}/${expectedEntries} entries (${totalClaims} claims x ${REPEATS} repeats)`);
-    console.log("[check-benchmark] FAIL: Full benchmark requires all ${totalClaims} claims x ${REPEATS} repeats".replace("${totalClaims}", totalClaims));
+    console.log(
+      `[check-benchmark] Coverage: ${totalRunsFlat}/${expectedEntries} entries (${totalClaims} claims x ${REPEATS} repeats)`
+    );
+    console.log(
+      `[check-benchmark] FAIL: Full benchmark requires all ${totalClaims} claims x ${REPEATS} repeats`
+    );
     hasError = true;
   }
 
@@ -125,7 +143,7 @@ function main() {
     console.error("[check-benchmark] FAIL: Summary does not match raw runs data");
     process.exit(1);
   } else {
-    console.log("[check-benchmark] OK: All checks passed - summary matches raw runs data");
+    console.log("[check-benchmark] OK: All checks passed - summary matches raw runs data (72/72)");
     process.exit(0);
   }
 }
