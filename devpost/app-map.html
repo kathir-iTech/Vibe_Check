@@ -145,8 +145,8 @@
       <span class="badge">Devpost Learn &middot; 5-build App Map</span>
       <h1>VibeCheck &mdash; Architecture &amp; Code Tour Guide</h1>
       <p style="color: var(--muted); margin: 0.25rem 0 0;">
-        Plain-language guide to how VibeCheck extracts coding-agent claims, checks real GitHub repository files and commit diffs, and enforces server-side quote verification.
-        Snapshot anchored at commit <code>a7fac7b</code> (static offline HTML, zero external dependencies).
+        Plain-language guide to how VibeCheck extracts coding-agent claims, checks real GitHub repository files and commit diffs, and enforces deterministic server-side guards.
+        Snapshot anchored at commit <code>6746621</code> (static offline HTML, zero external dependencies).
       </p>
     </header>
 
@@ -157,15 +157,15 @@
         It consists of four main pieces:
       </p>
       <ul>
-        <li><strong>The Inspector Page (<code>src/app/page.tsx</code>):</strong> Collects the agent message (or a GitHub PR/commit URL) and target repository URL, checks <code>sessionStorage</code> cache first, and runs the 3-step verification pipeline.</li>
-        <li><strong>The GitHub Evidence Engine (<code>src/app/api/check-evidence/route.ts</code> &amp; <code>src/lib/github.ts</code>):</strong> Fetches the repo file tree, scores up to 60 source files by keyword hits, and inspects recent commit diffs/patches.</li>
-        <li><strong>The Spec-Drift &amp; Quote Verifier (<code>src/app/api/check-spec-drift/route.ts</code> &amp; <code>src/lib/gemini.ts</code>):</strong> Compares claims against <code>devpost/scope.md</code>, <code>prd.md</code>, and <code>spec.md</code> plus matched repo files, then verifies every cited quote verbatim in server code.</li>
-        <li><strong>The Verdict &amp; Report Surface (<code>src/components/ResultsPanel.tsx</code> &amp; <code>ReportExport.tsx</code>):</strong> Renders the Build Honesty Scorecard, deep-linked GitHub citations, and exports self-contained Base64URL permalinks or PR Markdown tables.</li>
+        <li><strong>The Inspector Page (<code>src/app/page.tsx</code>):</strong> Collects the agent message (or a GitHub PR/commit URL) and target repository URL, automatically activates demo mode on <code>/?demo=1</code>, checks <code>sessionStorage</code> cache first, and runs the 3-step verification pipeline.</li>
+        <li><strong>The GitHub Evidence Engine (<code>src/app/api/check-evidence/route.ts</code> &amp; <code>src/lib/github.ts</code>):</strong> Validates the GitHub URL via <code>parseGitHubRepoUrl()</code>, fetches the repo file tree, scores up to 60 source files by keyword hits + AST-lite declaration bonuses, and inspects matched commit diffs/patches.</li>
+        <li><strong>The Spec-Drift &amp; Quote Verifier (<code>src/app/api/check-spec-drift/route.ts</code>, <code>src/lib/gemini.ts</code>, &amp; <code>src/lib/verification-guards.mjs</code>):</strong> Compares claims against <code>devpost/scope.md</code>, <code>prd.md</code>, and <code>spec.md</code> plus matched repo files, then verifies every cited quote via deterministic whole-line, comment-spoof, negation, and keyword guards.</li>
+        <li><strong>The Verdict &amp; Signed Report Surface (<code>src/components/ResultsPanel.tsx</code>, <code>ReportExport.tsx</code>, &amp; <code>src/lib/report-crypto.mjs</code>):</strong> Renders the Build Honesty Scorecard, deep-linked GitHub citations, and exports HMAC-SHA256 signed Base64URL permalinks or PR Markdown tables.</li>
       </ul>
       <div class="verdict-row">
-        <span class="pill pill-true">&#10003; TRUE: Verbatim supporting line verified in repo file</span>
-        <span class="pill pill-drift">&#9888; SPEC-DRIFT: Verbatim contradiction in scope/prd/spec</span>
-        <span class="pill pill-unv">? UNVERIFIED: No verified supporting line or restatement rejected</span>
+        <span class="pill pill-true">&#10003; TRUE: Non-comment executable/config line verified in repo file</span>
+        <span class="pill pill-drift">&#9888; SPEC-DRIFT: Contradiction verified in scope/prd/spec</span>
+        <span class="pill pill-unv">? UNVERIFIED: No verified supporting line or rejected by guards</span>
       </div>
     </div>
 
@@ -176,7 +176,7 @@
         <text x="24" y="52" font-family="monospace" font-size="12" font-weight="bold" fill="#059669">1. Browser UI</text>
         <text x="24" y="74" font-family="sans-serif" font-size="12" fill="currentColor">src/app/page.tsx</text>
         <text x="24" y="96" font-family="monospace" font-size="11" fill="#71717a">handleCheck()</text>
-        <text x="24" y="118" font-family="monospace" font-size="11" fill="#71717a">result-cache.ts</text>
+        <text x="24" y="118" font-family="monospace" font-size="11" fill="#71717a">/?demo=1 auto-load</text>
         <text x="24" y="142" font-family="sans-serif" font-size="11" fill="#71717a">Checks sessionStorage</text>
         <text x="24" y="158" font-family="sans-serif" font-size="11" fill="#71717a">before firing network</text>
 
@@ -188,19 +188,19 @@
         <text x="244" y="75" font-family="monospace" font-size="11" fill="currentColor">/api/extract-claims</text>
         <text x="244" y="97" font-family="monospace" font-size="11" fill="currentColor">/api/check-evidence</text>
         <text x="244" y="119" font-family="monospace" font-size="11" fill="currentColor">/api/check-spec-drift</text>
-        <text x="244" y="145" font-family="sans-serif" font-size="11" fill="#71717a">Server-side keys +</text>
+        <text x="244" y="145" font-family="sans-serif" font-size="11" fill="#71717a">URL host validation +</text>
         <text x="244" y="161" font-family="sans-serif" font-size="11" fill="#71717a">Server-Timing headers</text>
 
         <line x1="415" y1="102" x2="450" y2="102" stroke="#71717a" stroke-width="2" />
         <polygon points="450,97 460,102 450,107" fill="#71717a" />
 
         <rect x="460" y="25" width="175" height="155" rx="10" fill="none" stroke="#d97706" stroke-width="2" />
-        <text x="474" y="52" font-family="monospace" font-size="12" font-weight="bold" fill="#d97706">3.Deterministic Gates</text>
-        <text x="474" y="74" font-family="monospace" font-size="11" fill="currentColor">src/lib/gemini.ts</text>
+        <text x="474" y="52" font-family="monospace" font-size="12" font-weight="bold" fill="#d97706">3. Deterministic Gates</text>
+        <text x="474" y="74" font-family="monospace" font-size="11" fill="currentColor">verification-guards.mjs</text>
         <text x="474" y="96" font-family="monospace" font-size="11" fill="#71717a">findLineNumber()</text>
-        <text x="474" y="116" font-family="monospace" font-size="11" fill="#71717a">isRestatement()</text>
-        <text x="474" y="136" font-family="monospace" font-size="11" fill="#71717a">hasContradiction</text>
-        <text x="474" y="152" font-family="monospace" font-size="11" fill="#71717a">Keywords()</text>
+        <text x="474" y="116" font-family="monospace" font-size="11" fill="#71717a">isExecutableCodeLine()</text>
+        <text x="474" y="136" font-family="monospace" font-size="11" fill="#71717a">hasNegationMismatch()</text>
+        <text x="474" y="154" font-family="monospace" font-size="11" fill="#71717a">isRestatement()</text>
 
         <line x1="635" y1="102" x2="665" y2="102" stroke="#71717a" stroke-width="2" />
         <polygon points="665,97 675,102 665,107" fill="#71717a" />
@@ -209,8 +209,8 @@
         <text x="687" y="52" font-family="monospace" font-size="12" font-weight="bold" fill="#059669">4. Output UI</text>
         <text x="687" y="76" font-family="monospace" font-size="11" fill="currentColor">ResultsPanel</text>
         <text x="687" y="98" font-family="monospace" font-size="11" fill="currentColor">ReportExport</text>
-        <text x="687" y="122" font-family="sans-serif" font-size="11" fill="#71717a">Honesty Score</text>
-        <text x="687" y="140" font-family="sans-serif" font-size="11" fill="#71717a">Deep GitHub</text>
+        <text x="687" y="122" font-family="sans-serif" font-size="11" fill="#71717a">HMAC-Signed</text>
+        <text x="687" y="140" font-family="sans-serif" font-size="11" fill="#71717a">Permalinks &amp;</text>
         <text x="687" y="158" font-family="sans-serif" font-size="11" fill="#71717a">file:line links</text>
       </svg>
     </div>
@@ -219,29 +219,28 @@
     <details open>
       <summary>Stop 1 &mdash; Entry &amp; Orchestration: <code>src/app/page.tsx</code> &rarr; <code>handleCheck()</code></summary>
       <p>
-        When you click <strong>Check Claims</strong>, <code>handleCheck(forceLive)</code> hashes the input message/PR URL and repository URL via <code>cacheKey()</code>.
-        On a cache miss, it chains three sequential POST requests using <code>fetchWithTimeout()</code>:
-        <code>/api/extract-claims</code> &rarr; <code>/api/check-evidence</code> &rarr; <code>/api/check-spec-drift</code>, storing the result in <code>sessionStorage</code> only after all three succeed.
+        When you click <strong>Check Claims</strong>, <code>handleCheck(forceLive)</code> locks <code>auditedRepoUrl</code>, checks <code>sessionStorage</code> via <code>cacheKey()</code>, and chains three sequential POST requests using <code>fetchWithTimeout()</code>:
+        <code>/api/extract-claims</code> &rarr; <code>/api/check-evidence</code> &rarr; <code>/api/check-spec-drift</code>.
       </p>
     </details>
 
     <details open>
       <summary>Stop 2 &mdash; Content-Based Evidence Retrieval: <code>src/app/api/check-evidence/route.ts</code> &rarr; <code>POST()</code></summary>
       <p>
-        Resolves the repository&rsquo;s default branch via <code>getDefaultBranch()</code>, fetches the recursive Git tree and recent commits, and runs <code>selectContentCandidates()</code> + <code>fetchRawFileTexts()</code> in <code>src/lib/github.ts</code>.
-        Each file is scored by how many distinct claim keywords appear in its content plus a path-match bonus, returning the top 5 files per claim along with matched commit diffs.
+        Validates the repository URL via <code>parseGitHubRepoUrl()</code>, resolves the default branch via <code>getDefaultBranch()</code>, excludes <code>.agents/</code>, <code>.claude/</code>, <code>devpost/</code>, and <code>benchmark/</code> across all retrieval stages, and scores up to 60 source files by keyword hits plus AST-lite declaration bonuses.
       </p>
     </details>
 
     <details open>
-      <summary>Stop 3 &mdash; Server-Side Quote &amp; Keyword Guards: <code>src/lib/gemini.ts</code> &rarr; <code>validateAssessments()</code></summary>
+      <summary>Stop 3 &mdash; Server-Side Quote &amp; Keyword Guards: <code>src/lib/gemini.ts</code> &amp; <code>src/lib/verification-guards.mjs</code></summary>
       <p>
-        Even after Gemini proposes a supporting or contradicting quote, VibeCheck never trusts the model&rsquo;s word alone.
-        <code>validateAssessments()</code> runs three deterministic code checks:
+        <code>validateAssessments()</code> runs five deterministic code checks before assigning a verdict:
       </p>
       <pre>1. hasContradictionKeywords(claim.text, contradictingLine)  // Requires &ge;2 shared non-stopword keywords for SPEC-DRIFT
-2. findLineNumber(doc.text, quote)                         // Verifies the quoted line exists verbatim in the fetched file
-3. isRestatement(claim.text, supportingQuote, lineText)    // Rejects lines that merely repeat the claim text</pre>
+2. findLineNumber(doc.text, quote)                         // Whole-line aware verbatim match in the fetched file
+3. isExecutableCodeLine(lineText, supportingFile)          // Rejects code comments and TODO/FIXME placeholders
+4. hasNegationMismatch(claim.text, lineText)               // Rejects positive claims paired with negated lines
+5. isRestatement(claim.text, supportingQuote, lineText)    // Rejects lines that merely repeat the claim text</pre>
     </details>
 
     <h2>4. &ldquo;To Change This, Start Here&rdquo;</h2>
@@ -261,13 +260,13 @@
       <div class="card">
         <strong>Tune Verdict Guards or Model Fallback</strong>
         <p style="font-size: 0.9rem; color: var(--muted); margin-bottom: 0;">
-          Open <code>src/lib/gemini.ts</code> and inspect <code>PRIMARY_MODEL</code>, <code>FALLBACK_MODEL</code>, <code>isRestatement()</code>, and <code>hasContradictionKeywords()</code>.
+          Open <code>src/lib/verification-guards.mjs</code> and <code>src/lib/gemini.ts</code> to inspect <code>isExecutableCodeLine()</code>, <code>hasNegationMismatch()</code>, <code>isRestatement()</code>, and <code>hasContradictionKeywords()</code>.
         </p>
       </div>
       <div class="card">
         <strong>Add or Edit Scenario Presets</strong>
         <p style="font-size: 0.9rem; color: var(--muted); margin-bottom: 0;">
-          Open <code>src/lib/demo-data.ts</code> and edit <code>SCENARIO_PRESETS</code> or <code>RETROACTIVE_AUDIT_CASEBOOK</code>.
+          Open <code>src/lib/demo-data.ts</code> and edit <code>SCENARIO_PRESETS</code>.
         </p>
       </div>
     </div>
@@ -275,20 +274,17 @@
     <h2>5. A Practice to Reuse</h2>
     <div class="card">
       <p style="margin-top: 0;">
-        <strong>Pair AI judgment with a deterministic post-condition in code (<code>src/lib/gemini.ts &gt; validateAssessments</code>).</strong>
+        <strong>Pair AI judgment with a deterministic post-condition in a shared, directly tested module (<code>src/lib/verification-guards.mjs</code>).</strong>
       </p>
       <p style="margin-bottom: 0; font-size: 0.92rem; color: var(--muted);">
-        Early in the build (Fixes 3&ndash;9), a claim could be marked <code>TRUE</code> whenever file names matched its keywords and Gemini reported no spec contradiction &mdash; meaning absence of contradiction was treated as proof.
-        In Fix 10 and Fix 16, we changed the contract: the model must return an exact line from a fetched file, and server code deterministically checks <code>findLineNumber()</code>, <code>isRestatement()</code>, and <code>hasContradictionKeywords()</code> before assigning a verdict.
-        On any future AI project, let the model propose structured candidates, but enforce the acceptance rule in deterministic code tested by fast offline unit tests (<code>npm run test</code>).
+        Let the model propose structured candidates, but enforce the acceptance rule in deterministic code (`findLineNumber`, `isExecutableCodeLine`, `hasNegationMismatch`, `isRestatement`, `hasContradictionKeywords`) imported directly by both the production route and `npm run test` (`scripts/test-core.mjs`).
       </p>
     </div>
 
     <h2>6. How to Run &amp; Verify Again</h2>
     <div class="card">
       <pre>npm install
-npm run verify            # Runs eslint + check-seed + unit tests + next build
-npm run check-benchmark   # Verifies 72/72 benchmark coverage and summary math
+npm run verify            # Runs eslint + check-seed + check-benchmark + unit tests + next build
 npm run dev               # Starts local server at http://localhost:3000</pre>
     </div>
   </main>

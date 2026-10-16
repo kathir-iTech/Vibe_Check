@@ -6,15 +6,21 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const body = await request.json();
-  const url = typeof body.url === "string" ? body.url.trim() : "";
+  let body: any;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+  const url = typeof body?.url === "string" ? body.url.trim() : "";
+  const userToken = request.headers?.get?.("x-github-token") || undefined;
 
-  if (!url) {
-    return NextResponse.json({ error: "A PR or commit URL is required" }, { status: 400 });
+  if (!url || url.length > 512) {
+    return NextResponse.json({ error: "A valid PR or commit URL is required" }, { status: 400 });
   }
 
   try {
-    const text = await fetchClaimTextFromUrl(url);
+    const text = await fetchClaimTextFromUrl(url, userToken);
     return NextResponse.json({ text });
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);

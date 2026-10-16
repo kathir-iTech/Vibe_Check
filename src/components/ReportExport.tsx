@@ -4,6 +4,7 @@ import { fetchWithTimeout } from "@/lib/http";
 
 interface Props {
   repoUrl: string;
+  headSha?: string;
   claims: any[];
   evidence: Record<string, any>;
   verdicts: any[];
@@ -11,6 +12,7 @@ interface Props {
 
 function buildMarkdownReport(
   repoUrl: string,
+  headSha: string | undefined,
   claims: any[],
   evidence: Record<string, any>,
   verdicts: any[]
@@ -40,6 +42,7 @@ function buildMarkdownReport(
     `# VibeCheck Build-Honesty Audit Report`,
     ``,
     `- **Repository:** ${repoUrl || "N/A"}`,
+    ...(headSha ? [`- **Audited Commit SHA:** \`${headSha}\``] : []),
     `- **Generated At:** ${timestamp}`,
     `- **Build Honesty Score:** **${score}%** (${trueCount} TRUE · ${driftCount} SPEC-DRIFT · ${unverifiedCount} UNVERIFIED)`,
     ``,
@@ -53,8 +56,9 @@ function buildMarkdownReport(
   ].join("\n");
 }
 
-export function ReportExport({ repoUrl, claims, evidence, verdicts }: Props) {
+export function ReportExport({ repoUrl, headSha, claims, evidence, verdicts }: Props) {
   const [permalink, setPermalink] = useState("");
+  const [sig, setSig] = useState("");
   const [copiedMd, setCopiedMd] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -67,13 +71,14 @@ export function ReportExport({ repoUrl, claims, evidence, verdicts }: Props) {
       const res = await fetchWithTimeout("/api/generate-report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ repoUrl, claims, evidence, verdicts }),
+        body: JSON.stringify({ repoUrl, headSha, claims, evidence, verdicts }),
       });
       const data = await res.json();
       if (!res.ok || data.error) {
         throw new Error(data.error || `generate-report failed (${res.status})`);
       }
       setPermalink(data.permalink);
+      setSig(typeof data.sig === "string" ? data.sig : "");
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -82,7 +87,14 @@ export function ReportExport({ repoUrl, claims, evidence, verdicts }: Props) {
   }
 
   function handleExportJson() {
-    const payload = { repoUrl, claims, evidence, verdicts, generatedAt: new Date().toISOString() };
+    const payload = {
+      repoUrl,
+      headSha: headSha || "",
+      claims,
+      evidence,
+      verdicts,
+      generatedAt: new Date().toISOString(),
+    };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -93,7 +105,7 @@ export function ReportExport({ repoUrl, claims, evidence, verdicts }: Props) {
   }
 
   function handleExportMarkdown() {
-    const md = buildMarkdownReport(repoUrl, claims, evidence, verdicts);
+    const md = buildMarkdownReport(repoUrl, headSha, claims, evidence, verdicts);
     const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -105,7 +117,7 @@ export function ReportExport({ repoUrl, claims, evidence, verdicts }: Props) {
 
   async function handleCopyMarkdown() {
     try {
-      const md = buildMarkdownReport(repoUrl, claims, evidence, verdicts);
+      const md = buildMarkdownReport(repoUrl, headSha, claims, evidence, verdicts);
       await navigator.clipboard.writeText(md);
       setCopiedMd(true);
       setTimeout(() => setCopiedMd(false), 2500);
@@ -122,7 +134,7 @@ export function ReportExport({ repoUrl, claims, evidence, verdicts }: Props) {
           disabled={busy || !hasClaims}
           className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {busy ? "Generating..." : "Generate Shareable Report"}
+          {busy ? "Generating..." : "Generate Signed Permalink"}
         </button>
         <button
           onClick={handleCopyMarkdown}
@@ -163,10 +175,10 @@ export function ReportExport({ repoUrl, claims, evidence, verdicts }: Props) {
               rel="noreferrer"
               className="text-sm font-semibold text-emerald-700 underline underline-offset-2 hover:text-emerald-600 dark:text-emerald-400 dark:hover:text-emerald-300"
             >
-              Open shareable report in new tab &rarr;
+              Open signed shareable report in new tab &rarr;
             </a>
-            <span className="font-mono text-[11px] text-zinc-500 dark:text-zinc-400">
-              Self-contained Base64URL permalink
+            <span className="font-mono text-[11px] text-emerald-800 dark:text-emerald-300">
+              {sig ? `✓ HMAC-SHA256 sig: ${sig.slice(0, 12)}…` : "Self-contained Base64URL permalink"}
             </span>
           </div>
           <p className="break-all font-mono text-[11px] leading-relaxed text-zinc-500 dark:text-zinc-400">

@@ -1,15 +1,16 @@
 "use client";
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { ResultsPanel, type ModelInfo, type ResultModels } from "@/components/ResultsPanel";
 import { ReportExport } from "@/components/ReportExport";
 import { DemoMode } from "@/components/DemoMode";
 import { SelfAudit } from "@/components/SelfAudit";
 import { BenchmarkCard } from "@/components/BenchmarkCard";
-import { RetroactiveCasebook } from "@/components/RetroactiveCasebook";
 import { ShieldIcon, SpinnerIcon } from "@/components/icons";
 import {
   demoClaims,
   demoEvidence,
+  demoHeadSha,
   demoRepoUrl,
   demoVerdicts,
   SCENARIO_PRESETS,
@@ -21,6 +22,8 @@ import benchmarkResults from "benchmark/results.json";
 
 interface CheckResult {
   claimSource: string;
+  auditedRepoUrl: string;
+  auditedHeadSha: string;
   claims: any[];
   evidence: Record<string, any>;
   driftFlags: any[];
@@ -47,7 +50,7 @@ const PIPELINE_STEPS: { id: PipelineStage; step: string; title: string; detail: 
     id: "extract",
     step: "02",
     title: "Claim Extractor",
-    detail: "Gemini JSON + Nonce Injection Guard",
+    detail: "Atomic Claims + Nonce Injection Guard",
   },
   {
     id: "evidence",
@@ -59,7 +62,7 @@ const PIPELINE_STEPS: { id: PipelineStage; step: string; title: string; detail: 
     id: "drift",
     step: "04",
     title: "Spec-Drift & Line Gate",
-    detail: "Verbatim Line + Keyword & Restatement Guards",
+    detail: "Whole-Line + Comment/Negation/Keyword Guards",
   },
 ];
 
@@ -73,31 +76,65 @@ const STAGE_ORDER: Record<PipelineStage, number> = {
   error: -1,
 };
 
-export default function Home() {
+function InspectorWorkspace() {
+  const searchParams = useSearchParams();
+  const demoParamActive = searchParams?.get("demo") === "1";
+
   const [message, setMessage] = useState(SCENARIO_PRESETS[0].message);
   const [prUrl, setPrUrl] = useState("");
   const [claimSource, setClaimSource] = useState("");
   const [repoUrl, setRepoUrl] = useState(SCENARIO_PRESETS[0].repoUrl);
-  const [claims, setClaims] = useState<any[]>([]);
-  const [evidence, setEvidence] = useState<Record<string, any>>({});
-  const [driftFlags, setDriftFlags] = useState<any[]>([]);
+  const [auditedRepoUrl, setAuditedRepoUrl] = useState(demoRepoUrl);
+  const [auditedHeadSha, setAuditedHeadSha] = useState(demoHeadSha);
+  const [githubToken, setGithubToken] = useState("");
+  const [showTokenInput, setShowTokenInput] = useState(false);
+
+  const [claims, setClaims] = useState<any[]>(() => (demoParamActive ? demoClaims : []));
+  const [evidence, setEvidence] = useState<Record<string, any>>(() =>
+    demoParamActive ? demoEvidence : {}
+  );
+  const [driftFlags, setDriftFlags] = useState<any[]>(() =>
+    demoParamActive ? demoVerdicts : []
+  );
   const [loading, setLoading] = useState(false);
-  const [stage, setStage] = useState<PipelineStage>("idle");
+  const [stage, setStage] = useState<PipelineStage>(() =>
+    demoParamActive ? "done" : "idle"
+  );
   const [error, setError] = useState("");
   const [resultSource, setResultSource] = useState<{
     kind: "live" | "cached" | "demo";
     at: string;
-  } | null>(null);
+  } | null>(() =>
+    demoParamActive ? { kind: "demo", at: "2026-10-16T00:00:00.000Z" } : null
+  );
   const [models, setModels] = useState<ResultModels>({});
   const [timings, setTimings] = useState<{
     evidenceMs?: number;
     driftMs?: number;
     totalMs?: number;
-  }>({});
+  }>(() => (demoParamActive ? { evidenceMs: 410, driftMs: 0, totalMs: 410 } : {}));
   const [editingClaims, setEditingClaims] = useState(false);
   const [draftClaimsText, setDraftClaimsText] = useState("");
 
+  // Also synchronize if the user clicks the header ?demo=1 link while already mounted
+  const activeClaims = claims.length > 0 ? claims : demoParamActive ? demoClaims : [];
+  const activeEvidence =
+    Object.keys(evidence).length > 0 ? evidence : demoParamActive ? demoEvidence : {};
+  const activeDriftFlags =
+    driftFlags.length > 0 ? driftFlags : demoParamActive ? demoVerdicts : [];
+  const activeResultSource =
+    resultSource || (demoParamActive ? { kind: "demo", at: "2026-10-16T00:00:00.000Z" } : null);
+
+  function buildAuthHeaders(): Record<string, string> {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (githubToken.trim()) {
+      headers["x-github-token"] = githubToken.trim();
+    }
+    return headers;
+  }
+
   function applyPreset(preset: ScenarioPreset) {
+    if (loading) return;
     setMessage(preset.message);
     setPrUrl(preset.prUrl);
     setRepoUrl(preset.repoUrl);
@@ -106,11 +143,12 @@ export default function Home() {
   }
 
   function loadDemoIntoInspector() {
-    setMessage(
-      "All tasks complete:\n1. The project uses Tailwind CSS for styling.\n2. OAuth login with Google has been added to the project.\n3. Sandboxed code execution is implemented in the check-spec-drift route."
-    );
+    if (loading) return;
+    setMessage(SCENARIO_PRESETS[0].message);
     setPrUrl("");
     setRepoUrl(demoRepoUrl);
+    setAuditedRepoUrl(demoRepoUrl);
+    setAuditedHeadSha(demoHeadSha);
     setClaimSource("");
     setClaims(demoClaims);
     setEvidence(demoEvidence);
@@ -124,7 +162,7 @@ export default function Home() {
   }
 
   function openClaimEditor() {
-    const lines = claims.map((c) => c.text).join("\n");
+    const lines = activeClaims.map((c) => c.text).join("\n");
     setDraftClaimsText(lines);
     setEditingClaims(true);
   }
@@ -138,7 +176,8 @@ export default function Home() {
       setError("Enter at least one claim line to verify.");
       return;
     }
-    if (!repoUrl.trim()) {
+    const targetRepo = repoUrl.trim();
+    if (!targetRepo) {
       setError("Enter a GitHub repo URL.");
       return;
     }
@@ -153,6 +192,7 @@ export default function Home() {
     setLoading(true);
     setError("");
     setStage("evidence");
+    setAuditedRepoUrl(targetRepo);
     setClaims(customClaims);
     setEvidence({});
     setDriftFlags([]);
@@ -162,8 +202,8 @@ export default function Home() {
       const evStart = performance.now();
       const evidenceRes = await fetchWithTimeout("/api/check-evidence", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ repoUrl, claims: customClaims }),
+        headers: buildAuthHeaders(),
+        body: JSON.stringify({ repoUrl: targetRepo, claims: customClaims }),
       });
       const evidenceData = await evidenceRes.json();
       if (!evidenceRes.ok || evidenceData.error) {
@@ -171,14 +211,17 @@ export default function Home() {
       }
       const evidenceMs = Math.round(performance.now() - evStart);
       setEvidence(evidenceData.evidence || {});
+      if (typeof evidenceData.headSha === "string") {
+        setAuditedHeadSha(evidenceData.headSha);
+      }
 
       setStage("drift");
       const drStart = performance.now();
       const driftRes = await fetchWithTimeout("/api/check-spec-drift", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: buildAuthHeaders(),
         body: JSON.stringify({
-          repoUrl,
+          repoUrl: targetRepo,
           claims: customClaims,
           evidence: evidenceData.evidence || {},
         }),
@@ -209,21 +252,24 @@ export default function Home() {
 
   async function handleCheck(forceLive = false) {
     const sourceUrl = prUrl.trim();
+    const targetRepo = repoUrl.trim();
     if (!sourceUrl && !message.trim()) {
       setError("Paste an agent message first, or a PR/commit URL below.");
       return;
     }
-    if (!repoUrl.trim()) {
+    if (!targetRepo) {
       setError("Enter a GitHub repo URL.");
       return;
     }
 
-    const key = cacheKey([sourceUrl || message, repoUrl]);
+    const key = cacheKey([sourceUrl || message, targetRepo]);
 
     if (!forceLive) {
       const cached = readCached<CheckResult>(key);
       if (cached) {
         setClaimSource(cached.data.claimSource);
+        setAuditedRepoUrl(cached.data.auditedRepoUrl || targetRepo);
+        setAuditedHeadSha(cached.data.auditedHeadSha || "");
         setClaims(cached.data.claims);
         setEvidence(cached.data.evidence);
         setDriftFlags(cached.data.driftFlags);
@@ -241,6 +287,8 @@ export default function Home() {
     setError("");
     setResultSource(null);
     setClaimSource("");
+    setAuditedRepoUrl(targetRepo);
+    setAuditedHeadSha("");
     setClaims([]);
     setEvidence({});
     setDriftFlags([]);
@@ -257,7 +305,7 @@ export default function Home() {
         setStage("source");
         const sourceRes = await fetchWithTimeout("/api/claim-source", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: buildAuthHeaders(),
           body: JSON.stringify({ url: sourceUrl }),
         });
         const sourceData = await sourceRes.json();
@@ -274,8 +322,8 @@ export default function Home() {
       setStage("extract");
       const extractRes = await fetchWithTimeout("/api/extract-claims", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: claimText, repoUrl }),
+        headers: buildAuthHeaders(),
+        body: JSON.stringify({ message: claimText, repoUrl: targetRepo }),
       });
       const extractData = await extractRes.json();
       if (!extractRes.ok || extractData.error) {
@@ -293,23 +341,25 @@ export default function Home() {
       const evStart = performance.now();
       const evidenceRes = await fetchWithTimeout("/api/check-evidence", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ repoUrl, claims: extractedClaims }),
+        headers: buildAuthHeaders(),
+        body: JSON.stringify({ repoUrl: targetRepo, claims: extractedClaims }),
       });
       const evidenceData = await evidenceRes.json();
       if (!evidenceRes.ok || evidenceData.error) {
         throw new Error(evidenceData.error || `check-evidence failed (${evidenceRes.status})`);
       }
       const evidenceMs = Math.round(performance.now() - evStart);
+      const resolvedSha = typeof evidenceData.headSha === "string" ? evidenceData.headSha : "";
       setEvidence(evidenceData.evidence || {});
+      setAuditedHeadSha(resolvedSha);
 
       setStage("drift");
       const drStart = performance.now();
       const driftRes = await fetchWithTimeout("/api/check-spec-drift", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: buildAuthHeaders(),
         body: JSON.stringify({
-          repoUrl,
+          repoUrl: targetRepo,
           claims: extractedClaims,
           evidence: evidenceData.evidence || {},
         }),
@@ -329,6 +379,8 @@ export default function Home() {
 
       const entry = writeCached<CheckResult>(key, {
         claimSource: sourceUrl ? claimText : "",
+        auditedRepoUrl: targetRepo,
+        auditedHeadSha: resolvedSha,
         claims: extractedClaims,
         evidence: evidenceData.evidence || {},
         driftFlags: driftData.drift || [],
@@ -340,7 +392,8 @@ export default function Home() {
       console.info("[VibeCheck] live run finished");
     } catch (err) {
       setStage("error");
-      setError(err instanceof Error ? err.message : String(err));
+      const errMsg = err instanceof Error ? err.message : String(err);
+      setError(errMsg);
     } finally {
       setLoading(false);
     }
@@ -362,15 +415,17 @@ export default function Home() {
               Did your AI coding agent actually build what it claimed?
             </h1>
             <p className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-              Paste your coding agent&rsquo;s completion message (or a GitHub PR/commit URL) + a repository URL. VibeCheck extracts every discrete claim, cross-checks real repo files, commit diffs, and <code className="rounded bg-zinc-100 px-1 py-0.5 font-mono text-xs dark:bg-zinc-800">devpost/</code> specs, and verifies every cited quote server-side.
+              Paste your coding agent&rsquo;s completion message (or a GitHub PR/commit URL) + a repository URL. VibeCheck extracts discrete atomic claims, cross-checks real repo files, commit diffs, and <code className="rounded bg-zinc-100 px-1 py-0.5 font-mono text-xs dark:bg-zinc-800">devpost/</code> specs, and enforces whole-line, comment-spoof, and negation guards server-side.
             </p>
           </div>
           <div className="flex shrink-0 flex-col items-stretch gap-2 sm:items-end">
             <button
+              type="button"
               onClick={loadDemoIntoInspector}
-              className="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-600/40 bg-emerald-50 px-3.5 py-2 text-xs font-semibold text-emerald-900 transition-colors hover:bg-emerald-100 dark:border-emerald-500/40 dark:bg-emerald-500/15 dark:text-emerald-200 dark:hover:bg-emerald-500/25"
+              disabled={loading}
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-600/40 bg-emerald-50 px-3.5 py-2 text-xs font-semibold text-emerald-900 transition-colors hover:bg-emerald-100 disabled:opacity-60 dark:border-emerald-500/40 dark:bg-emerald-500/15 dark:text-emerald-200 dark:hover:bg-emerald-500/25"
             >
-              <span>⚡ Load 3-Verdict Demo (0 API Calls)</span>
+              <span>⚡ Load ?demo=1 Sample Flow (0 API Calls)</span>
             </button>
             <span className="font-mono text-[10px] text-zinc-500 dark:text-zinc-400">
               Design boundary: static/API checks only (no code execution)
@@ -383,7 +438,10 @@ export default function Home() {
           {PIPELINE_STEPS.map((s, index) => {
             const stepNum = index + 1;
             const isActive = loading && currentStageNum === stepNum;
-            const isDone = stage === "done" || (loading && currentStageNum > stepNum);
+            const isDone =
+              stage === "done" ||
+              (!loading && activeClaims.length > 0) ||
+              (loading && currentStageNum > stepNum);
             const stateClass = isActive
               ? "border-emerald-500 bg-emerald-50/70 text-emerald-900 dark:border-emerald-500 dark:bg-emerald-950/30 dark:text-emerald-200"
               : isDone
@@ -426,8 +484,9 @@ export default function Home() {
             <button
               key={preset.id}
               type="button"
+              disabled={loading}
               onClick={() => applyPreset(preset)}
-              className="group flex flex-col items-start rounded-lg border border-zinc-200 bg-zinc-50/80 p-2.5 text-left transition-colors hover:border-emerald-500/60 hover:bg-emerald-50/40 dark:border-zinc-800 dark:bg-zinc-800/50 dark:hover:border-emerald-500/50 dark:hover:bg-emerald-950/20"
+              className="group flex flex-col items-start rounded-lg border border-zinc-200 bg-zinc-50/80 p-2.5 text-left transition-colors hover:border-emerald-500/60 hover:bg-emerald-50/40 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-800/50 dark:hover:border-emerald-500/50 dark:hover:bg-emerald-950/20"
             >
               <div className="flex w-full items-center justify-between gap-2">
                 <span className="text-xs font-semibold text-zinc-900 group-hover:text-emerald-700 dark:text-zinc-100 dark:group-hover:text-emerald-300">
@@ -456,10 +515,11 @@ export default function Home() {
               <textarea
                 id="agentMessage"
                 rows={4}
+                disabled={loading}
                 placeholder="Paste agent message here..."
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                className="block min-h-[7rem] w-full resize-y rounded-lg border border-zinc-300 bg-zinc-50 px-3 py-2.5 font-mono text-sm text-zinc-900 placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500"
+                className="block min-h-[7rem] w-full resize-y rounded-lg border border-zinc-300 bg-zinc-50 px-3 py-2.5 font-mono text-sm text-zinc-900 placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500"
               />
             </div>
           ) : null}
@@ -475,13 +535,14 @@ export default function Home() {
           <input
             type="text"
             id="prUrl"
+            disabled={loading}
             placeholder="https://github.com/{owner}/{repo}/pull/123 or .../commit/abc1234"
             value={prUrl}
             onChange={(e) => {
               setPrUrl(e.target.value);
               setClaimSource("");
             }}
-            className="block w-full rounded-lg border border-zinc-300 bg-zinc-50 px-3 py-2.5 font-mono text-sm text-zinc-900 placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500"
+            className="block w-full rounded-lg border border-zinc-300 bg-zinc-50 px-3 py-2.5 font-mono text-sm text-zinc-900 placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500"
           />
 
           {claimSource ? (
@@ -496,21 +557,53 @@ export default function Home() {
           ) : null}
 
           <div>
-            <label
-              htmlFor="repoUrl"
-              className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400"
-            >
-              Target GitHub Repository URL
-            </label>
+            <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+              <label
+                htmlFor="repoUrl"
+                className="block text-xs font-medium text-zinc-600 dark:text-zinc-400"
+              >
+                Target GitHub Repository URL
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowTokenInput(!showTokenInput)}
+                className="font-mono text-[11px] font-medium text-emerald-700 underline-offset-2 hover:underline dark:text-emerald-400"
+              >
+                {showTokenInput
+                  ? "Hide Optional GitHub Token"
+                  : "+ Optional GitHub Token (Rate-Limit Shield)"}
+              </button>
+            </div>
             <input
               type="text"
               id="repoUrl"
-              placeholder="GitHub repo URL..."
+              disabled={loading}
+              placeholder="https://github.com/{owner}/{repo}"
               value={repoUrl}
               onChange={(e) => setRepoUrl(e.target.value)}
-              className="block w-full rounded-lg border border-zinc-300 bg-zinc-50 px-3 py-2.5 font-mono text-sm text-zinc-900 placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500"
+              className="block w-full rounded-lg border border-zinc-300 bg-zinc-50 px-3 py-2.5 font-mono text-sm text-zinc-900 placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500"
             />
           </div>
+
+          {showTokenInput ? (
+            <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-800/60">
+              <label
+                htmlFor="githubToken"
+                className="mb-1 block text-xs font-medium text-zinc-700 dark:text-zinc-300"
+              >
+                Optional GitHub PAT (Forwarded only in request header to raise rate limit from 60 to 5,000 req/hr)
+              </label>
+              <input
+                type="password"
+                id="githubToken"
+                disabled={loading}
+                placeholder="ghp_... or github_pat_... (leave blank to use server default)"
+                value={githubToken}
+                onChange={(e) => setGithubToken(e.target.value)}
+                className="block w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 font-mono text-xs text-zinc-900 placeholder-zinc-400 focus:border-emerald-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+              />
+            </div>
+          ) : null}
 
           <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
             <div className="flex flex-wrap items-center gap-2.5">
@@ -526,26 +619,44 @@ export default function Home() {
                 type="button"
                 onClick={loadDemoIntoInspector}
                 disabled={loading}
-                className="rounded-lg border border-zinc-300 bg-white px-3.5 py-2.5 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                className="rounded-lg border border-zinc-300 bg-white px-3.5 py-2.5 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
               >
-                Instant Sample Run (No API Key)
+                Load ?demo=1 Sample Data
               </button>
             </div>
-
-            {error ? (
-              <p className="text-sm font-medium text-red-600 dark:text-red-400">{error}</p>
-            ) : null}
           </div>
+
+          {/* Graceful Error & Fallback Banner per spec.md > Important Failure Modes */}
+          {error ? (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50/80 px-3.5 py-2.5 text-sm text-red-800 dark:border-red-500/30 dark:bg-red-950/30 dark:text-red-300">
+              <p className="font-medium">{error}</p>
+              <button
+                type="button"
+                onClick={loadDemoIntoInspector}
+                className="shrink-0 rounded-md border border-red-300 bg-white px-2.5 py-1 text-xs font-semibold text-red-800 hover:bg-red-50 dark:border-red-500/40 dark:bg-zinc-900 dark:text-red-300"
+              >
+                Switch to ?demo=1 Fallback &rarr;
+              </button>
+            </div>
+          ) : null}
         </div>
       </section>
 
       {/* Results Section + Interactive Claim Editor */}
       <section className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-            Results
-          </h2>
-          {claims.length > 0 && !loading ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+              Results
+            </h2>
+            {activeClaims.length > 0 && auditedRepoUrl ? (
+              <span className="rounded bg-zinc-100 px-2 py-0.5 font-mono text-[11px] text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
+                Target: {auditedRepoUrl.replace(/^https?:\/\/github\.com\//i, "")}
+                {auditedHeadSha ? ` @ ${auditedHeadSha.slice(0, 7)}` : ""}
+              </span>
+            ) : null}
+          </div>
+          {activeClaims.length > 0 && !loading ? (
             <button
               type="button"
               onClick={() => (editingClaims ? setEditingClaims(false) : openClaimEditor())}
@@ -591,15 +702,15 @@ export default function Home() {
           </div>
         ) : null}
 
-        {resultSource ? (
+        {activeResultSource ? (
           <div className="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
-            {resultSource.kind === "cached" ? (
+            {activeResultSource.kind === "cached" ? (
               <>
                 <span className="rounded-full bg-amber-100 px-2 py-0.5 font-bold uppercase tracking-wide text-amber-800 dark:bg-amber-500/15 dark:text-amber-400">
                   cached
                 </span>
                 <span className="text-zinc-500 dark:text-zinc-400">
-                  saved {formatStamp(resultSource.at)} &mdash;
+                  saved {formatStamp(activeResultSource.at)} &mdash;
                 </span>
                 <button
                   onClick={() => handleCheck(true)}
@@ -610,13 +721,13 @@ export default function Home() {
                 </button>
                 <span className="text-zinc-500 dark:text-zinc-400">for a fresh check</span>
               </>
-            ) : resultSource.kind === "demo" ? (
+            ) : activeResultSource.kind === "demo" ? (
               <>
                 <span className="rounded-full bg-amber-100 px-2 py-0.5 font-bold uppercase tracking-wide text-amber-800 dark:bg-amber-500/15 dark:text-amber-400">
-                  sample data (0 API calls)
+                  demo fixture (?demo=1 &middot; 0 API calls)
                 </span>
                 <span className="text-zinc-500 dark:text-zinc-400">
-                  pre-verified against <code className="font-mono">{demoRepoUrl}</code> &mdash;
+                  preloaded sample against <code className="font-mono">{demoRepoUrl}</code> &mdash;
                 </span>
                 <button
                   onClick={() => handleCheck(true)}
@@ -632,7 +743,7 @@ export default function Home() {
                   live
                 </span>
                 <span className="text-zinc-500 dark:text-zinc-400">
-                  checked {formatStamp(resultSource.at)}
+                  checked {formatStamp(activeResultSource.at)}
                 </span>
               </>
             )}
@@ -640,12 +751,12 @@ export default function Home() {
         ) : null}
 
         <ResultsPanel
-          claims={claims}
-          evidence={evidence}
-          driftFlags={driftFlags}
+          claims={activeClaims}
+          evidence={activeEvidence}
+          driftFlags={activeDriftFlags}
           loading={loading}
           models={models}
-          repoUrl={repoUrl}
+          repoUrl={auditedRepoUrl}
           timings={timings}
         />
       </section>
@@ -655,7 +766,13 @@ export default function Home() {
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
           Shareable Verdict Report &amp; PR Export
         </h2>
-        <ReportExport repoUrl={repoUrl} claims={claims} evidence={evidence} verdicts={driftFlags} />
+        <ReportExport
+          repoUrl={auditedRepoUrl}
+          headSha={auditedHeadSha}
+          claims={activeClaims}
+          evidence={activeEvidence}
+          verdicts={activeDriftFlags}
+        />
       </section>
 
       {/* Demo Mode */}
@@ -677,52 +794,36 @@ export default function Home() {
         <SelfAudit />
       </section>
 
-      {/* Retroactive 8-Build Casebook ("The Published Number") */}
-      <section
-        id="casebook"
-        className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
-      >
-        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-          Retroactive 8-Build Hackathon Audit Casebook (Published Number)
-        </h2>
-        <RetroactiveCasebook
-          onSelectCase={(claimText) => {
-            setPrUrl("");
-            setMessage(claimText);
-            setRepoUrl("https://github.com/kathir-iTech/Vibe_Check");
-            window.scrollTo({ top: 0, behavior: "smooth" });
-          }}
-        />
-      </section>
-
-      {/* 24-Claim Benchmark Card */}
+      {/* Collapsible QA Benchmark Drawer */}
       <div id="benchmark">
         <BenchmarkCard
           data={benchmarkResults as any}
           fallback={
             <section className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
               <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                Benchmark
+                QA Benchmark
               </h2>
-              <div className="space-y-3">
-                <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                  <span className="font-semibold">Status:</span> not yet run
-                </p>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                  Run{" "}
-                  <code className="rounded bg-zinc-100 px-1 font-mono dark:bg-zinc-800">
-                    npm run benchmark
-                  </code>{" "}
-                  against a live dev server to generate results.
-                </p>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                  benchmark/ and devpost/ are excluded from evidence.
-                </p>
-              </div>
+              <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                <span className="font-semibold">Status:</span> not yet run
+              </p>
             </section>
           }
         />
       </div>
     </main>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense
+      fallback={
+        <main className="mx-auto max-w-4xl px-4 py-12 text-sm text-zinc-500">
+          Loading VibeCheck Inspector&hellip;
+        </main>
+      }
+    >
+      <InspectorWorkspace />
+    </Suspense>
   );
 }

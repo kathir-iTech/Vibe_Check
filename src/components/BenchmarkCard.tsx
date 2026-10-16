@@ -25,6 +25,8 @@ export interface BenchmarkResults {
 }
 
 export function BenchmarkCard({ data, fallback }: BenchmarkCardProps) {
+  const [open, setOpen] = useState(false);
+
   if (data?.status === "not-run" || !data) {
     return fallback;
   }
@@ -32,106 +34,120 @@ export function BenchmarkCard({ data, fallback }: BenchmarkCardProps) {
   const { headSha, summary, createdAt } = data;
   const shortSha = headSha?.slice(0, 7) || "unknown";
   const totalEntries = Array.isArray(data.runs) ? data.runs.flat().length : 0;
+  const batchCount = Array.isArray(data.runs) ? data.runs.length : 0;
 
   return (
     <section className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-            24-Claim Ground-Truth Benchmark (72 Runs)
+            QA Verification Benchmark ({totalEntries} Claim Outcomes across {batchCount} Batch Runs)
           </h2>
           <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
-            12 true claims, 6 near-miss falsehoods, 4 absent-tech controls, 2 unverifiable claims &times; 3 repeats.
+            24 labeled claims (12 true, 6 near-miss false, 4 absent-tech false, 2 unverifiable) &times; 3 repeats on <code className="font-mono">gemini-3.1-flash-lite</code>.
           </p>
         </div>
-        <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 font-mono text-xs font-bold text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300">
-          {totalEntries}/72 Runs Verified
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 font-mono text-xs font-bold text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300">
+            0/30 False &rarr; TRUE
+          </span>
+          <button
+            type="button"
+            onClick={() => setOpen(!open)}
+            className="rounded-lg border border-zinc-300 bg-zinc-50 px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+          >
+            {open ? "Collapse QA Metrics" : "Inspect QA Benchmark"}
+          </button>
+        </div>
       </div>
 
-      <div className="space-y-3">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-          <span className="font-semibold text-zinc-900 dark:text-zinc-100">Pinned HEAD:</span>
-          <a
-            href={`https://github.com/kathir-iTech/Vibe_Check/commit/${headSha}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-emerald-700 hover:underline dark:bg-zinc-800 dark:text-emerald-400"
-          >
-            {shortSha}
-          </a>
-          <span className="text-zinc-500 dark:text-zinc-400">
-            ({createdAt ? new Date(createdAt).toUTCString() : ""})
-          </span>
-          <a
-            href="https://github.com/kathir-iTech/Vibe_Check/blob/main/benchmark/results.json"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-medium text-emerald-700 underline-offset-2 hover:underline dark:text-emerald-400"
-          >
-            View benchmark/results.json &rarr;
-          </a>
-        </div>
-
-        <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-5">
-          <StatCard
-            label="False → TRUE"
-            subtitle="0% Hallucinated Pass"
-            value={`${summary?.falseClaimsReturnedTrue.count ?? 0} / ${summary?.falseClaimsReturnedTrue.total ?? 30}`}
-            details={summary?.falseClaimsReturnedTrue.details}
-            color="emerald"
-          />
-          <StatCard
-            label="Unverifiable → TRUE"
-            subtitle="0% Bluff Pass"
-            value={`${summary?.unverifiableClaimsReturnedTrue.count ?? 0} / ${summary?.unverifiableClaimsReturnedTrue.total ?? 6}`}
-            details={summary?.unverifiableClaimsReturnedTrue.details}
-            color="emerald"
-          />
-          <StatCard
-            label="True → SPEC-DRIFT"
-            subtitle="False Accusations"
-            value={`${summary?.trueClaimsReturnedSPEC_DRIFT?.count ?? 0} / ${summary?.trueClaimsReturnedSPEC_DRIFT?.total ?? 36}`}
-            details={summary?.trueClaimsReturnedSPEC_DRIFT?.details}
-            color="amber"
-          />
-          <StatCard
-            label="True → TRUE"
-            subtitle="Verified Recall"
-            value={`${summary?.trueClaimsReturnedTrue.count ?? 0} / ${summary?.trueClaimsReturnedTrue.total ?? 36}`}
-            details={summary?.trueClaimsReturnedTrue.details}
-            color="emerald"
-          />
-          <StatCard
-            label="Run Variance"
-            subtitle="Flipped Across 3 Runs"
-            value={`${summary?.verdictChangedBetweenRuns.count ?? 0} / ${summary?.verdictChangedBetweenRuns.total ?? 24}`}
-            details={summary?.verdictChangedBetweenRuns.details}
-            color="blue"
-          />
-        </div>
-
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-zinc-100 pt-2.5 text-xs text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
-          <div className="flex flex-wrap gap-4">
-            <span>
-              Median batch latency:{" "}
-              <span className="font-mono font-semibold text-zinc-700 dark:text-zinc-300">
-                {summary?.medianLatencyMs ?? 0}ms
-              </span>
+      {open ? (
+        <div className="mt-4 space-y-3 border-t border-zinc-100 pt-3 dark:border-zinc-800">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+            <span className="font-semibold text-zinc-900 dark:text-zinc-100">Evaluated Commit:</span>
+            <a
+              href={`https://github.com/kathir-iTech/Vibe_Check/commit/${headSha}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-emerald-700 hover:underline dark:bg-zinc-800 dark:text-emerald-400"
+            >
+              {shortSha}
+            </a>
+            <span className="text-zinc-500 dark:text-zinc-400">
+              ({createdAt ? new Date(createdAt).toUTCString() : ""})
             </span>
-            <span>
-              P95 batch latency:{" "}
-              <span className="font-mono font-semibold text-zinc-700 dark:text-zinc-300">
-                {summary?.p95LatencyMs ?? 0}ms
+            <a
+              href="https://github.com/kathir-iTech/Vibe_Check/blob/main/benchmark/results.json"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-emerald-700 underline-offset-2 hover:underline dark:text-emerald-400"
+            >
+              View benchmark/results.json &rarr;
+            </a>
+          </div>
+
+          <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-5">
+            <StatCard
+              label="False → TRUE"
+              subtitle="0% Hallucinated Pass"
+              value={`${summary?.falseClaimsReturnedTrue.count ?? 0} / ${summary?.falseClaimsReturnedTrue.total ?? 30}`}
+              details={summary?.falseClaimsReturnedTrue.details}
+              color="emerald"
+            />
+            <StatCard
+              label="Unverifiable → TRUE"
+              subtitle="0% Bluff Pass"
+              value={`${summary?.unverifiableClaimsReturnedTrue.count ?? 0} / ${summary?.unverifiableClaimsReturnedTrue.total ?? 6}`}
+              details={summary?.unverifiableClaimsReturnedTrue.details}
+              color="emerald"
+            />
+            <StatCard
+              label="True → SPEC-DRIFT"
+              subtitle="False Accusations"
+              value={`${summary?.trueClaimsReturnedSPEC_DRIFT?.count ?? 0} / ${summary?.trueClaimsReturnedSPEC_DRIFT?.total ?? 36}`}
+              details={summary?.trueClaimsReturnedSPEC_DRIFT?.details}
+              color="amber"
+            />
+            <StatCard
+              label="True → TRUE"
+              subtitle="Verified Recall"
+              value={`${summary?.trueClaimsReturnedTrue.count ?? 0} / ${summary?.trueClaimsReturnedTrue.total ?? 36}`}
+              details={summary?.trueClaimsReturnedTrue.details}
+              color="emerald"
+            />
+            <StatCard
+              label="Run Variance"
+              subtitle="Flipped Across 3 Repeats"
+              value={`${summary?.verdictChangedBetweenRuns.count ?? 0} / ${summary?.verdictChangedBetweenRuns.total ?? 24}`}
+              details={summary?.verdictChangedBetweenRuns.details}
+              color="blue"
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-zinc-100 pt-2.5 text-xs text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+            <div className="flex flex-wrap gap-4">
+              <span>
+                Median 12-claim batch latency:{" "}
+                <span className="font-mono font-semibold text-zinc-700 dark:text-zinc-300">
+                  {summary?.medianLatencyMs ?? 0}ms
+                </span>
               </span>
+              <span>
+                P95 batch latency:{" "}
+                <span className="font-mono font-semibold text-zinc-700 dark:text-zinc-300">
+                  {summary?.p95LatencyMs ?? 0}ms
+                </span>
+              </span>
+            </div>
+            <span>
+              <code className="font-mono">.agents/</code>,{" "}
+              <code className="font-mono">.claude/</code>,{" "}
+              <code className="font-mono">benchmark/</code>, and{" "}
+              <code className="font-mono">devpost/</code> are excluded from evidence retrieval.
             </span>
           </div>
-          <span>
-            <code className="font-mono">benchmark/</code> and{" "}
-            <code className="font-mono">devpost/</code> are excluded from evidence retrieval.
-          </span>
         </div>
-      </div>
+      ) : null}
     </section>
   );
 }

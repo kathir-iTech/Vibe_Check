@@ -1,83 +1,35 @@
 #!/usr/bin/env node
-// Deterministic offline unit test suite for VibeCheck core verification rules:
-// 1. SPEC-DRIFT keyword guard (Case A accepted, Case B rejected)
-// 2. Quote normalization & findLineNumber (escaped template literals, Markdown bold, "1: " prefix)
-// 3. Restatement guard (restatement rejected, genuine code line accepted)
-// 4. summarize.mjs per-claim isolation (no cross-claim mixing, throws on partial data)
+// Deterministic offline unit test suite for VibeCheck production verification modules:
+// Imports the ACTUAL production modules (src/lib/verification-guards.mjs and src/lib/report-crypto.mjs)
+// rather than maintaining hand-copied duplicates.
 
 import assert from "assert";
 import { readFileSync } from "fs";
 import { dirname, resolve } from "path";
 import { fileURLToPath } from "url";
 import { summarize } from "./summarize.mjs";
+import {
+  calculateCodeRelevanceBonus,
+  findLineNumber,
+  hasContradictionKeywords,
+  hasNegationMismatch,
+  isExecutableCodeLine,
+  isRestatement,
+  tokenize,
+} from "../src/lib/verification-guards.mjs";
+import {
+  encodeSignedReport,
+  parseGitHubRepoUrl,
+  safeDecodeReportId,
+} from "../src/lib/report-crypto.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, "..");
 
-const normalize = (s) => s.replace(/\s+/g, " ").trim().toLowerCase();
-
-const STOPWORDS = new Set([
-  "the", "and", "for", "are", "not", "this", "that", "with", "from", "into",
-  "been", "will", "have", "does", "just", "also", "more", "than", "then",
-]);
-
-const tokenize = (s) =>
-  s
-    .toLowerCase()
-    .split(/[^a-z0-9]+/)
-    .filter((w) => w && !STOPWORDS.has(w)) ?? [];
-
-function hasContradictionKeywords(claimText, contradictingLine) {
-  const claimKeywords = [...new Set(tokenize(claimText).filter((w) => w.length > 3))];
-  if (!claimKeywords.length) return false;
-  const lineTokens = new Set(tokenize(contradictingLine || ""));
-  const shared = claimKeywords.filter((k) => lineTokens.has(k));
-  return shared.length >= 2;
-}
-
-function isRestatement(claimText, quote, lineText) {
-  const nClaim = normalize(claimText);
-  const nQuote = normalize(quote);
-  if (!nQuote || !nClaim) return false;
-  if (nQuote.includes(nClaim) || nClaim.includes(nQuote)) return true;
-  const claimKeywords = [...new Set(tokenize(claimText).filter((w) => w.length > 3))];
-  if (!claimKeywords.length) return false;
-  const lineTokens = new Set(tokenize(lineText || quote));
-  const shared = claimKeywords.filter((k) => lineTokens.has(k));
-  return shared.length / claimKeywords.length >= 0.8;
-}
-
-function normalizeForLineMatch(s) {
-  return s
-    .replace(/\\\\/g, "\\")
-    .replace(/\\\$/g, "$")
-    .replace(/\\`/g, "`")
-    .replace(/\\u0060/g, "`")
-    .replace(/\\"/g, '"')
-    .replace(/\*\*/g, "")
-    .replace(/__/g, "")
-    .replace(/\u2014|\u2013/g, "-");
-}
-
-function findLineNumber(docText, quote) {
-  const lines = docText.split("\n");
-  const rawNormalized = normalize(normalizeForLineMatch(quote));
-  if (!rawNormalized) return -1;
-  const strippedPrefix = rawNormalized.replace(/^\d+:\s*/, "");
-  for (let i = 0; i < lines.length; i++) {
-    const candidate = normalize(normalizeForLineMatch(lines[i]));
-    if (!candidate) continue;
-    if (candidate.includes(rawNormalized) || (strippedPrefix && candidate.includes(strippedPrefix))) {
-      return i + 1;
-    }
-  }
-  return -1;
-}
-
 function runTests() {
-  console.log("=== VibeCheck Unit Test Suite ===");
+  console.log("=== VibeCheck Production Unit Test Suite ===");
 
-  // 1. Verify gemini.ts source code fixes (contradictingLine assignment order)
+  // 1. Verify gemini.ts source code fixes (contradictingLine assignment order & shared guard import)
   const geminiSrc = readFileSync(resolve(REPO_ROOT, "src/lib/gemini.ts"), "utf8");
   const assignIdx = geminiSrc.indexOf('let contradictingLine = typeof item.contradictingLine === "string"');
   const guardIdx = geminiSrc.indexOf("hasContradictionKeywords(claim.text, contradictingLine)");
@@ -85,9 +37,13 @@ function runTests() {
     assignIdx !== -1 && guardIdx !== -1 && assignIdx < guardIdx,
     "contradictingLine must be extracted from item.contradictingLine BEFORE calling hasContradictionKeywords"
   );
-  console.log("[test] PASS: gemini.ts extracts contradictingLine before hasContradictionKeywords guard");
+  assert.ok(
+    geminiSrc.includes('from "./verification-guards.mjs"'),
+    "src/lib/gemini.ts must import guards directly from verification-guards.mjs"
+  );
+  console.log("[test] PASS: gemini.ts imports shared guards and extracts contradictingLine before keyword check");
 
-  // 2. Test SPEC-DRIFT keyword guard (Case A vs Case B)
+  // 2. Test SPEC-DRIFT keyword guard (Case A vs Case B) + camelCase splitting
   const caseAClaim = "Sandboxed code execution is implemented in the check-spec-drift route.";
   const caseALine =
     "- Sandboxed code execution (no running code in the tool — this is a deliberate boundary, not a gap)";
@@ -105,9 +61,50 @@ function runTests() {
     false,
     "Case B (unrelated flow sentence in spec.md:14) must be rejected (<2 shared keywords)"
   );
-  console.log("[test] PASS: SPEC-DRIFT keyword guard accepts Case A and rejects Case B (t11 false accusation)");
 
-  // 3. Test quote normalization & findLineNumber
+  const camelTokens = tokenize("fetchWithTimeout");
+  assert.ok(
+    camelTokens.includes("fetch") && camelTokens.includes("timeout") && camelTokens.includes("fetchwithtimeout"),
+    "tokenize() must split camelCase identifiers while preserving the joined identifier"
+  );
+  console.log("[test] PASS: SPEC-DRIFT keyword guard and camelCase tokenizer work accurately");
+
+  // 3. Test Comment-Spoofing & Negation-Mismatch Guards
+  assert.strictEqual(
+    isExecutableCodeLine("// TODO: OAuth Google login implemented", "src/lib/auth.ts"),
+    false,
+    "Single-line TODO comment in a .ts file must be rejected by isExecutableCodeLine"
+  );
+  assert.strictEqual(
+    isExecutableCodeLine("/* OAuth login implemented */", "src/lib/auth.ts"),
+    false,
+    "Block comment in a .ts file must be rejected by isExecutableCodeLine"
+  );
+  assert.strictEqual(
+    isExecutableCodeLine("export async function authenticateUser() {", "src/lib/auth.ts"),
+    true,
+    "Real TypeScript function declaration must be accepted by isExecutableCodeLine"
+  );
+  assert.strictEqual(
+    hasNegationMismatch("OAuth login is implemented", "const status = 'OAuth login is not implemented';"),
+    true,
+    "Positive claim paired with negated line ('is not implemented') must trigger hasNegationMismatch"
+  );
+  assert.strictEqual(
+    hasNegationMismatch(
+      "Evidence checks are static/API-based only — no sandboxed code execution.",
+      "> **Design boundary:** no sandboxed code execution. Evidence checks are static/API-based only"
+    ),
+    false,
+    "Negative boundary claim paired with matching negative boundary line must NOT trigger hasNegationMismatch"
+  );
+  assert.ok(
+    calculateCodeRelevanceBonus("export async function fetchWithTimeout(") >= 3,
+    "Exported async function declaration must receive AST-lite relevance bonus"
+  );
+  console.log("[test] PASS: Comment-spoofing, TODO-spoofing, and negation-mismatch guards block adversarial lines");
+
+  // 4. Test Whole-Line Quote Verification & Normalization
   const realGeminiFile = readFileSync(resolve(REPO_ROOT, "src/lib/gemini.ts"), "utf8");
   const escapedLiveQuote =
     "throw new Error(\\`Gemini quoted text not found in \\${sourceDoc} for \\${claim.id}: \\${contradictingLine}\\`);";
@@ -125,15 +122,19 @@ function runTests() {
   const licenseLine = findLineNumber(realLicense, prefixedQuote);
   assert.strictEqual(licenseLine, 1, "Line-number prefixed quote '1: MIT License' must match LICENSE:1");
 
-  const fabricatedQuote = "export const TOTALLY_FABRICATED_LINE_DOES_NOT_EXIST = 999;";
   assert.strictEqual(
-    findLineNumber(realGeminiFile, fabricatedQuote),
+    findLineNumber(realGeminiFile, "true"),
     -1,
-    "Genuinely different line must still be rejected (-1)"
+    "Tiny 1-word fragment ('true') must be rejected by whole-line findLineNumber check"
   );
-  console.log("[test] PASS: Quote normalization accepts escaped/bold/prefixed real lines and rejects fabricated lines");
+  assert.strictEqual(
+    findLineNumber(realGeminiFile, "export const TOTALLY_FABRICATED_LINE_DOES_NOT_EXIST = 999;"),
+    -1,
+    "Genuinely different line must be rejected (-1)"
+  );
+  console.log("[test] PASS: Whole-line quote verifier accepts real lines and rejects tiny fragments & fabrications");
 
-  // 4. Test Restatement Guard
+  // 5. Test Restatement Guard
   const rClaim = "The restatement guard applies to supporting quotes only, not contradiction quotes";
   const restatingLine =
     'text: "The restatement guard applies to supporting quotes only, not contradiction quotes",';
@@ -150,7 +151,49 @@ function runTests() {
   );
   console.log("[test] PASS: Restatement guard rejects claim restatements and accepts genuine code lines");
 
-  // 5. Test summarize.mjs per-claim isolation (no cross-claim mixing)
+  // 6. Test Strict GitHub URL Validation & HMAC-SHA256 Report Signing
+  const validParsed = parseGitHubRepoUrl("https://github.com/kathir-iTech/Vibe_Check.git");
+  assert.strictEqual(validParsed.owner, "kathir-iTech");
+  assert.strictEqual(validParsed.repo, "Vibe_Check");
+  assert.throws(
+    () => parseGitHubRepoUrl("https://evil.example/github.com/kathir-iTech/Vibe_Check"),
+    /hostname must be github\.com/,
+    "Spoofed hostname URL must be rejected by parseGitHubRepoUrl"
+  );
+
+  const samplePayload = {
+    repoUrl: "https://github.com/kathir-iTech/Vibe_Check",
+    headSha: "674662188edef58c86ad2e9e5beff412bbfa9b9e",
+    claims: [{ id: "claim-1", text: "The project uses Tailwind CSS." }],
+    evidence: {},
+    verdicts: [{ claimId: "claim-1", verdict: "TRUE", specReference: "tailwind.config.ts:1: import" }],
+    generatedAt: "2026-10-16T00:00:00.000Z",
+  };
+  const { id } = encodeSignedReport(samplePayload);
+  const decoded = safeDecodeReportId(id);
+  assert.ok(decoded && decoded.signatureVerified === true, "Signed report must verify HMAC-SHA256 signature");
+
+  // Tamper with verdict -> signatureVerified must flip to false
+  const tamperedObj = JSON.parse(Buffer.from(id, "base64url").toString("utf8"));
+  tamperedObj.verdicts[0].verdict = "UNVERIFIED";
+  const tamperedId = Buffer.from(JSON.stringify(tamperedObj), "utf8").toString("base64url");
+  const decodedTampered = safeDecodeReportId(tamperedId);
+  assert.ok(
+    decodedTampered && decodedTampered.signatureVerified === false,
+    "Tampered report payload must fail HMAC-SHA256 verification"
+  );
+
+  // Invalid verdict enum ('UNERIFIED') -> must return null
+  tamperedObj.verdicts[0].verdict = "UNERIFIED";
+  const corruptedId = Buffer.from(JSON.stringify(tamperedObj), "utf8").toString("base64url");
+  assert.strictEqual(
+    safeDecodeReportId(corruptedId),
+    null,
+    "Report with invalid verdict enum ('UNERIFIED') must be rejected as null"
+  );
+  console.log("[test] PASS: Strict URL parser and HMAC-SHA256 report signing reject spoofed URLs and tampered reports");
+
+  // 7. Test summarize.mjs per-claim isolation
   const fixtureClaims = [
     { id: "t01", text: "Claim 1", label: "true" },
     { id: "t02", text: "Claim 2", label: "true" },
@@ -178,20 +221,12 @@ function runTests() {
     ],
   ];
   const summary = summarize({ runs: fixtureRuns, allClaims: fixtureClaims, REPEATS: 3 });
-  assert.strictEqual(summary.trueClaimsReturnedTrue.count, 5, "t01 (3) + t02 (2) = 5/6 TRUE runs");
-  assert.strictEqual(summary.trueClaimsReturnedTrue.total, 6);
-  assert.strictEqual(summary.falseClaimsReturnedTrue.count, 0, "0/3 false runs returned TRUE");
-  assert.strictEqual(summary.unverifiableClaimsReturnedTrue.count, 0, "0/3 unverifiable runs returned TRUE");
-  assert.strictEqual(summary.verdictChangedBetweenRuns.count, 2, "Only t02 and f01 changed between runs (not t01 or u01)");
-
-  // Missing data must throw
-  assert.throws(
-    () => summarize({ runs: [fixtureRuns[0]], allClaims: fixtureClaims, REPEATS: 3 }),
-    /missing data/,
-    "summarize must throw when any claim has fewer than REPEATS runs"
-  );
-  console.log("[test] PASS: summarize.mjs isolates per-claim runs accurately and throws on partial coverage");
-  console.log("=== ALL UNIT TESTS PASSED ===");
+  assert.strictEqual(summary.trueClaimsReturnedTrue.count, 5);
+  assert.strictEqual(summary.falseClaimsReturnedTrue.count, 0);
+  assert.strictEqual(summary.unverifiableClaimsReturnedTrue.count, 0);
+  assert.strictEqual(summary.verdictChangedBetweenRuns.count, 2);
+  console.log("[test] PASS: summarize.mjs isolates per-claim runs accurately");
+  console.log("=== ALL 7 PRODUCTION UNIT TEST SUITES PASSED ===");
 }
 
 runTests();

@@ -1,6 +1,7 @@
-import { Claim, RetroactiveAuditEntry } from "@/types";
+import { Claim } from "@/types";
 
 export const demoRepoUrl = "https://github.com/kathir-iTech/Vibe_Check";
+export const demoHeadSha = "674662188edef58c86ad2e9e5beff412bbfa9b9e";
 
 export const demoClaims: Claim[] = [
   {
@@ -37,8 +38,8 @@ export const demoEvidence: Record<string, any> = {
         hitCount: 2,
         matchedTerms: ["tailwind"],
         pathMatched: false,
-        lineNumber: 3,
-        previewLine: "tailwindcss: {},",
+        lineNumber: 2,
+        previewLine: 'plugins: ["tailwindcss", "autoprefixer"],',
       },
     ],
     commits: [
@@ -54,6 +55,7 @@ export const demoEvidence: Record<string, any> = {
     matchedTerms: ["tailwind", "styling"],
     totalFilesInRepo: 45,
     defaultBranch: "main",
+    headSha: demoHeadSha,
   },
   "claim-2": {
     files: [],
@@ -62,6 +64,7 @@ export const demoEvidence: Record<string, any> = {
     matchedTerms: [],
     totalFilesInRepo: 45,
     defaultBranch: "main",
+    headSha: demoHeadSha,
   },
   "claim-3": {
     files: [
@@ -73,16 +76,17 @@ export const demoEvidence: Record<string, any> = {
       {
         file: "src/app/api/check-spec-drift/route.ts",
         hitCount: 4,
-        matchedTerms: ["code", "check", "spec", "drift", "route"],
+        matchedTerms: ["check", "spec", "drift", "route"],
         pathMatched: true,
-        lineNumber: 27,
+        lineNumber: 35,
         previewLine: "export async function POST(request: NextRequest) {",
       },
     ],
     commits: [],
-    matchedTerms: ["code", "check", "spec", "drift", "route"],
+    matchedTerms: ["check", "spec", "drift", "route"],
     totalFilesInRepo: 45,
     defaultBranch: "main",
+    headSha: demoHeadSha,
   },
 };
 
@@ -126,7 +130,7 @@ export interface ScenarioPreset {
 export const SCENARIO_PRESETS: ScenarioPreset[] = [
   {
     id: "mixed-3-verdict",
-    label: "1. Three-Verdict Trap (TRUE + UNVERIFIED + SPEC-DRIFT)",
+    label: "1. Three-Verdict Flagship Trap (TRUE + UNVERIFIED + SPEC-DRIFT)",
     badge: "Flagship Flow",
     description:
       "Tests a realistic agent completion report containing one real feature, one hallucinated OAuth feature, and one spec violation.",
@@ -136,24 +140,24 @@ export const SCENARIO_PRESETS: ScenarioPreset[] = [
     repoUrl: "https://github.com/kathir-iTech/Vibe_Check",
   },
   {
-    id: "spec-drift-trap",
-    label: "2. Spec-Drift Contradiction Trap",
-    badge: "Catches Drift",
+    id: "inject-agent-lie",
+    label: "2. 🧪 Inject Agent Lie & Test Detection (Stress Test)",
+    badge: "Exposes Bluff",
     description:
-      "Tests an agent claiming it switched to a deprecated Gemini 2.5 model and added container code execution, violating scope.md and spec.md.",
+      "Simulates a classic 2am agent bluff claiming database migrations, Stripe payment webhooks, and container execution are wired.",
     message:
-      "Switched the primary Gemini model to gemini-2.5-flash and enabled sandboxed code execution for faster checks.",
+      "All database migrations complete, Stripe payment webhooks are fully wired in check-evidence, and isolated Docker code execution is live.",
     prUrl: "",
     repoUrl: "https://github.com/kathir-iTech/Vibe_Check",
   },
   {
-    id: "unverified-bluff",
-    label: "3. Hallucinated Webhook & Redis Bluff",
-    badge: "Catches Bluff",
+    id: "spec-drift-trap",
+    label: "3. Spec-Drift Contradiction Trap",
+    badge: "Catches Drift",
     description:
-      "Tests an agent claiming Slack webhook notifications and Redis caching exist in check-evidence.",
+      "Tests an agent claiming it switched to a deprecated Gemini 2.5 model and enabled sandboxed execution, violating scope.md and spec.md.",
     message:
-      "The check-evidence route sends each result to a Slack webhook and caches responses in Redis.",
+      "Switched the primary Gemini model to gemini-2.5-flash and enabled sandboxed code execution for faster checks.",
     prUrl: "",
     repoUrl: "https://github.com/kathir-iTech/Vibe_Check",
   },
@@ -166,106 +170,5 @@ export const SCENARIO_PRESETS: ScenarioPreset[] = [
     message: "",
     prUrl: "https://github.com/microsoft/TypeScript/pull/64651",
     repoUrl: "https://github.com/microsoft/TypeScript",
-  },
-];
-
-// The "Published Number" dataset from scope.md:
-// Retroactive audit of 8 past solo hackathon build logs where coding agents claimed "done/fixed/deployed"
-export const RETROACTIVE_AUDIT_CASEBOOK: RetroactiveAuditEntry[] = [
-  {
-    id: "log-01",
-    buildNumber: 1,
-    projectName: "LoopSight (Computer Vision Pipeline)",
-    event: "OpenCV AI Competition",
-    agentModel: "OpenCode / Relay Batch",
-    agentClaim: "All 40 batch tasks completed, WebSocket streaming and SQLite job worker fully wired.",
-    vibeCheckVerdict: "UNVERIFIED",
-    failureModeCode: "FM-08 / FM-11 (Mega-Batch Hallucination)",
-    caughtEvidence: "8 of 40 claimed tasks had zero matching exports in src/; worker route was a stub.",
-    impactSummary: "Agent printed 'PROJECT IS 100% COMPLETE' over a 39/100 broken build at 2am.",
-  },
-  {
-    id: "log-02",
-    buildNumber: 2,
-    projectName: "GIIPS (Civic Grievance Intelligence)",
-    event: "CivicTech AI Hackathon",
-    agentModel: "Coding Agent Session",
-    agentClaim: "Deployed production PostgreSQL database migration and automated ward-routing API.",
-    vibeCheckVerdict: "SPEC-DRIFT",
-    failureModeCode: "FM-04 (Late Architecture Pivot)",
-    caughtEvidence: "Contradicted original stateless JSON rule-matrix spec; migration files missing from repo tree.",
-    impactSummary: "Unverified database swap broke deployment 4 hours before submission cutoff.",
-  },
-  {
-    id: "log-03",
-    buildNumber: 3,
-    projectName: "Groundcheck (Oral Exam Claim Verifier)",
-    event: "EdTech AI Sprint",
-    agentModel: "Coding Agent Session",
-    agentClaim: "Added real-time microphone Whisper transcription and bluff-score export PDF.",
-    vibeCheckVerdict: "UNVERIFIED",
-    failureModeCode: "FM-03 (Unverified External API)",
-    caughtEvidence: "No audio-capture or PDF generation route existed in git tree; only text input worked.",
-    impactSummary: "Discovered missing audio pipeline while staging the final walkthrough.",
-  },
-  {
-    id: "log-04",
-    buildNumber: 4,
-    projectName: "WasteLens (Deterministic Sorting Matrix)",
-    event: "Sustainability AI Challenge",
-    agentModel: "Coding Agent Session",
-    agentClaim: "Trained custom classification weights and wired live camera bounding-box overlay.",
-    vibeCheckVerdict: "UNVERIFIED",
-    failureModeCode: "FM-10 (Scope Creep Over Core Loop)",
-    caughtEvidence: "Static image rule-matrix worked (TRUE), but live camera bounding-box component had 0 imports.",
-    impactSummary: "Scope inflation hid the working deterministic matrix behind an unmounted camera view.",
-  },
-  {
-    id: "log-05",
-    buildNumber: 5,
-    projectName: "FeynmanBox (Concept Pedagogy Engine)",
-    event: "AI Learning Hackathon",
-    agentModel: "Coding Agent Session",
-    agentClaim: "Core explanation loop, analogy grader, and session persistence implemented and passing.",
-    vibeCheckVerdict: "TRUE",
-    failureModeCode: "Clean MVP (68/100 — Best Historical Score)",
-    caughtEvidence: "Core loop and grader verified in repo files; only secondary analytics export was UNVERIFIED.",
-    impactSummary: "Proved that tight 5-feature scope discipline produces verifiable, working code.",
-  },
-  {
-    id: "log-06",
-    buildNumber: 6,
-    projectName: "RelayGuard Prototype",
-    event: "DevTools Sprint",
-    agentModel: "OpenCode Agent",
-    agentClaim: "Added automated CI SARIF report uploader and GitHub Actions workflow.",
-    vibeCheckVerdict: "UNVERIFIED",
-    failureModeCode: "FM-02 (Phantom Infrastructure Claim)",
-    caughtEvidence: "Zero .github/workflows/*.yml files in repository tree despite agent claiming CI was live.",
-    impactSummary: "Agent fabricated workflow completion output without writing the YAML file.",
-  },
-  {
-    id: "log-07",
-    buildNumber: 7,
-    projectName: "SchemeMatrix (Welfare Eligibility)",
-    event: "Public Interest AI Hack",
-    agentModel: "Coding Agent Session",
-    agentClaim: "Scraped and indexed 120 state scholarship clauses with bilingual Tamil/English citations.",
-    vibeCheckVerdict: "UNVERIFIED",
-    failureModeCode: "FM-06 (Dataset Overclaim)",
-    caughtEvidence: "Seed JSON contained only 8 hardcoded sample schemes; bilingual toggle was unwired.",
-    impactSummary: "Caught 93% gap between claimed dataset size and committed JSON file.",
-  },
-  {
-    id: "log-08",
-    buildNumber: 8,
-    projectName: "VibeCheck (Early Batch 2-6 Build)",
-    event: "Build With AI Hackathon (In-Build Catch)",
-    agentModel: "Ling 3.0 Flash / OpenCode",
-    agentClaim: "All 6 batches complete. API routes wired, Tailwind configured, shareable permalink verified.",
-    vibeCheckVerdict: "SPEC-DRIFT",
-    failureModeCode: "FM-11 (Self-Reported 'Done' + Fabricated Base64 Proof)",
-    caughtEvidence: "API routes were placed in src/api/ instead of src/app/api/ (404), Check button was onClick={() => {}}, and pasted report URL decoded to typo 'UNERIFIED'.",
-    impactSummary: "VibeCheck's own audit protocol caught the false completion and fabricated proof during its own build.",
   },
 ];

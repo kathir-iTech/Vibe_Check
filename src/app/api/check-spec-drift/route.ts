@@ -1,15 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { fetchFileContentsForClaims, githubApi } from "@/lib/github";
-import { assessClaimsAgainstSpec, GeminiUsage, SpecDoc } from "@/lib/gemini";
+import { fetchFileContentsForClaims, githubApi, parseGitHubRepoUrl } from "@/lib/github";
+import {
+  assessClaimsAgainstSpec,
+  GeminiUsage,
+  MAX_CLAIMS,
+  MAX_CLAIM_CHARS,
+  SpecDoc,
+} from "@/lib/gemini";
 import { createTimings, serverTimingHeader } from "@/lib/timings";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 
 export const maxDuration = 60;
 
-async function fetchDoc(base: string, file: string): Promise<string | null> {
+async function fetchDoc(base: string, file: string, userToken?: string): Promise<string | null> {
   try {
-    const data = await githubApi(`${base}/contents/${file}`);
+    const data = await githubApi(`${base}/contents/${file}`, 8000, userToken);
     return Buffer.from(data.content, "base64").toString();
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
@@ -27,10 +33,20 @@ function hasRealEvidence(entry: any): boolean {
 
 export async function POST(request: NextRequest) {
   const timings = createTimings();
-  const body = await request.json();
-  const repoUrl = body.repoUrl || "";
-  const claims = Array.isArray(body.claims) ? body.claims : [];
-  const evidence = body.evidence && typeof body.evidence === "object" ? body.evidence : {};
+  let body: any;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json(
+      { drift: [], error: "Invalid JSON body", model: null },
+      { status: 400 }
+    );
+  }
+
+  const repoUrl = typeof body?.repoUrl === "string" ? body.repoUrl.trim() : "";
+  const rawClaims = Array.isArray(body?.claims) ? body.claims.slice(0, MAX_CLAIMS) : [];
+  const evidence = body?.evidence && typeof body.evidence === "object" ? body.evidence : {};
+  const userToken = request.headers?.get?.("x-github-token") || undefined;
 
   if (!repoUrl) {
     return NextResponse.json(
@@ -38,28 +54,30 @@ export async function POST(request: NextRequest) {
       { status: 400 }
     );
   }
-  if (!claims.length) {
+  if (!rawClaims.length) {
     return NextResponse.json({ drift: [], model: null });
   }
 
-  const match = repoUrl.match(/github\.com\/([^/]+)\/([^/\s]+)/);
-  if (!match) {
+  let parsedRepo: { owner: string; repo: string; canonicalUrl: string };
+  try {
+    parsedRepo = parseGitHubRepoUrl(repoUrl);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Invalid GitHub URL";
     return NextResponse.json(
-      { drift: [], error: "Invalid GitHub URL", model: null },
+      { drift: [], error: msg, model: null },
       { status: 400 }
     );
   }
 
-  const [, owner, repo] = match;
-  const cleanRepo = repo.replace(/\.git$/, "");
+  const { owner, repo: cleanRepo } = parsedRepo;
   const base = `https://api.github.com/repos/${owner}/${cleanRepo}`;
 
   let docs: SpecDoc[];
   try {
     const [scopeContent, prdContent, specContent] = await Promise.all([
-      fetchDoc(base, "devpost/scope.md"),
-      fetchDoc(base, "devpost/prd.md"),
-      fetchDoc(base, "devpost/spec.md"),
+      fetchDoc(base, "devpost/scope.md", userToken),
+      fetchDoc(base, "devpost/prd.md", userToken),
+      fetchDoc(base, "devpost/spec.md", userToken),
     ]);
     docs = [
       { file: "devpost/scope.md", text: scopeContent || "" },
@@ -78,9 +96,9 @@ export async function POST(request: NextRequest) {
   const toAssess: { id: string; text: string }[] = [];
   timings.lap("specDocFetch");
 
-  for (const claim of claims) {
-    const claimText = claim.text || claim;
-    const claimId = claim.id || claimText;
+  for (const claim of rawClaims) {
+    const claimText = String(claim?.text || claim || "").slice(0, MAX_CLAIM_CHARS);
+    const claimId = String(claim?.id || claimText);
     if (hasRealEvidence(evidence[claimId])) {
       toAssess.push({ id: claimId, text: claimText });
     } else {
@@ -103,10 +121,10 @@ export async function POST(request: NextRequest) {
     const filesByClaim: Record<string, string[]> = {};
     for (const c of toAssess) {
       const entry = evidence[c.id];
-      filesByClaim[c.id] = Array.isArray(entry?.files) ? entry.files : [];
+      filesByClaim[c.id] = Array.isArray(entry?.files) ? entry.files.slice(0, 5) : [];
     }
     try {
-      supportFiles = await fetchFileContentsForClaims(base, filesByClaim);
+      supportFiles = await fetchFileContentsForClaims(base, filesByClaim, userToken);
     } catch {
       supportFiles = {};
     }
@@ -174,12 +192,12 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const drift = claims.map((claim: any) => {
-    const claimId = claim.id || claim.text;
+  const drift = rawClaims.map((claim: any) => {
+    const claimId = String(claim?.id || claim?.text || claim);
     return (
       outcomes.get(claimId) || {
         claimId,
-        claimText: claim.text || claim,
+        claimText: String(claim?.text || claim).slice(0, MAX_CLAIM_CHARS),
         verdict: "UNVERIFIED",
         reason: "No assessment produced",
         specReference: "",
@@ -206,6 +224,7 @@ export async function GET(request: NextRequest) {
   const evidence = {};
   const fakeRequest = {
     json: () => Promise.resolve({ repoUrl, claims, evidence }),
+    headers: request.headers,
   } as unknown as NextRequest;
   return POST(fakeRequest);
 }

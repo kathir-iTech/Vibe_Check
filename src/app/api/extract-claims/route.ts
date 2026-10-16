@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { extractClaimsViaGemini } from "@/lib/gemini";
+import { extractClaimsViaGemini, MAX_MESSAGE_CHARS } from "@/lib/gemini";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 
@@ -11,11 +11,22 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const body = await request.json();
-  const message = body.message || body.agentMessage || "";
+  let body: any;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body", model: null }, { status: 400 });
+  }
 
-  if (!message) {
+  const rawMessage = body?.message || body?.agentMessage || "";
+  if (typeof rawMessage !== "string" || !rawMessage.trim()) {
     return NextResponse.json({ error: "message required", model: null }, { status: 400 });
+  }
+  if (rawMessage.length > MAX_MESSAGE_CHARS * 4) {
+    return NextResponse.json(
+      { error: "Message payload exceeds maximum size (32KB).", model: null },
+      { status: 400 }
+    );
   }
 
   if (!GEMINI_API_KEY) {
@@ -26,8 +37,8 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { data: claims, model, modelFallback } = await extractClaimsViaGemini(
-      message,
+    const { data: claims, model, modelFallback, usage, timings } = await extractClaimsViaGemini(
+      rawMessage,
       GEMINI_API_KEY
     );
     if (!claims.length) {
@@ -36,7 +47,7 @@ export async function POST(request: NextRequest) {
         { status: 502 }
       );
     }
-    return NextResponse.json({ claims, model, modelFallback });
+    return NextResponse.json({ claims, model, modelFallback, usage, timings });
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     return NextResponse.json(

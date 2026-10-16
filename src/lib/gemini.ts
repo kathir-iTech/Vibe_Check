@@ -1,14 +1,38 @@
 import { GoogleGenAI } from "@google/genai";
+import {
+  COMMENT_SPOOF_REASON,
+  NEGATION_MISMATCH_REASON,
+  NO_CONTRADICTION_KEYWORDS_REASON,
+  RESTATEMENT_REASON,
+  findLineNumber,
+  hasContradictionKeywords,
+  hasNegationMismatch,
+  isExecutableCodeLine,
+  isRestatement,
+  normalize,
+  normalizeForLineMatch,
+  tokenize,
+} from "./verification-guards.mjs";
+
+export {
+  findLineNumber,
+  hasContradictionKeywords,
+  hasNegationMismatch,
+  isExecutableCodeLine,
+  isRestatement,
+  normalize,
+  normalizeForLineMatch,
+  tokenize,
+};
 
 const PRIMARY_MODEL = process.env.GEMINI_PRIMARY_MODEL || "gemini-3-flash-preview";
 const FALLBACK_MODEL = "gemini-3.1-flash-lite";
 
-const MAX_MESSAGE_CHARS = 8 * 1024;
+export const MAX_MESSAGE_CHARS = 8 * 1024;
 const MESSAGE_TRUNCATION_MARKER = "[VibeCheck truncated this message: over 8KB]";
-const MAX_CLAIMS = 15;
-const MAX_CLAIM_CHARS = 300;
+export const MAX_CLAIMS = 15;
+export const MAX_CLAIM_CHARS = 300;
 const CLAIM_TRUNCATION_MARKER = " [VibeCheck truncated this claim: over 300 chars]";
-const RESTATEMENT_REASON = "The cited line restates the claim; a restatement is not evidence.";
 const MAX_PROMPT_FILE_CHARS = 100 * 1024;
 const FILE_OMISSION_MARKER = "[VibeCheck omitted N matched file(s) here to stay within the 100KB prompt budget]";
 
@@ -171,7 +195,9 @@ export function buildExtractionPrompt(message: string, nonce: string): string {
   const capped = truncateTo(message, MAX_MESSAGE_CHARS, MESSAGE_TRUNCATION_MARKER);
   return `${untrustedRule(nonce)}
 
-Extract discrete checkable claims from the agent message in the DATA block below. Return only a JSON array of claim objects, each with "id", "text", and "evidenceType" fields. Be precise and specific.
+Extract discrete, atomic checkable claims from the agent message in the DATA block below.
+If a sentence makes multiple distinct technical claims (e.g., "Added OAuth login and all unit tests pass"), split them into separate atomic claim objects so each claim tests a single verifiable fact.
+Return only a JSON array of claim objects, each with "id", "text", and "evidenceType" fields. Be precise and specific.
 
 ${untrusted(capped, nonce)}`;
 }
@@ -219,69 +245,6 @@ export interface SpecAssessment {
   rejectionReason: string;
 }
 
-export const normalize = (s: string) => s.replace(/\s+/g, " ").trim().toLowerCase();
-
-const STOPWORDS = new Set([
-  "the", "and", "for", "are", "not", "this", "that", "with", "from", "into",
-  "been", "will", "have", "does", "just", "also", "more", "than", "then",
-]);
-
-export const tokenize = (s: string) =>
-  s
-    .toLowerCase()
-    .split(/[^a-z0-9]+/)
-    .filter((w) => w && !STOPWORDS.has(w)) ?? [];
-
-export function hasContradictionKeywords(claimText: string, contradictingLine: string): boolean {
-  // A contradiction quote must share >=2 non-stopword keywords with the claim
-  // using the same tokenizer as the restatement guard.
-  const claimKeywords = [...new Set(tokenize(claimText).filter((w) => w.length > 3))];
-  if (!claimKeywords.length) return false;
-  const lineTokens = new Set(tokenize(contradictingLine || ""));
-  const shared = claimKeywords.filter((k) => lineTokens.has(k));
-  return shared.length >= 2;
-}
-
-export function isRestatement(claimText: string, quote: string, lineText: string): boolean {
-  const nClaim = normalize(claimText);
-  const nQuote = normalize(quote);
-  if (!nQuote || !nClaim) return false;
-  if (nQuote.includes(nClaim) || nClaim.includes(nQuote)) return true;
-  const claimKeywords = [...new Set(tokenize(claimText).filter((w) => w.length > 3))];
-  if (!claimKeywords.length) return false;
-  const lineTokens = new Set(tokenize(lineText || quote));
-  const shared = claimKeywords.filter((k) => lineTokens.has(k));
-  return shared.length / claimKeywords.length >= 0.8;
-}
-
-export function normalizeForLineMatch(s: string): string {
-  return s
-    .replace(/\\\\/g, "\\")
-    .replace(/\\\$/g, "$")
-    .replace(/\\`/g, "`")
-    .replace(/\\u0060/g, "`")
-    .replace(/\\"/g, '"')
-    .replace(/\*\*/g, "")
-    .replace(/__/g, "")
-    .replace(/\u2014|\u2013/g, "-");
-}
-
-export function findLineNumber(docText: string, quote: string): number {
-  const lines = docText.split("\n");
-  const rawNormalized = normalize(normalizeForLineMatch(quote));
-  if (!rawNormalized) return -1;
-  // Also allow matching if the model included the "N: " line number prefix from the prompt
-  const strippedPrefix = rawNormalized.replace(/^\d+:\s*/, "");
-  for (let i = 0; i < lines.length; i++) {
-    const candidate = normalize(normalizeForLineMatch(lines[i]));
-    if (!candidate) continue;
-    if (candidate.includes(rawNormalized) || (strippedPrefix && candidate.includes(strippedPrefix))) {
-      return i + 1;
-    }
-  }
-  return -1;
-}
-
 export function validateAssessments(
   data: unknown,
   claims: { id: string; text: string }[],
@@ -321,15 +284,14 @@ export function validateAssessments(
 
     // SPEC-DRIFT keyword guard: if the contradicting line doesn't mention the
     // claim's subject (fewer than 2 shared non-stopword keywords), treat it as
-    // no contradiction. Reason: "The cited spec line does not mention the claim's
-    // subject; not treated as a contradiction."
+    // no contradiction.
     if (contradicts && hasContradictionKeywords(claim.text, contradictingLine)) {
       // keep contradicts=true
     } else if (contradicts) {
       contradicts = false;
       sourceDoc = "";
       contradictingLine = "";
-      reason = "The cited spec line does not mention the claim's subject; not treated as a contradiction.";
+      reason = NO_CONTRADICTION_KEYWORDS_REASON;
     }
 
     if (contradicts) {
@@ -366,7 +328,17 @@ export function validateAssessments(
         }
       } else {
         const lineText = doc ? doc.text.split("\n")[found - 1] || "" : "";
-        if (isRestatement(claim.text, supportingQuote, lineText)) {
+        if (!isExecutableCodeLine(lineText, supportingFile)) {
+          quoteRejected = true;
+          supported = false;
+          supportingLine = 0;
+          rejectionReason = COMMENT_SPOOF_REASON;
+        } else if (hasNegationMismatch(claim.text, lineText)) {
+          quoteRejected = true;
+          supported = false;
+          supportingLine = 0;
+          rejectionReason = NEGATION_MISMATCH_REASON;
+        } else if (isRestatement(claim.text, supportingQuote, lineText)) {
           quoteRejected = true;
           supported = false;
           supportingLine = 0;
@@ -503,8 +475,8 @@ Claims:
 ${untrusted(JSON.stringify(claims.map((c) => ({ id: c.id, text: c.text }))), nonce)}
 
 Support (checked against the matched repository files):
-- "supported": true ONLY when a line in one of that claim's matched repository files directly supports the claim.
-- When "supported" is true, "supportingFile" must be the file path exactly as given above, and "supportingQuote" an EXACT verbatim copy of one numbered line from that file (without the "N: " prefix).
+- "supported": true ONLY when a non-comment, executable code or configuration line in one of that claim's matched repository files directly proves the claim (never a TODO comment or negated line).
+- When "supported" is true, "supportingFile" must be the file path exactly as given above, and "supportingQuote" an EXACT verbatim copy of one complete numbered line from that file (without the "N: " prefix).
 - When you are not certain the file supports the claim, return "supported": false with "supportingFile" and "supportingQuote" set to "".
 - When "supported" is false, "reason" must say what the matched files did not show.
 - Return exactly one object per claim, keyed by claim id.

@@ -5,7 +5,7 @@ import { SelfAuditResult } from "@/types";
 // automatic API calls on page load; "Re-run live" triggers an on-demand check.
 export const SELF_AUDIT_SEED: SelfAuditResult = {
   repoUrl: "https://github.com/kathir-iTech/Vibe_Check",
-  runAt: "2026-10-14T18:05:00.000Z",
+  runAt: "2026-10-16T13:15:00.000Z",
   claims: [
     {
       "id": "self-1",
@@ -33,7 +33,7 @@ export const SELF_AUDIT_SEED: SelfAuditResult = {
       "text": "Every verdict is one of TRUE, UNVERIFIED, or SPEC-DRIFT \u2014 reachable from a real branch in check-spec-drift, never a UI default.",
       "verdict": "TRUE",
       "reason": "The code in check-spec-drift explicitly assigns SPEC-DRIFT, TRUE, and UNVERIFIED verdicts across dedicated conditional branches.",
-      "specReference": "src/app/api/check-spec-drift/route.ts:153:           verdict: \"SPEC-DRIFT\",",
+      "specReference": "src/app/api/check-spec-drift/route.ts:171:           verdict: \"SPEC-DRIFT\",",
       "files": [
         "src/app/api/check-spec-drift/route.ts",
         "src/lib/self-audit-seed.ts",
@@ -54,7 +54,7 @@ export const SELF_AUDIT_SEED: SelfAuditResult = {
       "text": "SPEC-DRIFT citations are verified against the real file content server-side before being shown \u2014 a quote that doesn't actually exist in the cited doc throws an error instead of displaying.",
       "verdict": "TRUE",
       "reason": "The implementation in src/lib/gemini.ts verifies contradictingLine via findLineNumber and throws an error when not found in sourceDoc.",
-      "specReference": "src/lib/gemini.ts:342:         throw new Error(`Gemini quoted text not found in ${sourceDoc} for ${claim.id}: ${contradictingLine}`);",
+      "specReference": "src/lib/gemini.ts:304:         throw new Error(`Gemini quoted text not found in ${sourceDoc} for ${claim.id}: ${contradictingLine}`);",
       "files": [
         "src/lib/gemini.ts",
         "src/lib/self-audit-seed.ts",
@@ -64,9 +64,9 @@ export const SELF_AUDIT_SEED: SelfAuditResult = {
       ],
       "commits": [
         {
-          "sha": "a7fac7be9b87a981822f06ef19bbe0df14d5646c",
-          "message": "fix: add stopword filtering to tokenize function for SPEC-DRIFT keyword guard",
-          "date": "2026-10-13T00:58:19Z"
+          "sha": "674662188edef58c86ad2e9e5beff412bbfa9b9e",
+          "message": "Fix 18b: add test-core suite, app-map.html, and remove stray scratch files",
+          "date": "2026-10-15T14:54:00Z"
         }
       ]
     }

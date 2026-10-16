@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Check that the committed benchmark summary matches the raw runs data.
-// Exits non-zero if the summary differs from recomputed values or if coverage < 72/72.
+// Exits non-zero if the summary differs from recomputed values or if coverage !== 72/72.
 
 import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
@@ -29,6 +29,17 @@ function main() {
   console.log(`[check-benchmark] Total flat run entries: ${totalRunsFlat}`);
   console.log(`[check-benchmark] Claims in claims.json: ${totalClaims}`);
   console.log(`[check-benchmark] Expected entries per repeat cycle: ${expectedEntries}`);
+
+  // Enforce exact count per claim (exactly REPEATS outcomes per claim)
+  for (const claim of allClaims) {
+    const countForClaim = runs.flat().filter((r) => r && r.claimId === claim.id).length;
+    if (countForClaim !== REPEATS) {
+      console.error(
+        `[check-benchmark] FAIL: Claim ${claim.id} has ${countForClaim} outcomes (expected exactly ${REPEATS})`
+      );
+      hasError = true;
+    }
+  }
 
   let computed;
   try {
@@ -129,12 +140,12 @@ function main() {
     }
   }
 
-  if (totalRunsFlat < expectedEntries) {
+  if (totalRunsFlat !== expectedEntries) {
     console.log(
       `[check-benchmark] Coverage: ${totalRunsFlat}/${expectedEntries} entries (${totalClaims} claims x ${REPEATS} repeats)`
     );
     console.log(
-      `[check-benchmark] FAIL: Full benchmark requires all ${totalClaims} claims x ${REPEATS} repeats`
+      `[check-benchmark] FAIL: Full benchmark requires exactly ${totalClaims} claims x ${REPEATS} repeats`
     );
     hasError = true;
   }

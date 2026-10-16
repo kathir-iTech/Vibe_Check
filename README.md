@@ -38,8 +38,8 @@ planning docs, then returns a verdict per claim.
 1. **Claim extractor** — turns an agent's free-text message into a structured list of checkable claims (Gemini).
 2. **Repo evidence checker** — cross-references each claim against GitHub REST API data (commits, file paths, file contents).
 3. **Spec-drift detector** — compares claims against the repo's own planning docs and cites the contradicting line.
-4. **Demo mode** — preloaded example repo data at `/demo`, for when GitHub/Gemini hiccup or you just want the flow.
-5. **Shareable verdict report** — permalink (`/report/[id]`) plus JSON export.
+4. **Demo mode** — preloaded example repo data at `/?demo=1` and `/demo`, for when GitHub/Gemini hiccup or you just want the flow.
+5. **Shareable verdict report** — HMAC-SHA256 signed permalink (`/report/[id]`) plus Markdown and JSON export.
 
 Plus a **Self-Audit** card: VibeCheck run against its own repo (`github.com/kathir-iTech/Vibe_Check`), with an
 on-demand **Re-run live** button.
@@ -59,9 +59,9 @@ It returns `UNVERIFIED` in red and points at the missing file.
 > **Design boundary:** no sandboxed code execution. Evidence checks are static/API-based only — a deliberate
 > choice, not a gap.
 
-## Ground-Truth Benchmark (24 Claims × 3 Repeats = 72 Runs)
+## QA Benchmark (24 Claims × 3 Repeats = 72 Claim Outcomes across 6 Batch Runs)
 
-VibeCheck includes a 24-claim labeled benchmark (`benchmark/claims.json` & `benchmark/results.json`) covering 12 true claims, 6 near-miss falsehoods, 4 absent-technology controls, and 2 unverifiable claims:
+VibeCheck includes a 24-claim labeled QA benchmark (`benchmark/claims.json` & `benchmark/results.json`) covering 12 true claims, 6 near-miss falsehoods, 4 absent-technology controls, and 2 unverifiable claims evaluated on `gemini-3.1-flash-lite`:
 
 | Benchmark Metric | Result | Meaning |
 | --- | --- | --- |
@@ -69,15 +69,15 @@ VibeCheck includes a 24-claim labeled benchmark (`benchmark/claims.json` & `benc
 | **Unverifiable Claims → `TRUE`** | `0 / 6` (0%) | Zero unverifiable claims (unit tests, WCAG contrast) passed as `TRUE` |
 | **True Claims → `SPEC-DRIFT`** | `0 / 36` (0%) | Zero false accusations on true claims (enforced by the `>=2` keyword guard) |
 | **True Claims → `TRUE`** | `32 / 36` (88.9%) | Verified recall with exact `file:line` quote verification |
-| **Retroactive 8-Build Audit** | `7 / 8` Caught | Caught 7 historical solo-hackathon agent overclaims (`UNVERIFIED` / `SPEC-DRIFT`) and verified 1 clean MVP (`TRUE`) |
+| **Run Variance** | `3 / 24` | Claims whose verdict varied across the 3 batch repeats |
 
 ## Getting started
 
 ### Prerequisites
 
-- Node.js 18.18+ (Node 20+ recommended)
+- Node.js 20.9+ (required by Next.js 16)
 - A [Gemini API key](https://aistudio.google.com/apikey)
-- A [GitHub personal access token](https://github.com/settings/tokens) (public repos only need read access)
+- A [GitHub personal access token](https://github.com/settings/tokens) (optional for public repos; raises rate limit from 60 to 5,000 req/hr)
 
 ### Setup
 
@@ -100,10 +100,10 @@ Both keys are read **server-side** inside API routes, so they never reach the br
 
 ```bash
 npm run dev              # http://localhost:3000
-npm run test             # Run deterministic unit tests (guards, normalizer, benchmark math)
+npm run test             # Run deterministic unit tests (guards, normalizer, HMAC signing, URL parser)
 npm run check-seed       # Verify self-audit seed claims & line citations
 npm run check-benchmark  # Recompute & verify 72/72 benchmark results from raw runs
-npm run verify           # Full gate: lint + check-seed + test + next build
+npm run verify           # Full gate: lint + check-seed + check-benchmark + test + next build
 ```
 
 ## How to use it
@@ -112,17 +112,17 @@ npm run verify           # Full gate: lint + check-seed + test + next build
 2. Paste the GitHub repo URL it was working on.
 3. Click **Check Claims** — extraction → evidence + commit diffs → spec-drift + verbatim line check → verdicts appear claim by claim.
 4. Optional: click **Edit / Refine Extracted Claims** to manually adjust extracted claims and re-verify without an extra extraction call.
-5. **Copy PR Audit Markdown**, **Export Report (.md / .json)**, or **Generate Shareable Report** for a self-contained Base64URL permalink.
+5. **Copy PR Audit Markdown**, **Export Report (.md / .json)**, or **Generate Signed Permalink** for a tamper-evident Base64URL permalink.
 
 ## API routes
 
 | Route | Purpose |
 | --- | --- |
 | `POST /api/claim-source` | Fetches PR title/body or commit message from a GitHub URL |
-| `POST /api/extract-claims` | Gemini extracts checkable claims from the agent message |
+| `POST /api/extract-claims` | Gemini extracts atomic checkable claims from the agent message |
 | `POST /api/check-evidence` | GitHub REST API file tree, 60-file content pass, and commit diff lookup |
 | `POST /api/check-spec-drift` | Contradiction & supporting-line check with server-side quote verification |
-| `POST /api/generate-report` | Builds the self-contained Base64URL shareable report permalink |
+| `POST /api/generate-report` | Builds the HMAC-SHA256 signed Base64URL shareable report permalink |
 | `POST /api/self-audit` | Runs VibeCheck's own 3 fixed claims against this repo |
 
 ## Docs

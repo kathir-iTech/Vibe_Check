@@ -1,13 +1,27 @@
-export async function getDefaultBranch(owner: string, repo: string): Promise<string> {
-  const url = `https://api.github.com/repos/${owner}/${repo}`;
+import { parseGitHubRepoUrl } from "./report-crypto.mjs";
+
+export { parseGitHubRepoUrl };
+
+export function getGitHubHeaders(userToken?: string, accept = "application/vnd.github.v3+json"): Record<string, string> {
   const headers: Record<string, string> = {
-    Accept: "application/vnd.github.v3+json",
+    Accept: accept,
     "User-Agent": "VibeCheck",
   };
-  if (process.env.GITHUB_TOKEN) {
-    headers["Authorization"] = `token ${process.env.GITHUB_TOKEN}`;
+  const token = (userToken && userToken.trim()) || process.env.GITHUB_TOKEN;
+  if (token) {
+    headers["Authorization"] = token.startsWith("ghp_") || token.startsWith("github_pat_")
+      ? `Bearer ${token}`
+      : `token ${token}`;
   }
-  const response = await fetch(url, { headers });
+  return headers;
+}
+
+export async function getDefaultBranch(owner: string, repo: string, userToken?: string): Promise<string> {
+  const url = `https://api.github.com/repos/${owner}/${repo}`;
+  const response = await fetch(url, {
+    headers: getGitHubHeaders(userToken),
+    signal: AbortSignal.timeout(8000),
+  });
   if (!response.ok) {
     throw new Error(`GitHub API error: ${response.status}`);
   }
@@ -15,16 +29,9 @@ export async function getDefaultBranch(owner: string, repo: string): Promise<str
   return data.default_branch || "main";
 }
 
-export async function githubApi(url: string, timeoutMs = 8000): Promise<any> {
-  const headers: Record<string, string> = {
-    Accept: "application/vnd.github.v3+json",
-    "User-Agent": "VibeCheck",
-  };
-  if (process.env.GITHUB_TOKEN) {
-    headers["Authorization"] = `token ${process.env.GITHUB_TOKEN}`;
-  }
+export async function githubApi(url: string, timeoutMs = 8000, userToken?: string): Promise<any> {
   const response = await fetch(url, {
-    headers,
+    headers: getGitHubHeaders(userToken),
     signal: AbortSignal.timeout(timeoutMs),
   });
   if (!response.ok) {
@@ -51,12 +58,12 @@ export function parseClaimSourceUrl(raw: string): { kind: "pull" | "commit"; own
   );
 }
 
-export async function fetchClaimTextFromUrl(raw: string): Promise<string> {
+export async function fetchClaimTextFromUrl(raw: string, userToken?: string): Promise<string> {
   const parsed = parseClaimSourceUrl(raw);
   const apiBase = `https://api.github.com/repos/${parsed.owner}/${parsed.repo}`;
   try {
     if (parsed.kind === "pull") {
-      const data = await githubApi(`${apiBase}/pulls/${parsed.ref}`);
+      const data = await githubApi(`${apiBase}/pulls/${parsed.ref}`, 8000, userToken);
       const title = String(data.title || "").trim();
       const body = String(data.body || "").trim();
       if (!title) {
@@ -64,7 +71,7 @@ export async function fetchClaimTextFromUrl(raw: string): Promise<string> {
       }
       return body ? `${title}\n\n${body}` : title;
     }
-    const data = await githubApi(`${apiBase}/commits/${parsed.ref}`);
+    const data = await githubApi(`${apiBase}/commits/${parsed.ref}`, 8000, userToken);
     const message = String(data.commit?.message || "").trim();
     if (!message) {
       throw new Error("Commit has an empty message.");
@@ -94,7 +101,8 @@ export interface CommitPatchSummary {
 export async function fetchCommitDiffDetails(
   base: string,
   shas: string[],
-  maxCommits = 3
+  maxCommits = 4,
+  userToken?: string
 ): Promise<Record<string, CommitPatchSummary>> {
   const uniqueShas = [...new Set(shas.filter(Boolean))].slice(0, maxCommits);
   const out: Record<string, CommitPatchSummary> = {};
@@ -103,10 +111,14 @@ export async function fetchCommitDiffDetails(
   await Promise.all(
     uniqueShas.map(async (sha) => {
       try {
-        const detail = await githubApi(`${base}/commits/${sha}`, 4000);
+        const detail = await githubApi(`${base}/commits/${sha}`, 4000, userToken);
         const files = Array.isArray(detail?.files) ? detail.files : [];
         const eligibleFiles = files.filter(
-          (f: any) => f && typeof f.filename === "string" && !isSkippableFile(f.filename)
+          (f: any) =>
+            f &&
+            typeof f.filename === "string" &&
+            !isExcludedEvidencePath(f.filename) &&
+            !isSkippableFile(f.filename)
         );
         const filesChanged = eligibleFiles.map((f: any) => String(f.filename)).slice(0, 8);
         const additions = typeof detail?.stats?.additions === "number" ? detail.stats.additions : 0;
@@ -157,6 +169,12 @@ const SKIP_NAMES = new Set([
 ]);
 
 const SKIP_DIR_PARTS = ["node_modules/", ".next/", "dist/", "build/", "coverage/", ".git/"];
+export const CONTENT_EXCLUDED_DIRS = [".agents/", ".claude/", "devpost/", "benchmark/"];
+
+export function isExcludedEvidencePath(path: string): boolean {
+  const lower = String(path || "").toLowerCase();
+  return CONTENT_EXCLUDED_DIRS.some((d) => lower.startsWith(d) || lower.includes(`/${d}`));
+}
 
 export interface RepoFileContent {
   file: string;
@@ -166,6 +184,7 @@ export interface RepoFileContent {
 
 export function isSkippableFile(path: string): boolean {
   const lower = path.toLowerCase();
+  if (isExcludedEvidencePath(lower)) return true;
   if (SKIP_DIR_PARTS.some((part) => lower.includes(part))) return true;
   if (lower.startsWith(".env") || lower.endsWith(".pem") || lower.endsWith(".key") || lower.endsWith(".p12")) {
     return true;
@@ -177,9 +196,10 @@ export function isSkippableFile(path: string): boolean {
   return false;
 }
 
-async function fetchRepoFile(base: string, path: string): Promise<RepoFileContent | null> {
+async function fetchRepoFile(base: string, path: string, userToken?: string): Promise<RepoFileContent | null> {
+  if (isSkippableFile(path)) return null;
   try {
-    const data = await githubApi(`${base}/contents/${path}`);
+    const data = await githubApi(`${base}/contents/${path}`, 8000, userToken);
     if (!data || !data.content || data.encoding !== "base64") return null;
     let text = Buffer.from(data.content, "base64").toString("utf8");
     if (text.includes("\u0000")) return null;
@@ -195,16 +215,15 @@ async function fetchRepoFile(base: string, path: string): Promise<RepoFileConten
 }
 
 const CONTENT_EXTENSIONS = new Set([
-  ".ts", ".tsx", ".js", ".jsx", ".py", ".go", ".rs", ".java", ".json", ".md",
-  ".css", ".html", ".yml", ".yaml",
+  ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".py", ".go", ".rs", ".java",
+  ".json", ".md", ".css", ".html", ".yml", ".yaml", ".sh", ".sql", ".c", ".cpp",
+  ".php", ".rb", ".toml", ".xml", ".prisma", ".graphql",
 ]);
 
-const CONTENT_EXCLUDED_DIRS = [".agents/", ".claude/", "devpost/", "benchmark/"];
-
-const WELL_KNOWN_EXTENSIONLESS = new Set(["license", "copying", "readme", "dockerfile", "makefile"]);
+const WELL_KNOWN_EXTENSIONLESS = new Set(["license", "licence", "copying", "readme", "dockerfile", "makefile"]);
 
 const MAX_CONTENT_CANDIDATES = 60;
-const RAW_FETCH_CONCURRENCY = 10;
+const RAW_FETCH_CONCURRENCY = 8;
 const RAW_FETCH_BUDGET_MS = 10_000;
 const MAX_RAW_CHARS = 20 * 1024;
 
@@ -214,9 +233,8 @@ export interface ContentFileText {
 }
 
 export function isContentCandidate(path: string): boolean {
+  if (isExcludedEvidencePath(path) || isSkippableFile(path)) return false;
   const lower = path.toLowerCase();
-  if (CONTENT_EXCLUDED_DIRS.some((d) => lower.startsWith(d) || lower.includes(`/${d}`))) return false;
-  if (isSkippableFile(path)) return false;
   const base = lower.split("/").pop() || lower;
   const dot = base.lastIndexOf(".");
   if (dot === -1) {
@@ -230,13 +248,23 @@ function isPreferredContentPath(path: string): boolean {
   return lower.startsWith("src/") || lower.startsWith("app/") || lower.startsWith("lib/") || !path.includes("/");
 }
 
-export function selectContentCandidates(paths: string[]): string[] {
+export function selectContentCandidates(paths: string[], claimKeywords: string[] = []): string[] {
   const candidates = paths.filter(isContentCandidate);
-  if (candidates.length <= MAX_CONTENT_CANDIDATES) return candidates;
+  const kwSet = [...new Set(claimKeywords.map((k) => k.toLowerCase()).filter((k) => k.length > 2))];
+
+  const scorePath = (p: string): number => {
+    const lower = p.toLowerCase();
+    let score = isPreferredContentPath(p) ? 2 : 0;
+    for (const kw of kwSet) {
+      if (lower.includes(kw)) score += 5;
+    }
+    return score;
+  };
+
   return [...candidates]
     .sort(
       (a, b) =>
-        Number(!isPreferredContentPath(a)) - Number(!isPreferredContentPath(b)) ||
+        scorePath(b) - scorePath(a) ||
         a.length - b.length ||
         a.localeCompare(b)
     )
@@ -248,21 +276,15 @@ async function fetchRawFile(
   repo: string,
   branch: string,
   path: string,
-  deadline: number
+  deadline: number,
+  userToken?: string
 ): Promise<ContentFileText | null> {
   const remaining = deadline - Date.now();
   if (remaining <= 0) return null;
   try {
     const encoded = path.split("/").map(encodeURIComponent).join("/");
-    const headers: Record<string, string> = {
-      Accept: "text/plain",
-      "User-Agent": "VibeCheck",
-    };
-    if (process.env.GITHUB_TOKEN) {
-      headers["Authorization"] = `token ${process.env.GITHUB_TOKEN}`;
-    }
     const response = await fetch(`https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${encoded}`, {
-      headers,
+      headers: getGitHubHeaders(userToken, "text/plain"),
       signal: AbortSignal.timeout(Math.min(remaining, RAW_FETCH_BUDGET_MS)),
     });
     if (!response.ok) return null;
@@ -279,14 +301,17 @@ export async function fetchRawFileTexts(
   owner: string,
   repo: string,
   branch: string,
-  paths: string[]
+  paths: string[],
+  userToken?: string
 ): Promise<ContentFileText[]> {
   const deadline = Date.now() + RAW_FETCH_BUDGET_MS;
   const out: ContentFileText[] = [];
   for (let i = 0; i < paths.length; i += RAW_FETCH_CONCURRENCY) {
     if (Date.now() >= deadline) break;
     const chunk = paths.slice(i, i + RAW_FETCH_CONCURRENCY);
-    const results = await Promise.all(chunk.map((p) => fetchRawFile(owner, repo, branch, p, deadline)));
+    const results = await Promise.all(
+      chunk.map((p) => fetchRawFile(owner, repo, branch, p, deadline, userToken))
+    );
     for (const result of results) {
       if (result) out.push(result);
     }
@@ -296,22 +321,25 @@ export async function fetchRawFileTexts(
 
 export async function fetchFileContentsForClaims(
   base: string,
-  filesByClaim: Record<string, string[]>
+  filesByClaim: Record<string, string[]>,
+  userToken?: string
 ): Promise<Record<string, RepoFileContent[]>> {
   const cache = new Map<string, Promise<RepoFileContent | null>>();
   const load = (path: string): Promise<RepoFileContent | null> => {
     let pending = cache.get(path);
     if (!pending) {
-      pending = fetchRepoFile(base, path);
+      pending = fetchRepoFile(base, path, userToken);
       cache.set(path, pending);
     }
     return pending;
   };
 
-  const entries = Object.entries(filesByClaim);
+  const entries = Object.entries(filesByClaim).slice(0, 15);
   const results = await Promise.all(
     entries.map(async ([claimId, files]) => {
-      const eligible = (files || []).filter((f) => !isSkippableFile(f)).slice(0, MAX_FILES_PER_CLAIM);
+      const eligible = (files || [])
+        .filter((f) => typeof f === "string" && !isSkippableFile(f))
+        .slice(0, MAX_FILES_PER_CLAIM);
       const loaded = await Promise.all(eligible.map(load));
       return [claimId, loaded.filter((f): f is RepoFileContent => f !== null)] as const;
     })
