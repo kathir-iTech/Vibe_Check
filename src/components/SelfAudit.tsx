@@ -4,6 +4,7 @@ import { SelfAuditResult } from "@/types";
 import { SELF_AUDIT_SEED } from "@/lib/self-audit-seed";
 import { cacheKey, formatStamp, readCached, writeCached } from "@/lib/result-cache";
 import { fetchWithTimeout } from "@/lib/http";
+import { EvidenceDisplay } from "./EvidenceDisplay";
 import { ExternalLinkIcon, SpinnerIcon } from "./icons";
 import { VerdictBadge } from "./ResultsPanel";
 
@@ -33,7 +34,6 @@ export function SelfAudit() {
         setSource("cached");
         setSavedAt(cached.savedAt);
         setError("");
-        console.info("[VibeCheck] self-audit cache hit — served from sessionStorage, 0 fetch calls");
         return;
       }
     }
@@ -69,7 +69,7 @@ export function SelfAudit() {
         <div className="min-w-0 flex-1 space-y-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 font-mono text-xs font-bold text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300">
-              {trueCount}/{result.claims.length} Self-Claims Verified
+              {trueCount}/{result.claims.length} Architectural Claims Verified
             </span>
             <a
               href={SELF_AUDIT_REPO}
@@ -82,7 +82,7 @@ export function SelfAudit() {
             </a>
           </div>
           <p className="text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
-            Three architectural claims about VibeCheck itself, verified through the real pipeline against its own repository. Seeded from a real run &mdash; nothing fires automatically on page load.
+            VibeCheck auditing its own repository against three core architectural guarantees.
           </p>
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
@@ -92,7 +92,7 @@ export function SelfAudit() {
             className="inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-zinc-50 px-3 py-1.5 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
           >
             {loading ? <SpinnerIcon className="h-3.5 w-3.5" /> : null}
-            {loading ? "Re-running..." : "Re-run"}
+            {loading ? "Running..." : "Re-run (Cached)"}
           </button>
           <button
             onClick={() => rerun(true)}
@@ -100,7 +100,7 @@ export function SelfAudit() {
             className="inline-flex items-center gap-2 rounded-lg border border-emerald-600/40 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 transition-colors hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-emerald-500/20"
           >
             {loading ? <SpinnerIcon className="h-3.5 w-3.5" /> : null}
-            {loading ? "Re-running..." : "Re-run live"}
+            {loading ? "Running..." : "Re-run Live"}
           </button>
         </div>
       </div>
@@ -110,12 +110,12 @@ export function SelfAudit() {
         className="font-mono text-[11px] text-zinc-500 dark:text-zinc-400"
       >
         {loading
-          ? `Running self-audit against the repo... (${elapsed}s elapsed)`
+          ? `Running self-audit against repository... (${elapsed}s elapsed)`
           : source === "cached"
-            ? `Cached result (saved ${formatStamp(savedAt)}) \u2014 Re-run live for a fresh check. Last run: ${result.runAt}`
+            ? `Served from session cache (${formatStamp(savedAt)})`
             : source === "live"
-              ? `Last run: ${result.runAt} (live)`
-              : `Last run: ${result.runAt} (verified seed)`}
+              ? `Live check completed at ${result.runAt}`
+              : `Verified baseline snapshot (${result.runAt})`}
       </p>
 
       {error ? (
@@ -134,9 +134,6 @@ export function SelfAudit() {
             >
               <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
                 <VerdictBadge verdict={claim.verdict} />
-                <span className="rounded bg-zinc-200/70 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
-                  {claim.id}
-                </span>
                 <p className="min-w-0 flex-1 break-words text-sm font-medium text-zinc-900 dark:text-zinc-100">
                   {claim.text}
                 </p>
@@ -150,7 +147,7 @@ export function SelfAudit() {
                 <div className="rounded-lg border border-emerald-200 bg-emerald-50/70 p-2 font-mono text-xs leading-relaxed text-emerald-900 dark:border-emerald-500/30 dark:bg-emerald-950/30 dark:text-emerald-300">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="text-[10px] font-semibold uppercase tracking-wider opacity-80">
-                      Server-Verified Line Citation
+                      Verified Source Citation
                     </span>
                     {parsedLink ? (
                       <a
@@ -172,16 +169,10 @@ export function SelfAudit() {
                   <p className="mt-0.5 break-all">&rarr; {claim.specReference}</p>
                 </div>
               ) : null}
-              {claim.files.length || claim.commits.length ? (
-                <p className="break-all font-mono text-[11px] leading-relaxed text-zinc-500 dark:text-zinc-400">
-                  {claim.files.length ? `Files: ${claim.files.join(", ")}` : ""}
-                  {claim.commits.length
-                    ? `${claim.files.length ? " | " : ""}Commits: ${claim.commits
-                        .map((c) => c.sha?.slice(0, 7))
-                        .join(", ")}`
-                    : ""}
-                </p>
-              ) : null}
+              <EvidenceDisplay
+                evidence={{ files: claim.files, commits: claim.commits, defaultBranch: "main" }}
+                ghBase={SELF_AUDIT_REPO}
+              />
             </li>
           );
         })}

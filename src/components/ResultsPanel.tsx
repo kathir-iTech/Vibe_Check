@@ -1,4 +1,5 @@
 import { Claim } from "@/types";
+import { EvidenceDisplay } from "./EvidenceDisplay";
 import { CheckIcon, ExternalLinkIcon, QuestionIcon, ShieldIcon, WarningIcon } from "./icons";
 
 interface Props {
@@ -9,6 +10,7 @@ interface Props {
   models?: ResultModels;
   repoUrl?: string;
   timings?: { evidenceMs?: number; driftMs?: number; totalMs?: number };
+  onLoadSample?: () => void;
 }
 
 export interface ModelInfo {
@@ -140,6 +142,7 @@ export function ResultsPanel({
   models,
   repoUrl,
   timings,
+  onLoadSample,
 }: Props) {
   if (loading) {
     return <ResultsSkeleton />;
@@ -147,13 +150,24 @@ export function ResultsPanel({
 
   if (!claims.length) {
     return (
-      <div className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50/60 p-6 text-center dark:border-zinc-800 dark:bg-zinc-900/40">
-        <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-          No active audit results yet.
+      <div className="rounded-xl border border-dashed border-zinc-300 bg-zinc-50/60 p-6 text-center dark:border-zinc-800 dark:bg-zinc-900/40">
+        <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+          Ready to audit your coding agent&rsquo;s claims.
         </p>
-        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-          Submit an agent message, paste a GitHub PR/commit URL, or click a 1-click preset above to run claim-by-claim forensic verification.
+        <p className="mx-auto mt-1 max-w-lg text-xs text-zinc-500 dark:text-zinc-400">
+          Click <strong>Check Claims</strong> above to run live against GitHub + Gemini, or preview a pre-verified three-verdict audit immediately with zero API calls.
         </p>
+        {onLoadSample ? (
+          <div className="mt-3">
+            <button
+              type="button"
+              onClick={onLoadSample}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-600/40 bg-emerald-50 px-3.5 py-1.5 text-xs font-semibold text-emerald-900 transition-colors hover:bg-emerald-100 dark:border-emerald-500/40 dark:bg-emerald-500/15 dark:text-emerald-200 dark:hover:bg-emerald-500/25"
+            >
+              <span>⚡ Preview Sample Verdicts Instantly (0 API Calls)</span>
+            </button>
+          </div>
+        ) : null}
       </div>
     );
   }
@@ -164,6 +178,7 @@ export function ResultsPanel({
   let trueCount = 0;
   let driftCount = 0;
   let unverifiedCount = 0;
+  let anyTreeTruncated = false;
 
   for (const claim of claims) {
     const df = driftFlags.find((d) => d.claimId === (claim.id || claim.text));
@@ -171,6 +186,8 @@ export function ResultsPanel({
     if (v === "TRUE") trueCount++;
     else if (v === "SPEC-DRIFT") driftCount++;
     else unverifiedCount++;
+    const ev = evidence[claim.id || claim.text];
+    if (ev?.treeTruncated) anyTreeTruncated = true;
   }
 
   const totalCount = claims.length;
@@ -184,6 +201,12 @@ export function ResultsPanel({
 
   return (
     <div className="space-y-4">
+      {anyTreeTruncated ? (
+        <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
+          Note: Target repository exceeds GitHub&rsquo;s single-tree response limit (<code className="font-mono">truncated=true</code>); deep paths outside the first tree page may not be indexed.
+        </p>
+      ) : null}
+
       {/* Build Honesty Scorecard */}
       <div className="rounded-xl border border-zinc-200 bg-zinc-50/90 p-4 dark:border-zinc-800 dark:bg-zinc-800/50">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -242,13 +265,8 @@ export function ResultsPanel({
           );
           const verdict = driftFlag?.verdict || "UNVERIFIED";
           const vStyle = VERDICT_STYLES[verdict] || FALLBACK_STYLE;
-          const hasFiles = Boolean(claimEvidence?.files?.length);
-          const hasCommits = Boolean(claimEvidence?.commits?.length);
           const branch = claimEvidence?.defaultBranch || "main";
           const parsedRef = parseSpecRef(driftFlag?.specReference || "");
-          const fileMatches: any[] = Array.isArray(claimEvidence?.fileMatches)
-            ? claimEvidence.fileMatches
-            : [];
 
           return (
             <li
@@ -259,7 +277,7 @@ export function ResultsPanel({
                 <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2.5">
                   <VerdictBadge verdict={verdict} />
                   <span className="rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-[11px] font-medium text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
-                    #{idx + 1} ({claim.id || `claim-${idx + 1}`})
+                    #{idx + 1}
                   </span>
                   <p className="min-w-0 flex-1 break-words text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                     {claim.text}
@@ -285,8 +303,8 @@ export function ResultsPanel({
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="text-[11px] font-semibold uppercase tracking-wider opacity-80">
                       {verdict === "TRUE"
-                        ? "Server-Verified Supporting Line"
-                        : "Server-Verified Spec Contradiction"}
+                        ? "Verified Source Citation"
+                        : "Verified Spec Contradiction"}
                     </span>
                     {ghBase && parsedRef ? (
                       <a
@@ -311,82 +329,7 @@ export function ResultsPanel({
                 </div>
               ) : null}
 
-              {/* Matched Repo Files & Commits */}
-              {hasFiles || hasCommits ? (
-                <div className="space-y-1.5 rounded-lg border border-zinc-100 bg-zinc-50 p-2.5 font-mono text-[11px] text-zinc-600 dark:border-zinc-800 dark:bg-zinc-800/60 dark:text-zinc-400">
-                  {hasFiles ? (
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="font-semibold text-zinc-700 dark:text-zinc-300">
-                        Files:
-                      </span>
-                      {claimEvidence.files.map((f: string) => {
-                        const matchInfo = fileMatches.find((m) => m.file === f);
-                        const lineSuffix = matchInfo?.lineNumber ? `#L${matchInfo.lineNumber}` : "";
-                        return ghBase ? (
-                          <a
-                            key={f}
-                            href={`${ghBase}/blob/${branch}/${f}${lineSuffix}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-1 rounded border border-zinc-200 bg-white px-1.5 py-0.5 text-zinc-700 hover:border-emerald-400 hover:text-emerald-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-emerald-500/50 dark:hover:text-emerald-400"
-                          >
-                            <span>{f}</span>
-                            {matchInfo?.hitCount ? (
-                              <span className="rounded bg-zinc-100 px-1 text-[10px] text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
-                                {matchInfo.hitCount} hits
-                              </span>
-                            ) : null}
-                          </a>
-                        ) : (
-                          <span
-                            key={f}
-                            className="rounded border border-zinc-200 bg-white px-1.5 py-0.5 dark:border-zinc-700 dark:bg-zinc-900"
-                          >
-                            {f}
-                          </span>
-                        );
-                      })}
-                    </div>
-                  ) : null}
-
-                  {hasCommits ? (
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="font-semibold text-zinc-700 dark:text-zinc-300">
-                        Commits:
-                      </span>
-                      {claimEvidence.commits.map((c: any, cIdx: number) => {
-                        const sha = typeof c === "string" ? c : c.sha || "";
-                        const shortSha = sha.slice(0, 7);
-                        const msg = typeof c === "object" && c.message ? String(c.message).split("\n")[0] : "";
-                        const diffBadge =
-                          typeof c === "object" &&
-                          (typeof c.additions === "number" || typeof c.deletions === "number")
-                            ? ` (+${c.additions || 0}/-${c.deletions || 0})`
-                            : "";
-                        return ghBase && sha ? (
-                          <a
-                            key={sha || cIdx}
-                            href={`${ghBase}/commit/${sha}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            title={msg}
-                            className="inline-flex items-center gap-1 rounded border border-zinc-200 bg-white px-1.5 py-0.5 text-emerald-700 hover:underline dark:border-zinc-700 dark:bg-zinc-900 dark:text-emerald-400"
-                          >
-                            <span>{shortSha}</span>
-                            {diffBadge ? (
-                              <span className="text-[10px] text-zinc-500">{diffBadge}</span>
-                            ) : null}
-                          </a>
-                        ) : (
-                          <span key={sha || cIdx} className="rounded bg-zinc-200/70 px-1.5 py-0.5 dark:bg-zinc-700">
-                            {shortSha}
-                          </span>
-                        );
-                      })}
-                    </div>
-                  ) : null}
-                </div>
-              ) : null}
+              <EvidenceDisplay evidence={claimEvidence} ghBase={ghBase} />
             </li>
           );
         })}

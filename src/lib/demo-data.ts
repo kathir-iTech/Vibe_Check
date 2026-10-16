@@ -1,7 +1,7 @@
 import { Claim } from "@/types";
 
 export const demoRepoUrl = "https://github.com/kathir-iTech/Vibe_Check";
-export const demoHeadSha = "674662188edef58c86ad2e9e5beff412bbfa9b9e";
+export const demoHeadSha = "f294071a9fab222625897d045365e3a0b7b8d809";
 
 export const demoClaims: Claim[] = [
   {
@@ -130,10 +130,10 @@ export interface ScenarioPreset {
 export const SCENARIO_PRESETS: ScenarioPreset[] = [
   {
     id: "mixed-3-verdict",
-    label: "1. Three-Verdict Flagship Trap (TRUE + UNVERIFIED + SPEC-DRIFT)",
+    label: "1. Three-Verdict Flagship Audit (TRUE + UNVERIFIED + SPEC-DRIFT)",
     badge: "Flagship Flow",
     description:
-      "Tests a realistic agent completion report containing one real feature, one hallucinated OAuth feature, and one spec violation.",
+      "Audits a completion report containing one real feature, one missing OAuth feature, and one spec violation.",
     message:
       "All tasks complete:\n1. Configured Tailwind CSS for project styling.\n2. Added OAuth login with Google and passing unit test suite.\n3. Implemented sandboxed code execution in the check-spec-drift route.",
     prUrl: "",
@@ -141,10 +141,10 @@ export const SCENARIO_PRESETS: ScenarioPreset[] = [
   },
   {
     id: "inject-agent-lie",
-    label: "2. 🧪 Inject Agent Lie & Test Detection (Stress Test)",
-    badge: "Exposes Bluff",
+    label: "2. Simulate Agent Bluff (Hallucinated Features)",
+    badge: "Catches Bluff",
     description:
-      "Simulates a classic 2am agent bluff claiming database migrations, Stripe payment webhooks, and container execution are wired.",
+      "Tests a classic 2am agent overclaim reporting database migrations, Stripe webhooks, and Docker execution.",
     message:
       "All database migrations complete, Stripe payment webhooks are fully wired in check-evidence, and isolated Docker code execution is live.",
     prUrl: "",
@@ -152,10 +152,10 @@ export const SCENARIO_PRESETS: ScenarioPreset[] = [
   },
   {
     id: "spec-drift-trap",
-    label: "3. Spec-Drift Contradiction Trap",
+    label: "3. Spec-Drift Contradiction Check",
     badge: "Catches Drift",
     description:
-      "Tests an agent claiming it switched to a deprecated Gemini 2.5 model and enabled sandboxed execution, violating scope.md and spec.md.",
+      "Detects when an agent claims it used a banned Gemini 2.5 model or added container code execution against spec.md.",
     message:
       "Switched the primary Gemini model to gemini-2.5-flash and enabled sandboxed code execution for faster checks.",
     prUrl: "",
@@ -163,10 +163,10 @@ export const SCENARIO_PRESETS: ScenarioPreset[] = [
   },
   {
     id: "real-pr-url",
-    label: "4. Real PR URL Audit (TypeScript #64651)",
+    label: "4. Live GitHub PR Audit (TypeScript #64651)",
     badge: "PR Source",
     description:
-      "Fetches claim text directly from a real public GitHub Pull Request via the GitHub REST API instead of free-text paste.",
+      "Fetches claim text directly from a public GitHub Pull Request via the GitHub REST API.",
     message: "",
     prUrl: "https://github.com/microsoft/TypeScript/pull/64651",
     repoUrl: "https://github.com/microsoft/TypeScript",
