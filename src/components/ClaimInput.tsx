@@ -21,42 +21,54 @@ export function getVerdictColor(verdict: string): string {
 
 interface PresetGridProps {
   disabled?: boolean;
+  activeId?: string;
   onSelectPreset: (preset: ScenarioPreset) => void;
 }
 
-export function ScenarioPresetGrid({ disabled, onSelectPreset }: PresetGridProps) {
+const SHORT_LABELS: Record<string, { title: string; tag: string }> = {
+  "mixed-3-verdict": { title: "1. Three-Verdict Flagship Audit", tag: "TRUE · UNVERIFIED · DRIFT" },
+  "inject-agent-lie": { title: "2. Simulate Agent Bluff", tag: "Fake OAuth & Docker" },
+  "spec-drift-trap": { title: "3. Spec-Drift Contradiction", tag: "Violates spec.md" },
+  "real-pr-url": { title: "4. Live GitHub PR Audit", tag: "TypeScript #64651" },
+};
+
+export function ScenarioPresetGrid({ disabled, activeId, onSelectPreset }: PresetGridProps) {
   return (
-    <div className="mb-4 space-y-2">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
-          Quick-Start Test Scenarios
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+          Quick Presets
         </span>
-        <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
-          Click any scenario to auto-fill the inspector
+        <span className="text-[11px] text-zinc-400 dark:text-zinc-500">
+          1-click auto-fill
         </span>
       </div>
-      <div className="grid gap-2 sm:grid-cols-2">
-        {SCENARIO_PRESETS.map((preset) => (
-          <button
-            key={preset.id}
-            type="button"
-            disabled={disabled}
-            onClick={() => onSelectPreset(preset)}
-            className="group flex flex-col items-start rounded-lg border border-zinc-200 bg-zinc-50/80 p-2.5 text-left transition-colors hover:border-emerald-500/60 hover:bg-emerald-50/40 disabled:cursor-not-allowed disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-800/50 dark:hover:border-emerald-500/50 dark:hover:bg-emerald-950/20"
-          >
-            <div className="flex w-full items-center justify-between gap-2">
-              <span className="text-xs font-semibold text-zinc-900 group-hover:text-emerald-700 dark:text-zinc-100 dark:group-hover:text-emerald-300">
-                {preset.label}
+      <div className="grid grid-cols-2 gap-1.5">
+        {SCENARIO_PRESETS.map((preset) => {
+          const short = SHORT_LABELS[preset.id] || { title: preset.label, tag: preset.badge };
+          const isSelected = activeId === preset.id;
+          return (
+            <button
+              key={preset.id}
+              type="button"
+              disabled={disabled}
+              onClick={() => onSelectPreset(preset)}
+              title={preset.description}
+              className={`group flex flex-col items-start rounded-lg border px-2.5 py-2 text-left transition-all disabled:cursor-not-allowed disabled:opacity-60 ${
+                isSelected
+                  ? "border-emerald-500 bg-emerald-50/70 dark:border-emerald-500/80 dark:bg-emerald-950/30"
+                  : "border-zinc-200 bg-zinc-50/70 hover:border-emerald-500/50 hover:bg-white dark:border-zinc-800 dark:bg-zinc-900/60 dark:hover:border-zinc-700 dark:hover:bg-zinc-800/80"
+              }`}
+            >
+              <span className="line-clamp-1 text-xs font-semibold text-zinc-900 group-hover:text-emerald-600 dark:text-zinc-100 dark:group-hover:text-emerald-400">
+                {short.title}
               </span>
-              <span className="shrink-0 rounded bg-zinc-200/80 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300">
-                {preset.badge}
+              <span className="mt-0.5 font-mono text-[10px] text-zinc-500 dark:text-zinc-400">
+                {short.tag}
               </span>
-            </div>
-            <p className="mt-1 line-clamp-1 text-[11px] text-zinc-500 dark:text-zinc-400">
-              {preset.description}
-            </p>
-          </button>
-        ))}
+            </button>
+          );
+        })}
       </div>
     </div>
   );

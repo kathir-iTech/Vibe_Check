@@ -50,23 +50,23 @@ interface VerdictStyle {
 const VERDICT_STYLES: Record<string, VerdictStyle> = {
   TRUE: {
     className:
-      "bg-emerald-100 text-emerald-800 border border-emerald-300/70 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/30",
+      "bg-emerald-500/15 text-emerald-700 border border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/30",
     cardBorder:
-      "border-l-4 border-l-emerald-500 border-zinc-200 dark:border-zinc-800 dark:border-l-emerald-500",
+      "border-l-4 border-l-emerald-500 border-zinc-200/90 dark:border-zinc-800 dark:border-l-emerald-500",
     Icon: CheckIcon,
   },
   UNVERIFIED: {
     className:
-      "bg-red-100 text-red-700 border border-red-300/70 dark:bg-red-500/15 dark:text-red-300 dark:border-red-500/30",
+      "bg-red-500/15 text-red-700 border border-red-500/30 dark:bg-red-500/15 dark:text-red-300 dark:border-red-500/30",
     cardBorder:
-      "border-l-4 border-l-red-500 border-zinc-200 dark:border-zinc-800 dark:border-l-red-500",
+      "border-l-4 border-l-red-500 border-zinc-200/90 dark:border-zinc-800 dark:border-l-red-500",
     Icon: QuestionIcon,
   },
   "SPEC-DRIFT": {
     className:
-      "bg-amber-100 text-amber-800 border border-amber-300/70 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30",
+      "bg-amber-500/15 text-amber-800 border border-amber-500/30 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30",
     cardBorder:
-      "border-l-4 border-l-amber-500 border-zinc-200 dark:border-zinc-800 dark:border-l-amber-500",
+      "border-l-4 border-l-amber-500 border-zinc-200/90 dark:border-zinc-800 dark:border-l-amber-500",
     Icon: WarningIcon,
   },
 };
@@ -82,7 +82,7 @@ export function VerdictBadge({ verdict }: { verdict: string }) {
   const { Icon } = style;
   return (
     <span
-      className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide ${style.className}`}
+      className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide ${style.className}`}
     >
       <Icon className="h-3 w-3" />
       {verdict}
@@ -112,22 +112,21 @@ function parseSpecRef(specRef: string): { file: string; line: number | null; quo
 
 function ResultsSkeleton() {
   return (
-    <div role="status" className="space-y-3">
+    <div role="status" className="space-y-2.5">
       <div className="flex items-center gap-2 text-xs font-medium text-emerald-700 dark:text-emerald-400">
         <span className="inline-block h-2 w-2 animate-ping rounded-full bg-emerald-500" />
-        <span>Checking claims against repo evidence &amp; spec documents&hellip;</span>
+        <span>Verifying claims against repository files, diffs &amp; specs&hellip;</span>
       </div>
       {[0, 1, 2].map((i) => (
         <div
           key={i}
-          className="animate-pulse space-y-2.5 rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-800/50"
+          className="animate-pulse space-y-2 rounded-xl border border-zinc-200 bg-zinc-50 p-3.5 dark:border-zinc-800 dark:bg-zinc-800/50"
         >
           <div className="flex items-center gap-2">
-            <div className="h-5 w-24 rounded-full bg-zinc-200 dark:bg-zinc-700" />
+            <div className="h-5 w-20 rounded-full bg-zinc-200 dark:bg-zinc-700" />
             <div className="h-4 flex-1 rounded bg-zinc-200 dark:bg-zinc-700" />
           </div>
           <div className="h-3 w-2/3 rounded bg-zinc-200/70 dark:bg-zinc-700/70" />
-          <div className="h-8 w-full rounded bg-zinc-200/50 dark:bg-zinc-700/40" />
         </div>
       ))}
     </div>
@@ -152,19 +151,16 @@ export function ResultsPanel({
     return (
       <div className="rounded-xl border border-dashed border-zinc-300 bg-zinc-50/60 p-6 text-center dark:border-zinc-800 dark:bg-zinc-900/40">
         <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
-          Ready to audit your coding agent&rsquo;s claims.
-        </p>
-        <p className="mx-auto mt-1 max-w-lg text-xs text-zinc-500 dark:text-zinc-400">
-          Click <strong>Check Claims</strong> above to run live against GitHub + Gemini, or preview a pre-verified three-verdict audit immediately with zero API calls.
+          Ready to audit your coding agent&rsquo;s claims
         </p>
         {onLoadSample ? (
           <div className="mt-3">
             <button
               type="button"
               onClick={onLoadSample}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-600/40 bg-emerald-50 px-3.5 py-1.5 text-xs font-semibold text-emerald-900 transition-colors hover:bg-emerald-100 dark:border-emerald-500/40 dark:bg-emerald-500/15 dark:text-emerald-200 dark:hover:bg-emerald-500/25"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500"
             >
-              <span>⚡ Preview Sample Verdicts Instantly (0 API Calls)</span>
+              <span>⚡ Load 3-Verdict Sample</span>
             </button>
           </div>
         ) : null}
@@ -192,72 +188,56 @@ export function ResultsPanel({
 
   const totalCount = claims.length;
   const honestyScore = totalCount > 0 ? Math.round((trueCount / totalCount) * 100) : 0;
-  const scoreBadgeColor =
-    honestyScore >= 80 && driftCount === 0
-      ? "bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/30"
-      : driftCount > 0
-        ? "bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30"
-        : "bg-red-100 text-red-800 border-red-300 dark:bg-red-500/15 dark:text-red-300 dark:border-red-500/30";
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {anyTreeTruncated ? (
-        <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
-          Note: Target repository exceeds GitHub&rsquo;s single-tree response limit (<code className="font-mono">truncated=true</code>); deep paths outside the first tree page may not be indexed.
+        <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
+          Note: Repository tree exceeds single-page limit (<code className="font-mono">truncated=true</code>).
         </p>
       ) : null}
 
-      {/* Build Honesty Scorecard */}
-      <div className="rounded-xl border border-zinc-200 bg-zinc-50/90 p-4 dark:border-zinc-800 dark:bg-zinc-800/50">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+      {/* Compact Build Honesty Scorecard */}
+      <div className="rounded-xl border border-zinc-200/90 bg-zinc-50/90 p-3.5 dark:border-zinc-800 dark:bg-zinc-800/40">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2.5">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600/10 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
               <ShieldIcon className="h-4 w-4" />
             </span>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                Build Honesty Scorecard
-              </p>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+              <div className="flex items-center gap-2">
+                <span className="text-base font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
                   {honestyScore}% Verified Support
                 </span>
-                <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${scoreBadgeColor}`}>
-                  {trueCount}/{totalCount} TRUE
+                <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                  Build Honesty Score
                 </span>
               </div>
+              {(label || timings?.totalMs) ? (
+                <p className="font-mono text-[10px] text-zinc-500 dark:text-zinc-400">
+                  {label ? `${label} · ` : ""}
+                  {timings?.totalMs ? `${timings.totalMs}ms` : ""}
+                </p>
+              ) : null}
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
-            <span className="rounded-md bg-emerald-100/80 px-2.5 py-1 font-semibold text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300">
+          <div className="flex flex-wrap items-center gap-1.5 font-mono text-xs">
+            <span className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 font-semibold text-emerald-700 dark:text-emerald-300">
               ✓ {trueCount} TRUE
             </span>
-            <span className="rounded-md bg-amber-100/80 px-2.5 py-1 font-semibold text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">
-              ⚠ {driftCount} SPEC-DRIFT
+            <span className="rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 font-semibold text-amber-700 dark:text-amber-300">
+              ⚠ {driftCount} DRIFT
             </span>
-            <span className="rounded-md bg-red-100/80 px-2.5 py-1 font-semibold text-red-700 dark:bg-red-500/15 dark:text-red-300">
+            <span className="rounded-md border border-red-500/30 bg-red-500/10 px-2 py-0.5 font-semibold text-red-700 dark:text-red-300">
               ? {unverifiedCount} UNVERIFIED
             </span>
           </div>
         </div>
-
-        {(label || timings?.totalMs) ? (
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-zinc-200/80 pt-2.5 font-mono text-[11px] text-zinc-500 dark:border-zinc-700/70 dark:text-zinc-400">
-            {label ? <span>{label}</span> : <span />}
-            {timings?.totalMs ? (
-              <span>
-                pipeline: {timings.evidenceMs ? `evidence ${timings.evidenceMs}ms · ` : ""}
-                {timings.driftMs ? `drift ${timings.driftMs}ms · ` : ""}
-                total {timings.totalMs}ms
-              </span>
-            ) : null}
-          </div>
-        ) : null}
       </div>
 
-      {/* Claim-by-claim verdict list */}
-      <ul className="space-y-3">
+      {/* Scannable Claim Verdict Cards */}
+      <ul className="space-y-2.5">
         {claims.map((claim, idx) => {
           const claimEvidence = evidence[claim.id || claim.text];
           const driftFlag = driftFlags.find(
@@ -271,61 +251,54 @@ export function ResultsPanel({
           return (
             <li
               key={claim.id || claim.text}
-              className={`space-y-2.5 rounded-xl border bg-white p-4 shadow-sm transition-colors dark:bg-zinc-900 ${vStyle.cardBorder}`}
+              className={`space-y-2 rounded-xl border bg-white p-3.5 shadow-sm transition-colors dark:bg-zinc-900/90 ${vStyle.cardBorder}`}
             >
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2.5">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex min-w-0 flex-1 items-center gap-2">
                   <VerdictBadge verdict={verdict} />
-                  <span className="rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-[11px] font-medium text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
-                    #{idx + 1}
-                  </span>
                   <p className="min-w-0 flex-1 break-words text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                     {claim.text}
                   </p>
                 </div>
+                <span className="shrink-0 font-mono text-[10px] text-zinc-400">
+                  #{idx + 1}
+                </span>
               </div>
 
               {driftFlag?.reason ? (
-                <p className="text-xs leading-relaxed text-zinc-600 dark:text-zinc-300">
+                <p className="text-xs text-zinc-600 dark:text-zinc-400">
                   {driftFlag.reason}
                 </p>
               ) : null}
 
-              {/* Verified Citation Block with Deep Link */}
+              {/* Compact Clickable Citation Box */}
               {driftFlag?.specReference ? (
                 <div
-                  className={`rounded-lg border p-2.5 font-mono text-xs leading-relaxed ${
+                  className={`flex flex-wrap items-center justify-between gap-2 rounded-lg border px-2.5 py-1.5 font-mono text-[11px] ${
                     verdict === "TRUE"
-                      ? "border-emerald-200 bg-emerald-50/70 text-emerald-900 dark:border-emerald-500/30 dark:bg-emerald-950/30 dark:text-emerald-300"
-                      : "border-amber-200 bg-amber-50/70 text-amber-900 dark:border-amber-500/30 dark:bg-amber-950/30 dark:text-amber-300"
+                      ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-900 dark:text-emerald-200"
+                      : "border-amber-500/25 bg-amber-500/10 text-amber-900 dark:text-amber-200"
                   }`}
                 >
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-[11px] font-semibold uppercase tracking-wider opacity-80">
-                      {verdict === "TRUE"
-                        ? "Verified Source Citation"
-                        : "Verified Spec Contradiction"}
-                    </span>
-                    {ghBase && parsedRef ? (
-                      <a
-                        href={`${ghBase}/blob/${branch}/${parsedRef.file}${
-                          parsedRef.line ? `#L${parsedRef.line}` : ""
-                        }`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1 text-[11px] font-semibold underline underline-offset-2 hover:opacity-80"
-                      >
-                        <span>
-                          {parsedRef.file}
-                          {parsedRef.line ? `:${parsedRef.line}` : ""}
-                        </span>
-                        <ExternalLinkIcon className="h-3 w-3" />
-                      </a>
-                    ) : null}
-                  </div>
-                  <p className="mt-1 break-all">
-                    &rarr; {driftFlag.specReference}
-                  </p>
+                  <span className="line-clamp-1 flex-1 break-all">
+                    &rarr; { parsedRef ? parsedRef.quote : driftFlag.specReference }
+                  </span>
+                  {ghBase && parsedRef ? (
+                    <a
+                      href={`${ghBase}/blob/${branch}/${parsedRef.file}${
+                        parsedRef.line ? `#L${parsedRef.line}` : ""
+                      }`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex shrink-0 items-center gap-1 rounded bg-black/10 px-1.5 py-0.5 text-[10px] font-bold underline-offset-2 hover:underline dark:bg-white/10"
+                    >
+                      <span>
+                        {parsedRef.file}
+                        {parsedRef.line ? `:${parsedRef.line}` : ""}
+                      </span>
+                      <ExternalLinkIcon className="h-2.5 w-2.5" />
+                    </a>
+                  ) : null}
                 </div>
               ) : null}
 

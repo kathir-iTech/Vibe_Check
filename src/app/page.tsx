@@ -34,6 +34,7 @@ interface CheckResult {
 
 type PipelineStage = "idle" | "source" | "extract" | "evidence" | "drift" | "done" | "error";
 type VerificationTab = "self-audit" | "benchmark" | "demo";
+type InputMode = "message" | "pr";
 
 function toModelInfo(data: any): ModelInfo | undefined {
   return data && data.model
@@ -41,31 +42,11 @@ function toModelInfo(data: any): ModelInfo | undefined {
     : undefined;
 }
 
-const PIPELINE_STEPS: { id: PipelineStage; step: string; title: string; detail: string }[] = [
-  {
-    id: "source",
-    step: "01",
-    title: "Claim Source",
-    detail: "Agent message or GitHub PR/commit",
-  },
-  {
-    id: "extract",
-    step: "02",
-    title: "Claim Extractor",
-    detail: "Atomic Claims + Injection Guard",
-  },
-  {
-    id: "evidence",
-    step: "03",
-    title: "Repo & Diff Check",
-    detail: "Tree + 60-File Content + Commit Diffs",
-  },
-  {
-    id: "drift",
-    step: "04",
-    title: "Spec-Drift & Line Gate",
-    detail: "Verbatim Line + Code/Negation Guards",
-  },
+const PIPELINE_STEPS: { id: PipelineStage; step: string; title: string }[] = [
+  { id: "source", step: "01", title: "Claim Source" },
+  { id: "extract", step: "02", title: "Gemini Extractor" },
+  { id: "evidence", step: "03", title: "GitHub Tree & Diffs" },
+  { id: "drift", step: "04", title: "Spec-Drift & Line Gate" },
 ];
 
 const STAGE_ORDER: Record<PipelineStage, number> = {
@@ -82,6 +63,8 @@ function InspectorWorkspace() {
   const searchParams = useSearchParams();
   const demoParamActive = searchParams?.get("demo") === "1";
 
+  const [selectedPresetId, setSelectedPresetId] = useState<string>("mixed-3-verdict");
+  const [inputMode, setInputMode] = useState<InputMode>("message");
   const [message, setMessage] = useState(SCENARIO_PRESETS[0].message);
   const [prUrl, setPrUrl] = useState("");
   const [claimSource, setClaimSource] = useState("");
@@ -92,40 +75,29 @@ function InspectorWorkspace() {
   const [showTokenInput, setShowTokenInput] = useState(false);
   const [activeTab, setActiveTab] = useState<VerificationTab>("self-audit");
 
-  const [claims, setClaims] = useState<any[]>(() => (demoParamActive ? demoClaims : []));
-  const [evidence, setEvidence] = useState<Record<string, any>>(() =>
-    demoParamActive ? demoEvidence : {}
-  );
-  const [driftFlags, setDriftFlags] = useState<any[]>(() =>
-    demoParamActive ? demoVerdicts : []
-  );
+  // Initialize with the 3-verdict sample preview so the right-hand Results studio is
+  // immediately visual and populated on first open (no empty gray box!), and updates live on Check Claims
+  const [claims, setClaims] = useState<any[]>(() => demoClaims);
+  const [evidence, setEvidence] = useState<Record<string, any>>(() => demoEvidence);
+  const [driftFlags, setDriftFlags] = useState<any[]>(() => demoVerdicts);
   const [loading, setLoading] = useState(false);
-  const [stage, setStage] = useState<PipelineStage>(() =>
-    demoParamActive ? "done" : "idle"
-  );
+  const [stage, setStage] = useState<PipelineStage>("done");
   const [error, setError] = useState("");
   const [resultSource, setResultSource] = useState<{
     kind: "live" | "cached" | "demo";
     at: string;
-  } | null>(() =>
-    demoParamActive ? { kind: "demo", at: "2026-10-16T00:00:00.000Z" } : null
-  );
+  } | null>(() => ({
+    kind: "demo",
+    at: demoParamActive ? "2026-10-17T00:00:00.000Z" : "2026-10-17T00:00:00.000Z",
+  }));
   const [models, setModels] = useState<ResultModels>({});
   const [timings, setTimings] = useState<{
     evidenceMs?: number;
     driftMs?: number;
     totalMs?: number;
-  }>(() => (demoParamActive ? { evidenceMs: 410, driftMs: 0, totalMs: 410 } : {}));
+  }>({ evidenceMs: 410, driftMs: 0, totalMs: 410 });
   const [editingClaims, setEditingClaims] = useState(false);
   const [draftClaimsText, setDraftClaimsText] = useState("");
-
-  const activeClaims = claims.length > 0 ? claims : demoParamActive ? demoClaims : [];
-  const activeEvidence =
-    Object.keys(evidence).length > 0 ? evidence : demoParamActive ? demoEvidence : {};
-  const activeDriftFlags =
-    driftFlags.length > 0 ? driftFlags : demoParamActive ? demoVerdicts : [];
-  const activeResultSource =
-    resultSource || (demoParamActive ? { kind: "demo", at: "2026-10-16T00:00:00.000Z" } : null);
 
   function buildAuthHeaders(): Record<string, string> {
     const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -137,8 +109,10 @@ function InspectorWorkspace() {
 
   function applyPreset(preset: ScenarioPreset) {
     if (loading) return;
+    setSelectedPresetId(preset.id);
     setMessage(preset.message);
     setPrUrl(preset.prUrl);
+    setInputMode(preset.prUrl ? "pr" : "message");
     setRepoUrl(preset.repoUrl);
     setClaimSource("");
     setError("");
@@ -146,6 +120,8 @@ function InspectorWorkspace() {
 
   function loadDemoIntoInspector() {
     if (loading) return;
+    setSelectedPresetId("mixed-3-verdict");
+    setInputMode("message");
     setMessage(SCENARIO_PRESETS[0].message);
     setPrUrl("");
     setRepoUrl(demoRepoUrl);
@@ -164,7 +140,7 @@ function InspectorWorkspace() {
   }
 
   function openClaimEditor() {
-    const lines = activeClaims.map((c) => c.text).join("\n");
+    const lines = claims.map((c) => c.text).join("\n");
     setDraftClaimsText(lines);
     setEditingClaims(true);
   }
@@ -253,10 +229,10 @@ function InspectorWorkspace() {
   }
 
   async function handleCheck(forceLive = false) {
-    const sourceUrl = prUrl.trim();
+    const sourceUrl = inputMode === "pr" ? prUrl.trim() : "";
     const targetRepo = repoUrl.trim();
     if (!sourceUrl && !message.trim()) {
-      setError("Paste an agent message first, or a PR/commit URL below.");
+      setError("Paste an agent message first, or switch to the PR/Commit URL tab.");
       return;
     }
     if (!targetRepo) {
@@ -402,348 +378,341 @@ function InspectorWorkspace() {
   const currentStageNum = STAGE_ORDER[stage] ?? 0;
 
   return (
-    <main className="mx-auto max-w-4xl space-y-6 px-4 py-8 sm:py-10">
-      {/* Forensic Hero Banner */}
-      <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="max-w-2xl space-y-1.5">
-            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-50 px-2.5 py-0.5 font-mono text-[11px] font-semibold text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-300">
+    <main className="mx-auto max-w-6xl space-y-5 px-4 py-6 sm:px-6">
+      {/* Compact Studio Header + 4-Stage Pipeline Bar */}
+      <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-zinc-200/90 bg-white px-5 py-4 shadow-sm dark:border-zinc-800/90 dark:bg-zinc-900/90">
+        <div className="space-y-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 font-mono text-[11px] font-semibold text-emerald-700 dark:text-emerald-300">
               <ShieldIcon className="h-3.5 w-3.5" />
-              <span>2am Discovery Prevention &middot; Build-Honesty &amp; Spec-Drift Auditor</span>
-            </div>
-            <h1 className="text-xl font-bold tracking-tight text-zinc-900 sm:text-2xl dark:text-zinc-100">
+              <span>2am Discovery Prevention</span>
+            </span>
+            <h1 className="text-lg font-bold tracking-tight text-zinc-900 sm:text-xl dark:text-zinc-100">
               Did your AI coding agent actually build what it claimed?
             </h1>
-            <p className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-              Paste your coding agent&rsquo;s completion message (or a GitHub PR/commit URL) and repository URL. VibeCheck extracts discrete claims, cross-checks real repo files, commit diffs, and <code className="rounded bg-zinc-100 px-1 py-0.5 font-mono text-xs dark:bg-zinc-800">devpost/</code> specs, and verifies every cited line server-side.
-            </p>
           </div>
-          <div className="flex shrink-0 flex-col items-stretch gap-2 sm:items-end">
-            <button
-              type="button"
-              onClick={loadDemoIntoInspector}
-              disabled={loading}
-              className="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-600/40 bg-emerald-50 px-3.5 py-2 text-xs font-semibold text-emerald-900 transition-colors hover:bg-emerald-100 disabled:opacity-60 dark:border-emerald-500/40 dark:bg-emerald-500/15 dark:text-emerald-200 dark:hover:bg-emerald-500/25"
-            >
-              <span>⚡ Instant 3-Verdict Sample (0 API Calls)</span>
-            </button>
-          </div>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            Cross-checks AI completion claims against real GitHub files, commit diffs, and <code className="font-mono">devpost/</code> specs with verbatim line verification.
+          </p>
         </div>
 
-        {/* 4-Stage Pipeline Stepper */}
-        <div className="mt-4 grid gap-2 border-t border-zinc-100 pt-4 sm:grid-cols-4 dark:border-zinc-800">
+        {/* Compact Horizontal 4-Stage Pipeline Strip */}
+        <div className="flex flex-wrap items-center gap-1.5">
           {PIPELINE_STEPS.map((s, index) => {
             const stepNum = index + 1;
             const isActive = loading && currentStageNum === stepNum;
             const isDone =
               stage === "done" ||
-              (!loading && activeClaims.length > 0) ||
+              (!loading && claims.length > 0) ||
               (loading && currentStageNum > stepNum);
-            const stateClass = isActive
-              ? "border-emerald-500 bg-emerald-50/70 text-emerald-900 dark:border-emerald-500 dark:bg-emerald-950/30 dark:text-emerald-200"
-              : isDone
-                ? "border-emerald-200 bg-emerald-50/30 text-zinc-800 dark:border-emerald-900/50 dark:bg-emerald-950/10 dark:text-zinc-200"
-                : "border-zinc-200 bg-zinc-50/70 text-zinc-600 dark:border-zinc-800 dark:bg-zinc-800/40 dark:text-zinc-400";
             return (
               <div
                 key={s.id}
-                className={`rounded-lg border px-3 py-2 transition-colors ${stateClass}`}
+                className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 font-mono text-[11px] transition-colors ${
+                  isActive
+                    ? "border-emerald-500 bg-emerald-500/15 font-bold text-emerald-700 dark:text-emerald-300"
+                    : isDone
+                      ? "border-emerald-500/25 bg-emerald-500/5 text-zinc-800 dark:text-zinc-200"
+                      : "border-zinc-200 bg-zinc-50 text-zinc-500 dark:border-zinc-800 dark:bg-zinc-800/40 dark:text-zinc-400"
+                }`}
               >
-                <div className="flex items-center justify-between font-mono text-[10px] font-bold uppercase tracking-wider">
-                  <span>Stage {s.step}</span>
-                  <span>{isActive ? "RUNNING…" : isDone ? "✓ READY" : "STANDBY"}</span>
-                </div>
-                <p className="mt-0.5 text-xs font-semibold">{s.title}</p>
-                <p className="text-[11px] opacity-80">{s.detail}</p>
+                <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                  {isActive ? "●" : isDone ? "✓" : s.step}
+                </span>
+                <span>{s.title}</span>
               </div>
             );
           })}
         </div>
       </section>
 
-      {/* Main Input Panel */}
-      <section
-        id="inspector"
-        className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
-      >
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-          1. Audit Input
-        </h2>
-
-        <ScenarioPresetGrid disabled={loading} onSelectPreset={applyPreset} />
-
-        <div className="space-y-3">
-          {!prUrl.trim() ? (
-            <div>
-              <label
-                htmlFor="agentMessage"
-                className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400"
-              >
-                Agent Completion Message / Claim Text
-              </label>
-              <textarea
-                id="agentMessage"
-                rows={4}
-                disabled={loading}
-                placeholder="Paste agent message here..."
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                className="block min-h-[7rem] w-full resize-y rounded-lg border border-zinc-300 bg-zinc-50 px-3 py-2.5 font-mono text-sm text-zinc-900 placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500"
-              />
-            </div>
-          ) : null}
-
-          <div className="flex items-center gap-3">
-            <span className="h-px flex-1 bg-zinc-200 dark:bg-zinc-700" aria-hidden="true" />
-            <span className="text-xs uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
-              or paste a GitHub PR / commit URL
-            </span>
-            <span className="h-px flex-1 bg-zinc-200 dark:bg-zinc-700" aria-hidden="true" />
-          </div>
-
-          <input
-            type="text"
-            id="prUrl"
-            disabled={loading}
-            placeholder="https://github.com/{owner}/{repo}/pull/123 or .../commit/abc1234"
-            value={prUrl}
-            onChange={(e) => {
-              setPrUrl(e.target.value);
-              setClaimSource("");
-            }}
-            className="block w-full rounded-lg border border-zinc-300 bg-zinc-50 px-3 py-2.5 font-mono text-sm text-zinc-900 placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500"
-          />
-
-          {claimSource ? (
-            <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-800">
-              <p className="mb-1 text-xs uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
-                Fetched PR / Commit Claim Source
-              </p>
-              <p className="max-h-28 overflow-y-auto whitespace-pre-wrap break-words font-mono text-xs text-zinc-700 dark:text-zinc-300">
-                {claimSource}
-              </p>
-            </div>
-          ) : null}
-
-          <div>
-            <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
-              <label
-                htmlFor="repoUrl"
-                className="block text-xs font-medium text-zinc-600 dark:text-zinc-400"
-              >
-                Target GitHub Repository URL
-              </label>
+      {/* Split-Screen 2-Column Workspace: Left = Audit Input | Right = Results & Export */}
+      <div id="inspector" className="grid items-start gap-5 lg:grid-cols-12">
+        {/* LEFT COLUMN (5 cols): 1. Audit Input */}
+        <section className="space-y-4 rounded-2xl border border-zinc-200/90 bg-white p-5 shadow-sm lg:col-span-5 dark:border-zinc-800/90 dark:bg-zinc-900">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+              1. Audit Input
+            </h2>
+            <div className="inline-flex rounded-lg border border-zinc-200 bg-zinc-100 p-0.5 text-[11px] font-semibold dark:border-zinc-800 dark:bg-zinc-800">
               <button
                 type="button"
-                onClick={() => setShowTokenInput(!showTokenInput)}
-                className="font-mono text-[11px] font-medium text-emerald-700 underline-offset-2 hover:underline dark:text-emerald-400"
+                onClick={() => {
+                  setInputMode("message");
+                  setPrUrl("");
+                }}
+                className={`rounded-md px-2.5 py-1 transition-colors ${
+                  inputMode === "message"
+                    ? "bg-white text-zinc-900 shadow-sm dark:bg-zinc-900 dark:text-zinc-100"
+                    : "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400"
+                }`}
               >
-                {showTokenInput
-                  ? "Hide GitHub Token"
-                  : "+ Optional GitHub Token (5,000 req/hr)"}
+                Agent Message
+              </button>
+              <button
+                type="button"
+                onClick={() => setInputMode("pr")}
+                className={`rounded-md px-2.5 py-1 transition-colors ${
+                  inputMode === "pr"
+                    ? "bg-white text-zinc-900 shadow-sm dark:bg-zinc-900 dark:text-zinc-100"
+                    : "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400"
+                }`}
+              >
+                PR / Commit URL
               </button>
             </div>
-            <input
-              type="text"
-              id="repoUrl"
-              disabled={loading}
-              placeholder="https://github.com/{owner}/{repo}"
-              value={repoUrl}
-              onChange={(e) => setRepoUrl(e.target.value)}
-              className="block w-full rounded-lg border border-zinc-300 bg-zinc-50 px-3 py-2.5 font-mono text-sm text-zinc-900 placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500"
-            />
           </div>
 
-          {showTokenInput ? (
-            <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-800/60">
-              <label
-                htmlFor="githubToken"
-                className="mb-1 block text-xs font-medium text-zinc-700 dark:text-zinc-300"
-              >
-                Optional GitHub Personal Access Token (Passed only in request header for high-volume repos)
-              </label>
+          <ScenarioPresetGrid
+            disabled={loading}
+            activeId={selectedPresetId}
+            onSelectPreset={applyPreset}
+          />
+
+          <div className="space-y-3">
+            {inputMode === "message" ? (
+              <div>
+                <label
+                  htmlFor="agentMessage"
+                  className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400"
+                >
+                  Agent Completion Claims
+                </label>
+                <textarea
+                  id="agentMessage"
+                  rows={4}
+                  disabled={loading}
+                  placeholder="Paste what your coding agent claimed it finished..."
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  className="block w-full resize-y rounded-xl border border-zinc-300 bg-zinc-50 px-3 py-2.5 font-mono text-xs leading-relaxed text-zinc-900 placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-800/80 dark:text-zinc-100 dark:placeholder-zinc-500"
+                />
+              </div>
+            ) : (
+              <div>
+                <label
+                  htmlFor="prUrl"
+                  className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400"
+                >
+                  GitHub Pull Request or Commit URL
+                </label>
+                <input
+                  type="text"
+                  id="prUrl"
+                  disabled={loading}
+                  placeholder="https://github.com/{owner}/{repo}/pull/123"
+                  value={prUrl}
+                  onChange={(e) => {
+                    setPrUrl(e.target.value);
+                    setClaimSource("");
+                  }}
+                  className="block w-full rounded-xl border border-zinc-300 bg-zinc-50 px-3 py-2.5 font-mono text-xs text-zinc-900 placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-800/80 dark:text-zinc-100 dark:placeholder-zinc-500"
+                />
+              </div>
+            )}
+
+            {claimSource ? (
+              <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-2.5 dark:border-zinc-700 dark:bg-zinc-800">
+                <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+                  Fetched PR / Commit Text
+                </p>
+                <p className="max-h-20 overflow-y-auto whitespace-pre-wrap break-words font-mono text-[11px] text-zinc-700 dark:text-zinc-300">
+                  {claimSource}
+                </p>
+              </div>
+            ) : null}
+
+            <div>
+              <div className="mb-1 flex items-center justify-between gap-2">
+                <label
+                  htmlFor="repoUrl"
+                  className="block text-xs font-medium text-zinc-600 dark:text-zinc-400"
+                >
+                  Target GitHub Repository
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowTokenInput(!showTokenInput)}
+                  className="font-mono text-[11px] font-medium text-emerald-700 hover:underline dark:text-emerald-400"
+                >
+                  {showTokenInput ? "Hide Token" : "+ Optional GitHub Token (5,000 req/hr)"}
+                </button>
+              </div>
               <input
-                type="password"
-                id="githubToken"
+                type="text"
+                id="repoUrl"
                 disabled={loading}
-                placeholder="ghp_... or github_pat_... (leave blank to use server token)"
-                value={githubToken}
-                onChange={(e) => setGithubToken(e.target.value)}
-                className="block w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 font-mono text-xs text-zinc-900 placeholder-zinc-400 focus:border-emerald-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                placeholder="https://github.com/{owner}/{repo}"
+                value={repoUrl}
+                onChange={(e) => setRepoUrl(e.target.value)}
+                className="block w-full rounded-xl border border-zinc-300 bg-zinc-50 px-3 py-2 font-mono text-xs text-zinc-900 placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-800/80 dark:text-zinc-100 dark:placeholder-zinc-500"
               />
             </div>
-          ) : null}
 
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-            <div className="flex flex-wrap items-center gap-2.5">
+            {showTokenInput ? (
+              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-2.5 dark:border-zinc-800 dark:bg-zinc-800/60">
+                <input
+                  type="password"
+                  id="githubToken"
+                  disabled={loading}
+                  placeholder="ghp_... or github_pat_... (5,000 req/hr rate-limit shield)"
+                  value={githubToken}
+                  onChange={(e) => setGithubToken(e.target.value)}
+                  className="block w-full rounded-lg border border-zinc-300 bg-white px-2.5 py-1.5 font-mono text-xs text-zinc-900 placeholder-zinc-400 focus:border-emerald-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                />
+              </div>
+            ) : null}
+
+            <div className="flex flex-wrap items-center gap-2 pt-1">
               <button
                 onClick={() => handleCheck(false)}
                 disabled={loading}
-                className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-emerald-600/20 transition-all hover:bg-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {loading ? <SpinnerIcon className="h-4 w-4" /> : null}
-                {loading ? "Checking..." : "Check Claims"}
+                {loading ? "Checking Repo..." : "Check Claims"}
               </button>
               <button
                 type="button"
                 onClick={loadDemoIntoInspector}
                 disabled={loading}
-                className="rounded-lg border border-zinc-300 bg-white px-3.5 py-2.5 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                className="rounded-xl border border-zinc-300 bg-zinc-50 px-3 py-2.5 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-100 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
               >
-                Load Sample Data (?demo=1)
+                Load Sample (?demo=1)
               </button>
             </div>
-          </div>
 
-          {error ? (
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50/80 px-3.5 py-2.5 text-sm text-red-800 dark:border-red-500/30 dark:bg-red-950/30 dark:text-red-300">
-              <p className="font-medium">{error}</p>
-              <button
-                type="button"
-                onClick={loadDemoIntoInspector}
-                className="shrink-0 rounded-md border border-red-300 bg-white px-2.5 py-1 text-xs font-semibold text-red-800 hover:bg-red-50 dark:border-red-500/40 dark:bg-zinc-900 dark:text-red-300"
-              >
-                Load Sample Fallback &rarr;
-              </button>
-            </div>
-          ) : null}
-        </div>
-      </section>
-
-      {/* Results Section + Interactive Claim Editor */}
-      <section className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-              2. Verification Results
-            </h2>
-            {activeClaims.length > 0 && auditedRepoUrl ? (
-              <span className="rounded bg-zinc-100 px-2 py-0.5 font-mono text-[11px] text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
-                {auditedRepoUrl.replace(/^https?:\/\/github\.com\//i, "")}
-                {auditedHeadSha ? ` @ ${auditedHeadSha.slice(0, 7)}` : ""}
-              </span>
+            {error ? (
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-red-200 bg-red-50/80 px-3 py-2 text-xs text-red-800 dark:border-red-500/30 dark:bg-red-950/30 dark:text-red-300">
+                <p className="font-medium">{error}</p>
+                <button
+                  type="button"
+                  onClick={loadDemoIntoInspector}
+                  className="shrink-0 rounded border border-red-300 bg-white px-2 py-0.5 font-semibold text-red-800 dark:border-red-500/40 dark:bg-zinc-900 dark:text-red-300"
+                >
+                  Use Sample &rarr;
+                </button>
+              </div>
             ) : null}
           </div>
-          {activeClaims.length > 0 && !loading ? (
-            <button
-              type="button"
-              onClick={() => (editingClaims ? setEditingClaims(false) : openClaimEditor())}
-              className="rounded-lg border border-zinc-300 bg-zinc-50 px-3 py-1 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-            >
-              {editingClaims ? "Close Claim Editor" : "✎ Edit / Refine Claims"}
-            </button>
-          ) : null}
-        </div>
+        </section>
 
-        {editingClaims ? (
-          <div className="mb-4 space-y-2.5 rounded-xl border border-emerald-300/70 bg-emerald-50/40 p-4 dark:border-emerald-500/30 dark:bg-emerald-950/20">
-            <p className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
-              Edit Extracted Claims (one claim per line &mdash; re-verifies directly against repo evidence)
-            </p>
-            <textarea
-              rows={4}
-              value={draftClaimsText}
-              onChange={(e) => setDraftClaimsText(e.target.value)}
-              className="block w-full rounded-lg border border-zinc-300 bg-white p-2.5 font-mono text-xs text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-            />
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={handleVerifyEditedClaims}
-                className="rounded-lg bg-emerald-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-emerald-500"
-              >
-                Re-Verify Claims
-              </button>
-              <button
-                type="button"
-                onClick={() => setEditingClaims(false)}
-                className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-xs font-medium text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
-              >
-                Cancel
-              </button>
+        {/* RIGHT COLUMN (7 cols): 2. Verification Results + 3. Shareable Verdict Report */}
+        <div className="space-y-4 lg:col-span-7">
+          <section className="rounded-2xl border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800/90 dark:bg-zinc-900">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                  2. Verification Results
+                </h2>
+                {claims.length > 0 && auditedRepoUrl ? (
+                  <span className="rounded-md bg-zinc-100 px-2 py-0.5 font-mono text-[11px] text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
+                    {auditedRepoUrl.replace(/^https?:\/\/github\.com\//i, "")}
+                    {auditedHeadSha ? ` @ ${auditedHeadSha.slice(0, 7)}` : ""}
+                  </span>
+                ) : null}
+                {resultSource ? (
+                  <span
+                    className={`rounded-full px-2 py-0.5 font-mono text-[10px] font-bold uppercase ${
+                      resultSource.kind === "live"
+                        ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
+                        : "bg-amber-500/15 text-amber-700 dark:text-amber-300"
+                    }`}
+                  >
+                    {resultSource.kind === "live"
+                      ? "● Live API Run"
+                      : resultSource.kind === "cached"
+                        ? "Cached Run"
+                        : "Sample Preview (?demo=1)"}
+                  </span>
+                ) : null}
+              </div>
+
+              <div className="flex items-center gap-2">
+                {resultSource && resultSource.kind !== "live" && !loading ? (
+                  <button
+                    type="button"
+                    onClick={() => handleCheck(true)}
+                    className="font-mono text-[11px] font-semibold text-emerald-700 hover:underline dark:text-emerald-400"
+                  >
+                    Run Live via API &rarr;
+                  </button>
+                ) : null}
+                {claims.length > 0 && !loading ? (
+                  <button
+                    type="button"
+                    onClick={() => (editingClaims ? setEditingClaims(false) : openClaimEditor())}
+                    className="rounded-lg border border-zinc-300 bg-zinc-50 px-2.5 py-1 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                  >
+                    {editingClaims ? "Close Editor" : "✎ Edit / Refine Claims"}
+                  </button>
+                ) : null}
+              </div>
             </div>
-          </div>
-        ) : null}
 
-        {activeResultSource ? (
-          <div className="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
-            {activeResultSource.kind === "cached" ? (
-              <>
-                <span className="rounded-full bg-amber-100 px-2 py-0.5 font-bold uppercase tracking-wide text-amber-800 dark:bg-amber-500/15 dark:text-amber-400">
-                  cached
-                </span>
-                <span className="text-zinc-500 dark:text-zinc-400">
-                  saved {formatStamp(activeResultSource.at)} &mdash;
-                </span>
-                <button
-                  onClick={() => handleCheck(true)}
-                  disabled={loading}
-                  className="font-semibold text-emerald-700 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 disabled:cursor-not-allowed disabled:opacity-60 dark:text-emerald-400"
-                >
-                  Re-run live
-                </button>
-              </>
-            ) : activeResultSource.kind === "demo" ? (
-              <>
-                <span className="rounded-full bg-amber-100 px-2 py-0.5 font-bold uppercase tracking-wide text-amber-800 dark:bg-amber-500/15 dark:text-amber-400">
-                  sample data (?demo=1 &middot; 0 API calls)
-                </span>
-                <span className="text-zinc-500 dark:text-zinc-400">
-                  against <code className="font-mono">{demoRepoUrl}</code> &mdash;
-                </span>
-                <button
-                  onClick={() => handleCheck(true)}
-                  disabled={loading}
-                  className="font-semibold text-emerald-700 underline-offset-2 hover:underline dark:text-emerald-400"
-                >
-                  Run live via API
-                </button>
-              </>
-            ) : (
-              <>
-                <span className="rounded-full bg-emerald-100 px-2 py-0.5 font-bold uppercase tracking-wide text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-400">
-                  live
-                </span>
-                <span className="text-zinc-500 dark:text-zinc-400">
-                  checked {formatStamp(activeResultSource.at)}
-                </span>
-              </>
-            )}
-          </div>
-        ) : null}
+            {editingClaims ? (
+              <div className="mb-3 space-y-2 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3.5">
+                <p className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
+                  Edit Extracted Claims (one claim per line)
+                </p>
+                <textarea
+                  rows={3}
+                  value={draftClaimsText}
+                  onChange={(e) => setDraftClaimsText(e.target.value)}
+                  className="block w-full rounded-lg border border-zinc-300 bg-white p-2 font-mono text-xs text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                />
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleVerifyEditedClaims}
+                    className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500"
+                  >
+                    Re-Verify Claims
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditingClaims(false)}
+                    className="rounded-lg border border-zinc-300 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : null}
 
-        <ResultsPanel
-          claims={activeClaims}
-          evidence={activeEvidence}
-          driftFlags={activeDriftFlags}
-          loading={loading}
-          models={models}
-          repoUrl={auditedRepoUrl}
-          timings={timings}
-          onLoadSample={loadDemoIntoInspector}
-        />
-      </section>
+            <ResultsPanel
+              claims={claims}
+              evidence={evidence}
+              driftFlags={driftFlags}
+              loading={loading}
+              models={models}
+              repoUrl={auditedRepoUrl}
+              timings={timings}
+              onLoadSample={loadDemoIntoInspector}
+            />
+          </section>
 
-      {/* Report Exporter */}
-      <section className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-          3. Shareable Verdict Report &amp; PR Export
-        </h2>
-        <ReportExport
-          repoUrl={auditedRepoUrl}
-          headSha={auditedHeadSha}
-          claims={activeClaims}
-          evidence={activeEvidence}
-          verdicts={activeDriftFlags}
-        />
-      </section>
+          <section className="rounded-2xl border border-zinc-200/90 bg-white p-4 shadow-sm dark:border-zinc-800/90 dark:bg-zinc-900">
+            <h2 className="mb-2.5 text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+              3. Shareable Verdict Report &amp; PR Export
+            </h2>
+            <ReportExport
+              repoUrl={auditedRepoUrl}
+              headSha={auditedHeadSha}
+              claims={claims}
+              evidence={evidence}
+              verdicts={driftFlags}
+            />
+          </section>
+        </div>
+      </div>
 
-      {/* Compact 3-Tab Verification Suite (Self-Audit, QA Benchmark, Fallback Demo) */}
+      {/* Compact Bottom Verification Suite (3-Column Self-Audit + 72/72 Benchmark + Demo Mode) */}
       <section
         id="self-audit"
-        className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+        className="rounded-2xl border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-800/90 dark:bg-zinc-900"
       >
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-zinc-100 pb-3 dark:border-zinc-800">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-zinc-100 pb-2.5 dark:border-zinc-800">
           <div className="flex flex-wrap gap-1.5">
             <button
               type="button"
@@ -779,6 +748,9 @@ function InspectorWorkspace() {
               Fallback Demo Mode (?demo=1)
             </button>
           </div>
+          <span className="font-mono text-[11px] text-zinc-400">
+            Zero-Config Static Verification Suite
+          </span>
         </div>
 
         {activeTab === "self-audit" ? (
@@ -804,7 +776,7 @@ export default function Home() {
   return (
     <Suspense
       fallback={
-        <main className="mx-auto max-w-4xl px-4 py-12 text-sm text-zinc-500">
+        <main className="mx-auto max-w-6xl px-4 py-12 text-sm text-zinc-500">
           Loading VibeCheck Inspector&hellip;
         </main>
       }
