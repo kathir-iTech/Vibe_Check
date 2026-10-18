@@ -26,6 +26,8 @@ These two development requests ran while verifier source was changing and are ex
 - The first actual-provider browser attempt failed on provider HTTP 504, followed by an asynchronous test-observer error during teardown. The transient-error fallback now includes provider deadlines; production-function tests verify one fallback and no credential-error retry.
 - A subsequent browser attempt navigated to the native form URL while the development page was initializing. Interactive audit/import actions now wait for client readiness, and the live browser test waits before filling input. This attempt is not counted as a successful audit.
 - During the design revision, the first controlled browser run passed five cases and failed an outdated heading assertion and an import-readiness assertion. After correcting the heading and gating imports on readiness, all seven cases passed together.
+- Another actual local browser request failed on provider HTTP 503 high demand. The public-browser Express request subsequently completed, but its short supplied license prohibition did not survive the two-keyword relevance guard. This false negative is retained. Acronym/common-inflection handling now preserves that case without accepting the unrelated-license controls; an actual production-validator test checks both exact citations.
+- An initial staged deployment had a mistyped commit metadata argument. It was removed without promoting the public alias. A replacement built from the verified full source SHA was inspected and promoted only after hosted API/signature checks.
 
 ## Owner feedback and completed verification
 
@@ -35,6 +37,8 @@ The owner inspected the workspace and asked for fewer words and a distinct theme
 - `node scripts/evaluate-verifier.mjs`: 15/15 manufactured expected outcomes; zero of 13 unsafe cases accepted, compared with 11 accepted by the actual preserved legacy implementation. Selected cases only.
 - `npx playwright test tests/browser/workspace.spec.ts --workers=1`: seven passed together after the readiness correction.
 - `benchmark/v2/live-evaluation.json`: two actual public-source requests, eight labeled claim outcomes matched. Raw signed results, immutable subject SHAs and verifier source hashes are recorded. Development failures remain separate.
+- A staged production message audit of Express completed with license TRUE and tests-passed UNVERIFIED; actual extraction used the fallback model and assessment used the primary. Independent Node verification passed with the hosted public key. `benchmark/v2/hosted-observation.json` preserves this observation.
+- GitHub workflow run `39098304004` passed installation, the full verification gate, source-hash evaluation and seven controlled browser cases. A separate local recheck workflow test passed; subsequent CI includes it as the eighth browser case.
 - Public-history review found no tracked local environment/private learner-profile history and no match for the reviewed provider-token patterns. Deployment dry-run excluded local secrets, private learner context, tools and artifact contents. This is a scoped publication review, not a general security certification.
 
 ## Remaining delivery work

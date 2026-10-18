@@ -178,3 +178,47 @@ test("interrupted audit keeps input and lets the user retry", async ({
     page.getByRole("button", { name: "Check the proof" }),
   ).toBeEnabled();
 });
+
+test("recheck preserves the earlier revision and shows changed claim assessments", async ({
+  page,
+}) => {
+  const before = {
+    ...EXAMPLE_AUDIT,
+    source: { kind: "live" as const, label: "Controlled recheck fixture" },
+  };
+  const after = structuredClone(before);
+  after.headSha = "b".repeat(40);
+  after.verdicts[1].verdict = "PARTIAL";
+  const requests: any[] = [];
+  await page.route("**/api/audit", (route) => {
+    requests.push(route.request().postDataJSON());
+    const report = encodeSignedReport(requests.length === 1 ? before : after);
+    return route.fulfill({
+      contentType: "application/x-ndjson",
+      body:
+        JSON.stringify({
+          type: "result",
+          audit: report.signedPayload,
+          auditReceipt: report.id,
+        }) + "\n",
+    });
+  });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Check the proof" }).click();
+  await expect(
+    page.getByText("Live server assessment", { exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Recheck latest revision" }).click();
+  await expect(page.locator(".audit-title")).toContainText("bbbbbbbb");
+  expect(requests[1].baseSha).toBe(before.headSha);
+  expect(requests[1].headSha).toBe("");
+  expect(requests[1].claims.map((claim: any) => claim.text)).toEqual(
+    before.claims.map((claim) => claim.text),
+  );
+  await page.getByRole("tab", { name: /Compare/ }).click();
+  const row = page
+    .locator(".comparison-row")
+    .filter({ hasText: "All tests passed." });
+  await expect(row).toContainText("Needs evidence");
+  await expect(row).toContainText("Partial support");
+});

@@ -14,25 +14,33 @@ test("real GitHub and Gemini audit, requirement conflict, export and offline sig
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("/");
-  await expect(page.getByRole("button", { name: "Check the proof" })).toBeEnabled();
+  await expect(
+    page.getByRole("button", { name: "Check the proof" }),
+  ).toBeEnabled();
   await page
     .getByLabel("Agent completion message")
-    .fill("Next.js is listed as a project dependency. All unit tests passed.");
+    .fill("This package is MIT licensed. All unit tests passed.");
+  await page
+    .getByLabel("GitHub repository")
+    .fill("https://github.com/expressjs/express");
   await page.getByText("Add requirements", { exact: false }).click();
   await page
     .getByLabel("Optional requirements · one per line")
-    .fill("Next.js dependency is forbidden.");
+    .fill("MIT licensing is forbidden.");
   await page.getByText("Advanced options", { exact: false }).click();
   await page
     .getByLabel("Inspect a commit")
-    .fill("0bb49508c85aa6a1eafbf13a9c1849ef8a14464c");
+    .fill("0dee2c52c7c873498f8ed7d8ee4ddd0a04d3ada8");
   await page.getByRole("button", { name: "Check the proof" }).click();
+  await Promise.race([
+    page
+      .getByText("Live server assessment", { exact: true })
+      .waitFor({ timeout: 190000 }),
+    page.locator(".error-message").waitFor({ timeout: 190000 }),
+  ]);
   await expect(
     page.getByText("Live server assessment", { exact: true }),
-  ).toBeVisible({ timeout: 190000 });
-  await expect(page.locator(".finding-SPEC-DRIFT")).toHaveCount(1);
-  await expect(page.locator(".finding-UNVERIFIED")).toHaveCount(1);
-  await expect(page.getByText("Review requirement · line 1")).toBeVisible();
+  ).toBeVisible();
   const downloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: "Download JSON" }).click();
   const download = await downloadPromise;
@@ -53,14 +61,6 @@ test("real GitHub and Gemini audit, requirement conflict, export and offline sig
     { encoding: "utf8" },
   );
   expect(JSON.parse(verification).signatureVerified).toBe(true);
-  await page.getByRole("tab", { name: /Requirements/ }).click();
-  await expect(
-    page.getByText("Next.js dependency is forbidden.", { exact: true }),
-  ).toBeVisible();
-  await page.screenshot({
-    path: "artifacts/live-browser/actual-provider-result.png",
-    fullPage: true,
-  });
   writeFileSync(
     "artifacts/live-browser/browser-observation.json",
     JSON.stringify(
@@ -68,6 +68,9 @@ test("real GitHub and Gemini audit, requirement conflict, export and offline sig
         scope:
           "Actual builder browser -> server -> GitHub/Gemini -> export -> independent Node signature verification. Review-specific prohibition is supplied by the builder; it is not the repository owner policy.",
         pageErrors: errors,
+        service: await (await request.get("/api/health")).json(),
+        independentSignatureVerified:
+          JSON.parse(verification).signatureVerified,
         result: JSON.parse(
           readFileSync("artifacts/live-browser/audit.json", "utf8"),
         ),
@@ -76,5 +79,16 @@ test("real GitHub and Gemini audit, requirement conflict, export and offline sig
       2,
     ),
   );
+  await expect(page.locator(".finding-SPEC-DRIFT")).toHaveCount(1);
+  await expect(page.locator(".finding-UNVERIFIED")).toHaveCount(1);
+  await expect(page.getByText("Review requirement · line 1")).toBeVisible();
+  await page.getByRole("tab", { name: /Requirements/ }).click();
+  await expect(
+    page.getByText("MIT licensing is forbidden.", { exact: true }),
+  ).toBeVisible();
+  await page.screenshot({
+    path: "artifacts/live-browser/actual-provider-result.png",
+    fullPage: true,
+  });
   expect(errors).toEqual([]);
 });

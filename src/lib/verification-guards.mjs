@@ -162,9 +162,14 @@ export function isRestatement(claimText, quote, lineText) {
 }
 
 export function hasContradictionKeywords(claimText, contradictingLine) {
-  const claimKeywords = [...new Set(tokenize(claimText).filter((w) => w.length > 3))];
+  // Relevance only, never a contradiction verdict. Preserve specific acronyms
+  // (MIT/JWT) and common inflections (licensed/licensing, cached/caching).
+  // Still require two shared concepts so one generic term cannot accuse drift.
+  const acronyms = new Set((String(claimText).match(/\b[A-Z][A-Z0-9]{2,}\b/g) || []).map(w => w.toLowerCase()));
+  const concepts = (text) => tokenize(text).map(w => w.length > 5 ? w.replace(/(?:ing|ed|s)$/, "").replace(/e$/, "") : w);
+  const claimKeywords = [...new Set(concepts(claimText).filter((w) => w.length > 3 || acronyms.has(w)))];
   if (!claimKeywords.length) return false;
-  const lineTokens = new Set(tokenize(contradictingLine || ""));
+  const lineTokens = new Set(concepts(contradictingLine || ""));
   const shared = claimKeywords.filter((k) => lineTokens.has(k));
   return shared.length >= 2;
 }
