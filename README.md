@@ -15,7 +15,7 @@ Built for **Build With AI: Basics** using the Devpost Learn Skill Pack. Original
 3. Select **Check the proof**. Watch the actual source, extraction, retrieval, assessment and report stages.
 4. Inspect each claim's evidence and next step. Open **Requirements** for explicit planning statements absent from the completion message.
 5. Download JSON, copy PR Markdown or copy a verified report link. Signed reports are checked against the service's public key before they are displayed.
-6. After a fix, select **Recheck latest revision**. **Compare** matches exact claim text between the earlier and later assessments.
+6. After a fix, select **Recheck latest revision**. **Compare** matches claim text after case and whitespace normalization; it does not infer semantic equivalence between paraphrases.
 
 The example uses disclosed illustrative data and makes no model calls. It cannot receive a live-audit receipt. Live provider failures produce explicit errors; they never silently become an example or a successful result.
 

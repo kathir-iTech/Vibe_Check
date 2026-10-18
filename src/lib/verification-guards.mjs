@@ -60,7 +60,7 @@ export function findLineNumber(docText, quote) {
   const lines = String(docText || "").split("\n");
   // Never case-fold source code or collapse whitespace inside literals.
   const exact = (value) => String(value || "").replace(/\r$/, "").trim();
-  const rawNormalized = exact(quote).replace(/^\d+:\s?/, "");
+  const rawNormalized = exact(exact(quote).replace(/^\d+:\s?/, ""));
   if (!rawNormalized) return -1;
   const strippedQuote = stripOuterFormatting(normalizeForLineMatch(rawNormalized));
   if (!strippedQuote) return -1;

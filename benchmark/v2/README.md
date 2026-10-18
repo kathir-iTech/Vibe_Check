@@ -32,6 +32,8 @@ The first public-browser license-conflict check completed an audit but did not r
 
 `hosted-observation.json` records a separate successful staged-production HTTP audit at source `7193ac9`, including its public verification key and independently verified complete signature. It exercises actual message extraction and assessment without the later short-license-conflict correction.
 
+`hosted-conflict-observation.json` records the subsequent successful staged HTTP conflict check at `bb45074`. `browser-failure-prefix.json` preserves the next public browser observation: the audit/export/signature chain completed, but a numbered supporting quotation retained leading indentation and was rejected, preventing the expected conflict label. The correction normalizes outer whitespace after stripping the transport prefix; it does not case-fold code or collapse internal literal whitespace. The production-validator regression exercises both bare and numbered quotations. These attempts remain separate and are not added to the eight-claim frozen-source denominator.
+
 ## Interpretation
 
 “Source supported” means quoted static evidence survived the configured guards. The system does not execute the target repository, prove security, or certify test/deployment claims from source alone. Requirement associations are review aids. Signed reports establish issuance and integrity, not truth. Selected cases, builder-supplied labels, retrieval limits and correlated model behavior limit generalization.

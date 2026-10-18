@@ -36,30 +36,34 @@ test("a specific license acronym and licensing concept survive the relevance gua
 
 test("the production validator retains exact code and short requirement citations", () => {
   const { validateAssessments } = loadProduction("src/lib/gemini.ts");
-  const result = validateAssessments(
-    [
+  for (const quote of ['"license": "MIT",', '15:   "license": "MIT",']) {
+    const result = validateAssessments(
+      [
+        {
+          claimId: "license",
+          contradicts: true,
+          sourceDoc: "provided-requirements.md",
+          contradictingLine: "- MIT licensing is forbidden.",
+          supported: true,
+          supportingFile: "package.json",
+          supportingQuote: quote,
+          coverage: "full",
+        },
+      ],
+      [{ id: "license", text: "This package is MIT licensed." }],
+      [
+        {
+          file: "provided-requirements.md",
+          text: "- MIT licensing is forbidden.",
+        },
+      ],
       {
-        claimId: "license",
-        contradicts: true,
-        sourceDoc: "provided-requirements.md",
-        contradictingLine: "- MIT licensing is forbidden.",
-        supported: true,
-        supportingFile: "package.json",
-        supportingQuote: '"license": "MIT",',
-        coverage: "full",
+        license: [{ file: "package.json", text: '{\n  "license": "MIT",\n}' }],
       },
-    ],
-    [{ id: "license", text: "This package is MIT licensed." }],
-    [
-      {
-        file: "provided-requirements.md",
-        text: "- MIT licensing is forbidden.",
-      },
-    ],
-    { license: [{ file: "package.json", text: '{\n  "license": "MIT",\n}' }] },
-  );
-  assert.equal(result[0].contradicts, true);
-  assert.equal(result[0].supported, true);
-  assert.equal(result[0].lineNumber, 1);
-  assert.equal(result[0].supportingLine, 2);
+    );
+    assert.equal(result[0].contradicts, true);
+    assert.equal(result[0].supported, true);
+    assert.equal(result[0].lineNumber, 1);
+    assert.equal(result[0].supportingLine, 2);
+  }
 });

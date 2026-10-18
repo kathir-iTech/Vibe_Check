@@ -24,7 +24,7 @@ Single-page app with:
 4. **Demo mode** — accessible via `?demo=1` flag with preloaded example repo data
 
 ## Look and Feel
-Clean, direct, no-nonsense interface. The tool audits builds — it should feel like a strict but fair inspector. Red/green/amber verdicts are the primary visual language. Terminal-style evidence display (commit hashes, file paths, line numbers) reinforces the "show your work" ethos. Dark mode option for 2am builders.
+Owner feedback incorporated 18 October 2026: a short opening, two main inputs and one clear action. Requirements, revision controls and longer explanations expand on demand. Midnight indigo, lilac and orange replace the earlier green-led visual direction; self-hosted Space Grotesk headings and DM Sans body text establish a distinct VibeCheck identity. Light mode remains available. Plain-language result labels accompany citations and provenance rather than requiring visitors to understand the internal verdict codes.
 
 ## Features and Behavior
 
