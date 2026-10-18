@@ -58,17 +58,21 @@ function stripOuterFormatting(s) {
 // where the quote covers the meaningful statement on that line (preventing tiny 1-word substring spoofing).
 export function findLineNumber(docText, quote) {
   const lines = String(docText || "").split("\n");
-  const rawNormalized = normalize(normalizeForLineMatch(quote));
+  // Never case-fold source code or collapse whitespace inside literals.
+  const exact = (value) => String(value || "").replace(/\r$/, "").trim();
+  const rawNormalized = exact(exact(quote).replace(/^\d+:\s?/, ""));
   if (!rawNormalized) return -1;
-  const strippedQuote = stripOuterFormatting(rawNormalized);
+  const strippedQuote = stripOuterFormatting(normalizeForLineMatch(rawNormalized));
   if (!strippedQuote) return -1;
 
   // Pass 1: exact normalized line match (or exact after stripping prompt line prefix / markdown bullet)
   for (let i = 0; i < lines.length; i++) {
-    const candRaw = normalize(normalizeForLineMatch(lines[i]));
+    const candRaw = exact(lines[i]);
     if (!candRaw) continue;
-    const candStripped = stripOuterFormatting(candRaw);
-    if (candRaw === rawNormalized || candStripped === strippedQuote) {
+    // Escaped template markers are accepted only as a complete source line.
+    const markdownLine = /^(?:>|[-*] |#{1,6} )/.test(candRaw);
+    const candStripped = stripOuterFormatting(normalizeForLineMatch(candRaw));
+    if (candRaw === rawNormalized || (markdownLine && candStripped === strippedQuote)) {
       return i + 1;
     }
   }
@@ -77,9 +81,11 @@ export function findLineNumber(docText, quote) {
   // and covers at least 55% of the candidate line (or is a complete clause in a markdown/spec paragraph).
   if (strippedQuote.length < 10) return -1;
   for (let i = 0; i < lines.length; i++) {
-    const candRaw = normalize(normalizeForLineMatch(lines[i]));
+    const candRaw = exact(lines[i]);
     if (!candRaw) continue;
-    const candStripped = stripOuterFormatting(candRaw);
+    // Partial clauses are supported only in prose, never in executable code.
+    if (!/^(?:>|[-*] |#{1,6} )/.test(candRaw)) continue;
+    const candStripped = stripOuterFormatting(normalizeForLineMatch(candRaw));
     if (
       candRaw.includes(rawNormalized) ||
       candStripped.includes(strippedQuote)
@@ -92,6 +98,15 @@ export function findLineNumber(docText, quote) {
   }
 
   return -1;
+}
+
+export function isImplementationLineAt(text, line, path) {
+  const lines = String(text || "").split("\n");
+  if (!Number.isInteger(line) || line < 1 || line > lines.length) return false;
+  const before = lines.slice(0, line).join("\n");
+  if (CODE_FILE_EXT.test(path) && before.lastIndexOf("/*") > before.lastIndexOf("*/")) return false;
+  if (/\.(py|sh)$/i.test(path) && (before.match(/'''|"""/g) || []).length % 2) return false;
+  return isExecutableCodeLine(lines[line - 1], path);
 }
 
 const CODE_FILE_EXT = /\.(ts|tsx|js|jsx|mjs|cjs|py|go|rs|java|c|cpp|rb|php|sh)$/i;
@@ -130,6 +145,7 @@ export function hasNegationMismatch(claimText, lineText) {
   if (/\b(disabled|unimplemented|unsupported)\b/i.test(lineText) && !/\bdisabled:\s*opacity/i.test(lineText)) {
     return true;
   }
+  if (/\b(?:enabled|active|implemented|configured)\s*[:=]\s*(?:false|null|0)\b/i.test(lineText)) return true;
   return false;
 }
 
@@ -146,9 +162,14 @@ export function isRestatement(claimText, quote, lineText) {
 }
 
 export function hasContradictionKeywords(claimText, contradictingLine) {
-  const claimKeywords = [...new Set(tokenize(claimText).filter((w) => w.length > 3))];
+  // Relevance only, never a contradiction verdict. Preserve specific acronyms
+  // (MIT/JWT) and common inflections (licensed/licensing, cached/caching).
+  // Still require two shared concepts so one generic term cannot accuse drift.
+  const acronyms = new Set((String(claimText).match(/\b[A-Z][A-Z0-9]{2,}\b/g) || []).map(w => w.toLowerCase()));
+  const concepts = (text) => tokenize(text).map(w => w.length > 5 ? w.replace(/(?:ing|ed|s)$/, "").replace(/e$/, "") : w);
+  const claimKeywords = [...new Set(concepts(claimText).filter((w) => w.length > 3 || acronyms.has(w)))];
   if (!claimKeywords.length) return false;
-  const lineTokens = new Set(tokenize(contradictingLine || ""));
+  const lineTokens = new Set(concepts(contradictingLine || ""));
   const shared = claimKeywords.filter((k) => lineTokens.has(k));
   return shared.length >= 2;
 }

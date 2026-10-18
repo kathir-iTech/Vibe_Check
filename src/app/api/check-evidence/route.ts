@@ -3,10 +3,10 @@ import {
   fetchCommitDiffDetails,
   fetchRawFileTexts,
   githubApi,
-  getDefaultBranch,
   isExcludedEvidencePath,
   parseGitHubRepoUrl,
   selectContentCandidates,
+  resolveSnapshot,
 } from "@/lib/github";
 import {
   calculateCodeRelevanceBonus,
@@ -14,6 +14,7 @@ import {
   tokenize,
 } from "@/lib/verification-guards.mjs";
 import { createTimings, serverTimingHeader } from "@/lib/timings";
+import { evidenceObligation, validateAuditClaims } from "@/lib/audit-policy.mjs";
 
 const PATH_MATCH_BONUS = 2;
 const TOP_FILES_PER_CLAIM = 5;
@@ -54,7 +55,8 @@ function findBestLinePreview(
     const hitScore = hits.filter((h) => lower.includes(h)).length;
     if (hitScore === 0) continue;
     const declBonus = calculateCodeRelevanceBonus(rawLine);
-    const totalScore = hitScore * 2 + declBonus;
+    const keyBonus = hits.some(h => new RegExp(`^[\\s"']*${h}["']?\\s*:`).test(rawLine)) ? 6 : 0;
+    const totalScore = hitScore * 2 + declBonus + keyBonus;
     if (totalScore > bestScore && rawLine.trim().length > 2) {
       bestScore = totalScore;
       bestLine = i + 1;
@@ -79,7 +81,9 @@ export async function POST(request: NextRequest) {
   }
 
   const repoUrl = typeof body?.repoUrl === "string" ? body.repoUrl.trim() : "";
-  const rawClaims = Array.isArray(body?.claims) ? body.claims.slice(0, MAX_CLAIMS) : [];
+  let rawClaims: any[];
+  try { rawClaims = validateAuditClaims(body?.claims); }
+  catch (error) { return NextResponse.json({error:String(error)},{status:400}); }
   const userToken = request.headers?.get?.("x-github-token") || undefined;
 
   if (!repoUrl) {
@@ -97,8 +101,11 @@ export async function POST(request: NextRequest) {
   const { owner, repo: cleanRepo } = parsedRepo;
 
   let branch: string;
+  let headSha: string;
   try {
-    branch = await getDefaultBranch(owner, cleanRepo, userToken);
+    const snapshot = await resolveSnapshot(repoUrl, typeof body.headSha === "string" ? body.headSha : "", userToken);
+    branch = snapshot.defaultBranch;
+    headSha = snapshot.headSha;
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
@@ -112,8 +119,8 @@ export async function POST(request: NextRequest) {
   let files: any;
   try {
     [commits, files] = await Promise.all([
-      githubApi(`${base}/commits?per_page=30`, 8000, userToken),
-      githubApi(`${base}/git/trees/${branch}?recursive=1`, 8000, userToken),
+      githubApi(`${base}/commits?sha=${headSha}&per_page=30`, 8000, userToken),
+      githubApi(`${base}/git/trees/${headSha}?recursive=1`, 8000, userToken),
     ]);
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
@@ -129,7 +136,6 @@ export async function POST(request: NextRequest) {
     .filter((t: any) => t && t.type === "blob" && typeof t.path === "string" && !isExcludedEvidencePath(t.path))
     .map((t: any) => t.path);
   const commitList: any[] = Array.isArray(commits) ? commits : [];
-  const headSha: string = typeof commitList[0]?.sha === "string" ? commitList[0].sha : "";
   timings.lap("githubTree");
 
   // Collect all claim keywords so candidate selection ranks files by claim relevance before applying the 60-file cap
@@ -138,10 +144,10 @@ export async function POST(request: NextRequest) {
   );
 
   let contentTexts: { file: string; text: string }[] = [];
+  const candidates = selectContentCandidates(fileNames, allClaimKeywords);
   try {
     if (rawClaims.length) {
-      const candidates = selectContentCandidates(fileNames, allClaimKeywords);
-      contentTexts = await fetchRawFileTexts(owner, cleanRepo, branch, candidates, userToken);
+      contentTexts = await fetchRawFileTexts(owner, cleanRepo, headSha, candidates, userToken);
     }
   } catch {
     contentTexts = [];
@@ -246,6 +252,7 @@ export async function POST(request: NextRequest) {
     const top = [...scored.values()]
       .sort(
         (a, b) =>
+          (evidenceObligation(claimText) === "configuration" ? ((/^(?:package\.json|pyproject\.toml|Cargo\.toml|go\.mod|requirements\.txt)$/i.test(b.file) ? 30 : 0) - (/^(?:package\.json|pyproject\.toml|Cargo\.toml|go\.mod|requirements\.txt)$/i.test(a.file) ? 30 : 0)) : 0) ||
           b.hitCount +
           (b.pathMatched ? PATH_MATCH_BONUS : 0) +
           (b.codeBonus > 0 ? 1 : 0) -
@@ -303,7 +310,7 @@ export async function POST(request: NextRequest) {
 
   const finalTimings = timings.finish();
   return NextResponse.json(
-    { evidence, headSha, treeTruncated, timings: finalTimings },
+    { evidence, headSha, treeTruncated, planningFiles: (files?.tree || []).filter((f: any) => f.type === "blob" && /^(?:devpost\/|docs\/)?(?:scope|prd|spec)\.md$/i.test(f.path)).map((f: any) => f.path).slice(0, 6), retrieval: { totalFiles: fileNames.length, candidateFiles: candidates.length, inspectedFiles: contentTexts.length, omittedFiles: Math.max(0, fileNames.length - contentTexts.length), treeTruncated, bounded: true }, timings: finalTimings },
     { headers: { "Server-Timing": serverTimingHeader(finalTimings) } }
   );
 }

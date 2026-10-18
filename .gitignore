@@ -10,3 +10,10 @@ txtout*.txt
 FIX_*_SUMMARY.txt
 AGENTS.md
 CLAUDE.md
+.vercel/
+artifacts/
+test-results/
+playwright-report/
+
+.vercel
+.env*

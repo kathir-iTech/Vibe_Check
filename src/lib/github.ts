@@ -26,7 +26,60 @@ export async function getDefaultBranch(owner: string, repo: string, userToken?: 
     throw new Error(`GitHub API error: ${response.status}`);
   }
   const data = await response.json();
+  if (data.private && !userToken?.trim()) throw new Error("Private repositories require your own GitHub token");
   return data.default_branch || "main";
+}
+
+export interface RepoSnapshot {
+  repoUrl: string;
+  owner: string;
+  repo: string;
+  headSha: string;
+  defaultBranch: string;
+  baseSha?: string;
+}
+
+export async function resolveSnapshot(repoUrl: string, requestedRef = "", userToken?: string): Promise<RepoSnapshot> {
+  const { owner, repo, canonicalUrl } = parseGitHubRepoUrl(repoUrl);
+  if (requestedRef && !/^[a-f0-9]{7,40}$/i.test(requestedRef)) throw new Error("Revision must be a Git commit SHA");
+  const defaultBranch = await getDefaultBranch(owner, repo, userToken);
+  const commit = await githubApi(`https://api.github.com/repos/${owner}/${repo}/commits/${encodeURIComponent(requestedRef || defaultBranch)}`, 8000, userToken);
+  if (!/^[a-f0-9]{40}$/i.test(commit.sha)) throw new Error("GitHub did not return an immutable commit");
+  return { repoUrl: canonicalUrl, owner, repo, headSha: commit.sha, defaultBranch };
+}
+
+export function safeRepoPath(path: string): string {
+  if (typeof path !== "string" || path.length > 300 || path.startsWith("/") || path.includes("\\") || path.split("/").some(p => !p || p === "." || p === "..")) {
+    throw new Error("Invalid repository file path");
+  }
+  return path.split("/").map(encodeURIComponent).join("/");
+}
+
+export async function readSnapshotFile(snapshot: RepoSnapshot, path: string, userToken?: string): Promise<RepoFileContent | null> {
+  const encoded = safeRepoPath(path);
+  try {
+    const data = await githubApi(`https://api.github.com/repos/${snapshot.owner}/${snapshot.repo}/contents/${encoded}?ref=${snapshot.headSha}`, 8000, userToken);
+    if (data?.encoding !== "base64" || typeof data.content !== "string") return null;
+    const text = Buffer.from(data.content, "base64").toString("utf8");
+    if (text.includes("\u0000")) return null;
+    return { file: path, text: text.slice(0, MAX_FILE_CHARS), truncated: text.length > MAX_FILE_CHARS };
+  } catch (error) {
+    if (String(error).includes("404")) return null;
+    throw error;
+  }
+}
+
+export async function fetchClaimSource(raw: string, userToken?: string) {
+  const source = parseClaimSourceUrl(raw);
+  await getDefaultBranch(source.owner, source.repo, userToken);
+  const base = `https://api.github.com/repos/${source.owner}/${source.repo}`;
+  const data = await githubApi(`${base}/${source.kind === "pull" ? "pulls" : "commits"}/${source.ref}`, 8000, userToken);
+  const repoUrl = source.kind === "pull" ? data.head?.repo?.html_url : `https://github.com/${source.owner}/${source.repo}`;
+  const headSha = source.kind === "pull" ? data.head?.sha : data.sha;
+  const text = source.kind === "pull" ? `${data.title || ""}\n\n${data.body || ""}`.trim() : String(data.commit?.message || "").trim();
+  if (!repoUrl || !text || !/^[a-f0-9]{40}$/i.test(headSha)) throw new Error("Source has no readable repository, revision or claim text");
+  const snapshot = await resolveSnapshot(repoUrl, headSha, userToken);
+  return { text, snapshot, baseSha: source.kind === "pull" ? data.base?.sha : data.parents?.[0]?.sha, targetRepoUrl: `https://github.com/${source.owner}/${source.repo}`, kind: source.kind };
 }
 
 export async function githubApi(url: string, timeoutMs = 8000, userToken?: string): Promise<any> {
@@ -35,7 +88,8 @@ export async function githubApi(url: string, timeoutMs = 8000, userToken?: strin
     signal: AbortSignal.timeout(timeoutMs),
   });
   if (!response.ok) {
-    throw new Error(`GitHub API error: ${response.status}`);
+    const detail = response.status === 403 || response.status === 429 ? " — access denied or rate limit reached; retry later or use your own read token" : "";
+    throw new Error(`GitHub API error: ${response.status}${detail}`);
   }
   return response.json();
 }
@@ -190,16 +244,17 @@ export function isSkippableFile(path: string): boolean {
     return true;
   }
   const base = lower.split("/").pop() || lower;
+  if (base.startsWith(".env") || /(?:secret|credential|private[-_]key)/.test(base) || lower.split("/").some(p => p === ".." || p === ".git")) return true;
   if (SKIP_NAMES.has(base) || base.endsWith(".lock")) return true;
   const dot = base.lastIndexOf(".");
   if (dot !== -1 && SKIP_EXTENSIONS.has(base.slice(dot))) return true;
   return false;
 }
 
-async function fetchRepoFile(base: string, path: string, userToken?: string): Promise<RepoFileContent | null> {
+async function fetchRepoFile(base: string, path: string, userToken?: string, ref?: string): Promise<RepoFileContent | null> {
   if (isSkippableFile(path)) return null;
   try {
-    const data = await githubApi(`${base}/contents/${path}`, 8000, userToken);
+    const data = await githubApi(`${base}/contents/${safeRepoPath(path)}${ref ? `?ref=${encodeURIComponent(ref)}` : ""}`, 8000, userToken);
     if (!data || !data.content || data.encoding !== "base64") return null;
     let text = Buffer.from(data.content, "base64").toString("utf8");
     if (text.includes("\u0000")) return null;
@@ -322,13 +377,14 @@ export async function fetchRawFileTexts(
 export async function fetchFileContentsForClaims(
   base: string,
   filesByClaim: Record<string, string[]>,
-  userToken?: string
+  userToken?: string,
+  ref?: string
 ): Promise<Record<string, RepoFileContent[]>> {
   const cache = new Map<string, Promise<RepoFileContent | null>>();
   const load = (path: string): Promise<RepoFileContent | null> => {
     let pending = cache.get(path);
     if (!pending) {
-      pending = fetchRepoFile(base, path, userToken);
+      pending = fetchRepoFile(base, path, userToken, ref);
       cache.set(path, pending);
     }
     return pending;

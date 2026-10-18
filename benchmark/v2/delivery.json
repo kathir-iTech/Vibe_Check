@@ -1,0 +1,31 @@
+{
+  "schema": "vibecheck/delivery/v1",
+  "applicationSource": "d4a0d2f332ee2a57a29c598bc755a673384a0361",
+  "deploymentId": "dpl_GqHKRFsRFpHoii4LgQrpmD1Q7K5b",
+  "productionUrl": "https://vibe-check-dev.vercel.app",
+  "recordedProofUrl": "https://vibe-check-dev.vercel.app/proof",
+  "ciRuns": [
+    39100075057,
+    39100077730
+  ],
+  "productionFunctionRouteTests": 18,
+  "controlledBrowserCases": 8,
+  "manufacturedExpectedOutcomes": {
+    "matched": 15,
+    "total": 15
+  },
+  "productionReadback": {
+    "checkedAt": "2026-10-18T05:21:31.562Z",
+    "scope": "Actual production receipt -> share endpoint -> public fragment link -> browser public-key verification, followed by disclosed recorded live report -> signature verification -> conflict in Claims and Requirements. No model calls in this check.",
+    "origin": "https://vibe-check-dev.vercel.app",
+    "path": "/report/view",
+    "fragmentCharacters": 13445,
+    "httpStatus": 200,
+    "browserVerifiedReport": true,
+    "recordedProofVerified": true,
+    "pageErrors": []
+  },
+  "freshProviderAvailability": "Latest opt-in browser rerun timed out. Earlier actual browser audit/export/signature observation and staged HTTP observations are preserved separately. Recorded proof makes no fresh model call.",
+  "independentUserStudy": false,
+  "scope": "Measured engineering delivery. No population accuracy, jury score or winning probability is established."
+}
