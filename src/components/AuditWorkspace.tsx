@@ -403,6 +403,8 @@ export default function AuditWorkspace({
     if (busy) return;
     try {
       sessionStorage.removeItem(STORE);
+      // Keep the empty draft even if the user reloads before the save effect.
+      sessionStorage.setItem(STORE, JSON.stringify({ message: "", repoUrl: "" }));
     } catch {
       /* Clearing in-memory state still works without browser storage. */
     }
