@@ -6,6 +6,8 @@ import {
   isExcludedEvidencePath,
   parseGitHubRepoUrl,
   selectContentCandidates,
+  selectFollowupCandidates,
+  isContentCandidate,
   resolveSnapshot,
 } from "@/lib/github";
 import {
@@ -14,7 +16,10 @@ import {
   tokenize,
 } from "@/lib/verification-guards.mjs";
 import { createTimings, serverTimingHeader } from "@/lib/timings";
-import { evidenceObligation, validateAuditClaims } from "@/lib/audit-policy.mjs";
+import {
+  evidenceObligation,
+  validateAuditClaims,
+} from "@/lib/audit-policy.mjs";
 
 const PATH_MATCH_BONUS = 2;
 const TOP_FILES_PER_CLAIM = 5;
@@ -30,18 +35,22 @@ function claimKeywords(text: string): string[] {
 function tokensMatching(candidate: string, keywords: string[]): string[] {
   const cand = tokenize(candidate);
   return keywords.filter((k) =>
-    cand.some((t) => t.includes(k) || (t.length > 3 && k.includes(t)))
+    cand.some((t) => t.includes(k) || (t.length > 3 && k.includes(t))),
   );
 }
 
-function isRelevant(candidate: string, keywords: string[], minMatches: number): boolean {
+function isRelevant(
+  candidate: string,
+  keywords: string[],
+  minMatches: number,
+): boolean {
   return tokensMatching(candidate, keywords).length >= minMatches;
 }
 
 function findBestLinePreview(
   text: string,
   hits: string[],
-  filePath: string
+  filePath: string,
 ): { lineNumber?: number; previewLine?: string; codeBonus: number } {
   if (!text || !hits.length) return { codeBonus: 0 };
   const lines = text.split("\n");
@@ -55,7 +64,11 @@ function findBestLinePreview(
     const hitScore = hits.filter((h) => lower.includes(h)).length;
     if (hitScore === 0) continue;
     const declBonus = calculateCodeRelevanceBonus(rawLine);
-    const keyBonus = hits.some(h => new RegExp(`^[\\s"']*${h}["']?\\s*:`).test(rawLine)) ? 6 : 0;
+    const keyBonus = hits.some((h) =>
+      new RegExp(`^[\\s"']*${h}["']?\\s*:`).test(rawLine),
+    )
+      ? 6
+      : 0;
     const totalScore = hitScore * 2 + declBonus + keyBonus;
     if (totalScore > bestScore && rawLine.trim().length > 2) {
       bestScore = totalScore;
@@ -77,17 +90,26 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ evidence: {}, error: "Invalid JSON body" }, { status: 400 });
+    return NextResponse.json(
+      { evidence: {}, error: "Invalid JSON body" },
+      { status: 400 },
+    );
   }
 
   const repoUrl = typeof body?.repoUrl === "string" ? body.repoUrl.trim() : "";
   let rawClaims: any[];
-  try { rawClaims = validateAuditClaims(body?.claims); }
-  catch (error) { return NextResponse.json({error:String(error)},{status:400}); }
+  try {
+    rawClaims = validateAuditClaims(body?.claims);
+  } catch (error) {
+    return NextResponse.json({ error: String(error) }, { status: 400 });
+  }
   const userToken = request.headers?.get?.("x-github-token") || undefined;
 
   if (!repoUrl) {
-    return NextResponse.json({ evidence: {}, error: "repoUrl required" }, { status: 400 });
+    return NextResponse.json(
+      { evidence: {}, error: "repoUrl required" },
+      { status: 400 },
+    );
   }
 
   let parsedRepo: { owner: string; repo: string; canonicalUrl: string };
@@ -103,14 +125,21 @@ export async function POST(request: NextRequest) {
   let branch: string;
   let headSha: string;
   try {
-    const snapshot = await resolveSnapshot(repoUrl, typeof body.headSha === "string" ? body.headSha : "", userToken);
+    const snapshot = await resolveSnapshot(
+      repoUrl,
+      typeof body.headSha === "string" ? body.headSha : "",
+      userToken,
+    );
     branch = snapshot.defaultBranch;
     headSha = snapshot.headSha;
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
-      { evidence: {}, error: `Could not access repo ${owner}/${cleanRepo}: ${msg}` },
-      { status: 404 }
+      {
+        evidence: {},
+        error: `Could not access repo ${owner}/${cleanRepo}: ${msg}`,
+      },
+      { status: 404 },
     );
   }
   const base = `https://api.github.com/repos/${owner}/${cleanRepo}`;
@@ -126,33 +155,83 @@ export async function POST(request: NextRequest) {
     const msg = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
       { evidence: {}, error: `Failed to fetch repo data: ${msg}` },
-      { status: 502 }
+      { status: 502 },
     );
   }
 
   const treeTruncated = Boolean(files?.truncated);
   // Apply .agents/, .claude/, devpost/, and benchmark/ exclusions consistently across ALL retrieval stages
   const fileNames: string[] = (files?.tree || [])
-    .filter((t: any) => t && t.type === "blob" && typeof t.path === "string" && !isExcludedEvidencePath(t.path))
+    .filter(
+      (t: any) =>
+        t &&
+        t.type === "blob" &&
+        typeof t.path === "string" &&
+        !isExcludedEvidencePath(t.path),
+    )
     .map((t: any) => t.path);
+  const hints = body.fileHints == null ? [] : body.fileHints;
+  if (
+    !Array.isArray(hints) ||
+    hints.length > 8 ||
+    hints.some(
+      (p: unknown) =>
+        typeof p !== "string" ||
+        p.length > 300 ||
+        !fileNames.includes(p) ||
+        !isContentCandidate(p),
+    )
+  )
+    return NextResponse.json(
+      {
+        error:
+          "Provide up to 8 readable, non-secret file paths present in the inspected tree.",
+      },
+      { status: 400 },
+    );
   const commitList: any[] = Array.isArray(commits) ? commits : [];
   timings.lap("githubTree");
 
   // Collect all claim keywords so candidate selection ranks files by claim relevance before applying the 60-file cap
   const allClaimKeywords = rawClaims.flatMap((c: any) =>
-    claimKeywords(String(c?.text || c || "").slice(0, MAX_CLAIM_CHARS))
+    claimKeywords(String(c?.text || c || "").slice(0, MAX_CLAIM_CHARS)),
   );
 
   let contentTexts: { file: string; text: string }[] = [];
-  const candidates = selectContentCandidates(fileNames, allClaimKeywords);
+  const candidates = [
+    ...new Set([
+      ...hints,
+      ...selectContentCandidates(fileNames, allClaimKeywords),
+    ]),
+  ].slice(0, 60);
+  let followup: string[] = [];
   try {
     if (rawClaims.length) {
-      contentTexts = await fetchRawFileTexts(owner, cleanRepo, headSha, candidates, userToken);
+      contentTexts = await fetchRawFileTexts(
+        owner,
+        cleanRepo,
+        headSha,
+        candidates,
+        userToken,
+      );
+      followup = selectFollowupCandidates(fileNames, contentTexts, hints);
+      if (followup.length)
+        contentTexts.push(
+          ...(await fetchRawFileTexts(
+            owner,
+            cleanRepo,
+            headSha,
+            followup,
+            userToken,
+          )),
+        );
     }
   } catch {
     contentTexts = [];
   }
-  const textByFile = new Map<string, string>(contentTexts.map((c) => [c.file, c.text]));
+  const textByFile = new Map<string, string>(
+    contentTexts.map((c) => [c.file, c.text]),
+  );
   timings.lap("rawFileFetch");
 
   // Identify commits matching any claim (plus the 2 latest commits) to fetch diffs/patches
@@ -161,11 +240,17 @@ export async function POST(request: NextRequest) {
     if (c?.sha) matchedCommitShaSet.add(String(c.sha));
   }
   for (const claim of rawClaims) {
-    const kw = claimKeywords(String(claim?.text || claim || "").slice(0, MAX_CLAIM_CHARS));
+    const kw = claimKeywords(
+      String(claim?.text || claim || "").slice(0, MAX_CLAIM_CHARS),
+    );
     for (const c of commitList) {
       if (
         c?.sha &&
-        isRelevant(c.commit?.message || "", kw, Math.min(2, Math.max(1, Math.ceil(kw.length / 2))))
+        isRelevant(
+          c.commit?.message || "",
+          kw,
+          Math.min(2, Math.max(1, Math.ceil(kw.length / 2))),
+        )
       ) {
         matchedCommitShaSet.add(String(c.sha));
       }
@@ -175,14 +260,17 @@ export async function POST(request: NextRequest) {
     base,
     [...matchedCommitShaSet],
     4,
-    userToken
+    userToken,
   );
   timings.lap("commitDiffs");
 
   const evidence: Record<string, any> = {};
 
   for (const claim of rawClaims) {
-    const claimText = String(claim?.text || claim || "").slice(0, MAX_CLAIM_CHARS);
+    const claimText = String(claim?.text || claim || "").slice(
+      0,
+      MAX_CLAIM_CHARS,
+    );
     const claimId = String(claim?.id || claimText);
     const keywords = claimKeywords(claimText);
 
@@ -192,7 +280,7 @@ export async function POST(request: NextRequest) {
       const msgRelevant = isRelevant(
         c.commit?.message || "",
         keywords,
-        Math.min(2, Math.max(1, Math.ceil(keywords.length / 2)))
+        Math.min(2, Math.max(1, Math.ceil(keywords.length / 2))),
       );
       if (msgRelevant) return true;
       const diffDetail = commitDiffMap[c.sha];
@@ -209,7 +297,9 @@ export async function POST(request: NextRequest) {
     for (const { file, text } of contentTexts) {
       const fileTokens = new Set(tokenize(text));
       const lower = text.toLowerCase();
-      const hits = keywords.filter((k) => fileTokens.has(k) || lower.includes(k));
+      const hits = keywords.filter(
+        (k) => fileTokens.has(k) || lower.includes(k),
+      );
       if (hits.length) contentHits.set(file, hits);
     }
 
@@ -252,14 +342,27 @@ export async function POST(request: NextRequest) {
     const top = [...scored.values()]
       .sort(
         (a, b) =>
-          (evidenceObligation(claimText) === "configuration" ? ((/^(?:package\.json|pyproject\.toml|Cargo\.toml|go\.mod|requirements\.txt)$/i.test(b.file) ? 30 : 0) - (/^(?:package\.json|pyproject\.toml|Cargo\.toml|go\.mod|requirements\.txt)$/i.test(a.file) ? 30 : 0)) : 0) ||
+          (evidenceObligation(claimText) === "configuration"
+            ? (/^(?:package\.json|pyproject\.toml|Cargo\.toml|go\.mod|requirements\.txt)$/i.test(
+                b.file,
+              )
+                ? 30
+                : 0) -
+              (/^(?:package\.json|pyproject\.toml|Cargo\.toml|go\.mod|requirements\.txt)$/i.test(
+                a.file,
+              )
+                ? 30
+                : 0)
+            : 0) ||
           b.hitCount +
-          (b.pathMatched ? PATH_MATCH_BONUS : 0) +
-          (b.codeBonus > 0 ? 1 : 0) -
-          (a.hitCount + (a.pathMatched ? PATH_MATCH_BONUS : 0) + (a.codeBonus > 0 ? 1 : 0)) ||
+            (b.pathMatched ? PATH_MATCH_BONUS : 0) +
+            (b.codeBonus > 0 ? 1 : 0) -
+            (a.hitCount +
+              (a.pathMatched ? PATH_MATCH_BONUS : 0) +
+              (a.codeBonus > 0 ? 1 : 0)) ||
           b.hitCount - a.hitCount ||
           a.file.length - b.file.length ||
-          a.file.localeCompare(b.file)
+          a.file.localeCompare(b.file),
       )
       .slice(0, TOP_FILES_PER_CLAIM);
 
@@ -269,15 +372,24 @@ export async function POST(request: NextRequest) {
     }
 
     evidence[claimId] = {
-      files: top.map((t) => t.file),
-      fileMatches: top.map(({ file, hitCount, matchedTerms, pathMatched: pm, lineNumber, previewLine }) => ({
-        file,
-        hitCount,
-        matchedTerms,
-        pathMatched: pm,
-        lineNumber,
-        previewLine,
-      })),
+      files: [...new Set([...hints, ...top.map((t) => t.file)])].slice(0, 8),
+      fileMatches: top.map(
+        ({
+          file,
+          hitCount,
+          matchedTerms,
+          pathMatched: pm,
+          lineNumber,
+          previewLine,
+        }) => ({
+          file,
+          hitCount,
+          matchedTerms,
+          pathMatched: pm,
+          lineNumber,
+          previewLine,
+        }),
+      ),
       commits: matchedCommits.slice(0, 5).map((c: any) => {
         const diff = commitDiffMap[c.sha];
         return {
@@ -296,7 +408,9 @@ export async function POST(request: NextRequest) {
           ...keywords.filter(
             (k) =>
               matchedFiles.some((f) => tokensMatching(f, [k]).length) ||
-              matchedCommits.some((c) => tokensMatching(c.commit?.message || "", [k]).length)
+              matchedCommits.some(
+                (c) => tokensMatching(c.commit?.message || "", [k]).length,
+              ),
           ),
           ...contentTerms,
         ]),
@@ -310,8 +424,31 @@ export async function POST(request: NextRequest) {
 
   const finalTimings = timings.finish();
   return NextResponse.json(
-    { evidence, headSha, treeTruncated, planningFiles: (files?.tree || []).filter((f: any) => f.type === "blob" && /^(?:devpost\/|docs\/)?(?:scope|prd|spec)\.md$/i.test(f.path)).map((f: any) => f.path).slice(0, 6), retrieval: { totalFiles: fileNames.length, candidateFiles: candidates.length, inspectedFiles: contentTexts.length, omittedFiles: Math.max(0, fileNames.length - contentTexts.length), treeTruncated, bounded: true }, timings: finalTimings },
-    { headers: { "Server-Timing": serverTimingHeader(finalTimings) } }
+    {
+      evidence,
+      headSha,
+      treeTruncated,
+      planningFiles: (files?.tree || [])
+        .filter(
+          (f: any) =>
+            f.type === "blob" &&
+            /^(?:devpost\/|docs\/)?(?:scope|prd|spec)\.md$/i.test(f.path),
+        )
+        .map((f: any) => f.path)
+        .slice(0, 6),
+      retrieval: {
+        totalFiles: fileNames.length,
+        candidateFiles: candidates.length + followup.length,
+        inspectedFiles: contentTexts.length,
+        omittedFiles: Math.max(0, fileNames.length - contentTexts.length),
+        treeTruncated,
+        bounded: true,
+        followupCandidates: followup.length,
+        fileHints: hints,
+      },
+      timings: finalTimings,
+    },
+    { headers: { "Server-Timing": serverTimingHeader(finalTimings) } },
   );
 }
 
@@ -320,7 +457,7 @@ export async function GET(request: NextRequest) {
   try {
     const { owner, repo } = parseGitHubRepoUrl(url);
     const data = await githubApi(
-      `https://api.github.com/repos/${owner}/${repo}/commits?per_page=5`
+      `https://api.github.com/repos/${owner}/${repo}/commits?per_page=5`,
     );
     return NextResponse.json({ commits: data });
   } catch (err) {

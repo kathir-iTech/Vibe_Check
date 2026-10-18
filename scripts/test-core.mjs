@@ -155,7 +155,7 @@ function runTests() {
   const exactErrorLine = realGeminiFile
     .split("\n")
     .find((line) =>
-      line.includes("throw new Error(`Gemini quoted text not found"),
+      line.includes("`Gemini quoted text not found"),
     );
   assert.ok(
     findLineNumber(realGeminiFile, exactErrorLine) > 0,

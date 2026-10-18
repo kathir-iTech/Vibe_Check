@@ -1,6 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { fetchFileContentsForClaims, githubApi, parseGitHubRepoUrl, resolveSnapshot, safeRepoPath } from "@/lib/github";
-import { evidenceObligation, nextEvidence, RUNTIME_EVIDENCE_REASON, validateAuditClaims } from "@/lib/audit-policy.mjs";
+import {
+  fetchFileContentsForClaims,
+  githubApi,
+  parseGitHubRepoUrl,
+  resolveSnapshot,
+  safeRepoPath,
+} from "@/lib/github";
+import {
+  evidenceObligation,
+  nextEvidence,
+  RUNTIME_EVIDENCE_REASON,
+  validateAuditClaims,
+} from "@/lib/audit-policy.mjs";
+import { evidenceContract } from "@/lib/evidence-depth.mjs";
 import {
   assessClaimsAgainstSpec,
   GeminiUsage,
@@ -14,10 +26,21 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 
 export const maxDuration = 60;
 
-async function fetchDoc(base: string, file: string, userToken?: string, ref?: string): Promise<string | null> {
+async function fetchDoc(
+  base: string,
+  file: string,
+  userToken?: string,
+  ref?: string,
+): Promise<string | null> {
   try {
-    const data = await githubApi(`${base}/contents/${safeRepoPath(file)}?ref=${ref}`, 8000, userToken);
-    return Buffer.from(data.content, "base64").toString().slice(0, 20 * 1024);
+    const data = await githubApi(
+      `${base}/contents/${safeRepoPath(file)}?ref=${ref}`,
+      8000,
+      userToken,
+    );
+    return Buffer.from(data.content, "base64")
+      .toString()
+      .slice(0, 20 * 1024);
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     if (/GitHub API error: 404\b/.test(msg)) return null;
@@ -40,21 +63,28 @@ export async function POST(request: NextRequest) {
   } catch {
     return NextResponse.json(
       { drift: [], error: "Invalid JSON body", model: null },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
   const repoUrl = typeof body?.repoUrl === "string" ? body.repoUrl.trim() : "";
-  let rawClaims: {id: string; text: string}[];
-  try { rawClaims = validateAuditClaims(body?.claims); }
-  catch (error) { return NextResponse.json({ error: String(error), drift: [] }, { status: 400 }); }
-  const evidence = body?.evidence && typeof body.evidence === "object" ? body.evidence : {};
+  let rawClaims: { id: string; text: string }[];
+  try {
+    rawClaims = validateAuditClaims(body?.claims);
+  } catch (error) {
+    return NextResponse.json(
+      { error: String(error), drift: [] },
+      { status: 400 },
+    );
+  }
+  const evidence =
+    body?.evidence && typeof body.evidence === "object" ? body.evidence : {};
   const userToken = request.headers?.get?.("x-github-token") || undefined;
 
   if (!repoUrl) {
     return NextResponse.json(
       { drift: [], error: "repoUrl required", model: null },
-      { status: 400 }
+      { status: 400 },
     );
   }
   if (!rawClaims.length) {
@@ -68,7 +98,7 @@ export async function POST(request: NextRequest) {
     const msg = err instanceof Error ? err.message : "Invalid GitHub URL";
     return NextResponse.json(
       { drift: [], error: msg, model: null },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -78,18 +108,67 @@ export async function POST(request: NextRequest) {
   let docs: SpecDoc[];
   let headSha: string;
   try {
-    const inheritedSha = body.headSha || Object.values(evidence).map((e: any) => e?.headSha).find(Boolean) || "";
+    const inheritedSha =
+      body.headSha ||
+      Object.values(evidence)
+        .map((e: any) => e?.headSha)
+        .find(Boolean) ||
+      "";
     headSha = (await resolveSnapshot(repoUrl, inheritedSha, userToken)).headSha;
-    if (Object.values(evidence).some((e: any) => e?.headSha && e.headSha !== headSha)) throw new Error("Evidence snapshot mismatch");
-    const paths = Array.isArray(body.planningFiles) ? body.planningFiles.filter((p: unknown) => typeof p === "string" && /^(?:devpost\/|docs\/)?(?:scope|prd|spec)\.md$/i.test(p)).slice(0, 6) : ["devpost/scope.md", "devpost/prd.md", "devpost/spec.md", "scope.md", "prd.md", "spec.md"];
-    docs = (await Promise.all(paths.map(async (file: string) => ({file, text: await fetchDoc(base, file, userToken, headSha) || ""})))).filter(d => d.text.trim());
-    if (body.requirements != null && (typeof body.requirements !== "string" || body.requirements.length > 3000)) throw new Error("Review requirements must be at most 3000 characters");
-    if (typeof body.requirements === "string" && body.requirements.trim()) docs.unshift({file:"provided-requirements.md",text:body.requirements.split("\n").map((line:string)=>line.trim()).filter(Boolean).map((line:string)=>`- ${line.replace(/^[-*]\s*/,"")}`).join("\n")});
+    if (
+      Object.values(evidence).some(
+        (e: any) => e?.headSha && e.headSha !== headSha,
+      )
+    )
+      throw new Error("Evidence snapshot mismatch");
+    const paths = Array.isArray(body.planningFiles)
+      ? body.planningFiles
+          .filter(
+            (p: unknown) =>
+              typeof p === "string" &&
+              /^(?:devpost\/|docs\/)?(?:scope|prd|spec)\.md$/i.test(p),
+          )
+          .slice(0, 6)
+      : [
+          "devpost/scope.md",
+          "devpost/prd.md",
+          "devpost/spec.md",
+          "scope.md",
+          "prd.md",
+          "spec.md",
+        ];
+    docs = (
+      await Promise.all(
+        paths.map(async (file: string) => ({
+          file,
+          text: (await fetchDoc(base, file, userToken, headSha)) || "",
+        })),
+      )
+    ).filter((d) => d.text.trim());
+    if (
+      body.requirements != null &&
+      (typeof body.requirements !== "string" || body.requirements.length > 3000)
+    )
+      throw new Error("Review requirements must be at most 3000 characters");
+    if (typeof body.requirements === "string" && body.requirements.trim())
+      docs.unshift({
+        file: "provided-requirements.md",
+        text: body.requirements
+          .split("\n")
+          .map((line: string) => line.trim())
+          .filter(Boolean)
+          .map((line: string) => `- ${line.replace(/^[-*]\s*/, "")}`)
+          .join("\n"),
+      });
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
-      { drift: [], error: `Could not fetch spec documents: ${msg}`, model: null },
-      { status: 502 }
+      {
+        drift: [],
+        error: `Could not fetch spec documents: ${msg}`,
+        model: null,
+      },
+      { status: 502 },
     );
   }
 
@@ -98,10 +177,20 @@ export async function POST(request: NextRequest) {
   timings.lap("specDocFetch");
 
   for (const claim of rawClaims) {
-    const claimText = String(claim?.text || claim || "").slice(0, MAX_CLAIM_CHARS);
+    const claimText = String(claim?.text || claim || "").slice(
+      0,
+      MAX_CLAIM_CHARS,
+    );
     const claimId = String(claim?.id || claimText);
     if (["execution", "runtime"].includes(evidenceObligation(claimText))) {
-      outcomes.set(claimId, { claimId, claimText, verdict: "UNVERIFIED", reason: RUNTIME_EVIDENCE_REASON, specReference: "", obligation: evidenceObligation(claimText) });
+      outcomes.set(claimId, {
+        claimId,
+        claimText,
+        verdict: "UNVERIFIED",
+        reason: RUNTIME_EVIDENCE_REASON,
+        specReference: "",
+        obligation: evidenceObligation(claimText),
+      });
     } else if (hasRealEvidence(evidence[claimId])) {
       toAssess.push({ id: claimId, text: claimText });
     } else {
@@ -124,16 +213,25 @@ export async function POST(request: NextRequest) {
     const filesByClaim: Record<string, string[]> = {};
     for (const c of toAssess) {
       const entry = evidence[c.id];
-      filesByClaim[c.id] = Array.isArray(entry?.files) ? entry.files.slice(0, 5) : [];
+      filesByClaim[c.id] = Array.isArray(entry?.files)
+        ? entry.files.slice(0, 8)
+        : [];
     }
     try {
-      supportFiles = await fetchFileContentsForClaims(base, filesByClaim, userToken, headSha);
+      supportFiles = await fetchFileContentsForClaims(
+        base,
+        filesByClaim,
+        userToken,
+        headSha,
+      );
     } catch {
       supportFiles = {};
     }
   }
 
-  const hasSupport = toAssess.some((c) => (supportFiles[c.id] || []).length > 0);
+  const hasSupport = toAssess.some(
+    (c) => (supportFiles[c.id] || []).length > 0,
+  );
   timings.lap("supportFileFetch");
 
   if (toAssess.length && !docs.length && !hasSupport) {
@@ -142,19 +240,31 @@ export async function POST(request: NextRequest) {
         claimId: c.id,
         claimText: c.text,
         verdict: "UNVERIFIED",
-        reason: "No planning documents and no readable matched files to verify this claim against",
+        reason:
+          "No planning documents and no readable matched files to verify this claim against",
         specReference: "",
       });
     }
   } else if (toAssess.length) {
     let answer;
     try {
-      answer = await assessClaimsAgainstSpec(toAssess, docs, supportFiles, GEMINI_API_KEY);
+      answer = await assessClaimsAgainstSpec(
+        toAssess,
+        docs,
+        supportFiles,
+        GEMINI_API_KEY,
+        request.signal,
+      );
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       return NextResponse.json(
-        { drift: [], error: `Gemini API error: ${msg}`, model: null, modelFallback: false },
-        { status: 502 }
+        {
+          drift: [],
+          error: `Gemini API error: ${msg}`,
+          model: null,
+          modelFallback: false,
+        },
+        { status: 502 },
       );
     }
     model = answer.model;
@@ -167,7 +277,12 @@ export async function POST(request: NextRequest) {
     for (const a of answer.data) {
       const claim = toAssess.find((c) => c.id === a.claimId);
       const claimText = claim?.text || a.claimId;
-      if (a.contradicts && a.supported && a.supportingLine > 0 && a.coverage === "full") {
+      if (
+        a.contradicts &&
+        a.supported &&
+        a.supportingLine > 0 &&
+        a.coverage === "full"
+      ) {
         outcomes.set(a.claimId, {
           claimId: a.claimId,
           claimText,
@@ -175,24 +290,43 @@ export async function POST(request: NextRequest) {
           reason: a.reason,
           specReference: `${a.sourceDoc}:${a.lineNumber}: ${a.contradictingLine}`,
           supportingReference: `${a.supportingFile}:${a.supportingLine}: ${a.supportingQuote}`,
-          code: { file: a.supportingFile, line: a.supportingLine, quote: a.supportingQuote },
-          spec: { file: a.sourceDoc, line: a.lineNumber, quote: a.contradictingLine },
+          code: {
+            file: a.supportingFile,
+            line: a.supportingLine,
+            quote: a.supportingQuote,
+          },
+          spec: {
+            file: a.sourceDoc,
+            line: a.lineNumber,
+            quote: a.contradictingLine,
+          },
+          sourceCheck: a.sourceCheck,
         });
       } else if (a.supported && a.supportingLine > 0) {
         outcomes.set(a.claimId, {
           claimId: a.claimId,
           claimText,
           verdict: a.coverage === "partial" ? "PARTIAL" : "TRUE",
-          reason: a.reason,
+          reason:
+            a.sourceCheck?.ceiling === "partial"
+              ? `${a.reason} ${a.sourceCheck.note}`
+              : a.reason,
           specReference: `${a.supportingFile}:${a.supportingLine}: ${a.supportingQuote}`,
-          code: { file: a.supportingFile, line: a.supportingLine, quote: a.supportingQuote },
+          code: {
+            file: a.supportingFile,
+            line: a.supportingLine,
+            quote: a.supportingQuote,
+          },
+          sourceCheck: a.sourceCheck,
         });
       } else {
         outcomes.set(a.claimId, {
           claimId: a.claimId,
           claimText,
           verdict: "UNVERIFIED",
-          reason: a.rejectionReason || "No verified supporting line found in the matched files.",
+          reason:
+            a.rejectionReason ||
+            "No verified supporting line found in the matched files.",
           specReference: "",
         });
       }
@@ -214,8 +348,23 @@ export async function POST(request: NextRequest) {
 
   const finalTimings = timings.finish();
   return NextResponse.json(
-    { drift: drift.map((v: any) => ({...v, obligation: evidenceObligation(v.claimText), nextEvidence: nextEvidence(v.claimText, v.verdict)})), headSha, docs, model, modelFallback, usage, timings: finalTimings },
-    { headers: { "Server-Timing": serverTimingHeader(finalTimings) } }
+    {
+      drift: drift.map((v: any) => {
+        const finding = {
+          ...v,
+          obligation: evidenceObligation(v.claimText),
+          nextEvidence: nextEvidence(v.claimText, v.verdict),
+        };
+        return { ...finding, contract: evidenceContract(finding) };
+      }),
+      headSha,
+      docs,
+      model,
+      modelFallback,
+      usage,
+      timings: finalTimings,
+    },
+    { headers: { "Server-Timing": serverTimingHeader(finalTimings) } },
   );
 }
 

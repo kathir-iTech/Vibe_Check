@@ -22,6 +22,13 @@ export interface Finding {
   code?: Citation;
   spec?: Citation;
   changeEvidence?: string;
+  sourceCheck?: { ceiling: string; kind: string; note: string };
+  contract?: {
+    checked: string;
+    established: string;
+    unknown: string;
+    resolve: string;
+  };
 }
 export interface Requirement {
   id: string;
@@ -33,6 +40,8 @@ export interface Requirement {
   status: string;
   claimIds: string[];
   note?: string;
+  strength?: string;
+  suggestedClaimIds?: string[];
 }
 export interface Audit {
   schema?: string;
@@ -40,6 +49,7 @@ export interface Audit {
   repoUrl: string;
   headSha: string;
   baseSha?: string;
+  reviewContext?: string;
   generatedAt: string;
   claims: AuditClaim[];
   evidence: Record<string, any>;
@@ -53,6 +63,8 @@ export interface Audit {
     omittedFiles: number;
     treeTruncated: boolean;
     bounded: boolean;
+    followupCandidates?: number;
+    fileHints?: string[];
   };
   sourceDocuments: { file: string; sha256: string; truncated: boolean }[];
   models: Record<string, any>;
@@ -63,6 +75,10 @@ export interface Audit {
     status: string;
     conclusion: string;
     url: string;
+    headSha?: string;
+    completedAt?: string;
+    claimIds?: string[];
+    note?: string;
   }[];
   sig?: string;
   keyId?: string;

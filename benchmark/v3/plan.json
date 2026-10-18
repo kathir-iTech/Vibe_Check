@@ -1,0 +1,412 @@
+{
+  "schema": "vibecheck/product-evaluation-plan/v1",
+  "frozenAt": "2026-10-18T07:07:47.337Z",
+  "scope": "Builder-selected public subjects and builder-authored evidence-class expectations frozen before provider calls. Not independent labels or population accuracy. File hints are supplied to isolate assessment from discovery; retrieval coverage must be evaluated separately.",
+  "subjects": [
+    {
+      "repository": "expressjs/express",
+      "repoUrl": "https://github.com/expressjs/express",
+      "headSha": "0dee2c52c7c873498f8ed7d8ee4ddd0a04d3ada8",
+      "fileHints": [
+        "lib/application.js",
+        "package.json"
+      ],
+      "claims": [
+        {
+          "id": "declaration",
+          "text": "An app.handle function is defined",
+          "allowed": [
+            "TRUE"
+          ],
+          "kind": "source-presence",
+          "basis": {
+            "file": "lib/application.js",
+            "line": 152,
+            "quote": "app.handle = function handle(req, res, callback) {"
+          }
+        },
+        {
+          "id": "execution",
+          "text": "All tests passed",
+          "allowed": [
+            "UNVERIFIED"
+          ],
+          "kind": "execution-boundary"
+        },
+        {
+          "id": "deployment",
+          "text": "The application is deployed to production",
+          "allowed": [
+            "UNVERIFIED"
+          ],
+          "kind": "runtime-boundary"
+        },
+        {
+          "id": "universal",
+          "text": "Every route is fully protected against unauthorized access",
+          "allowed": [
+            "UNVERIFIED",
+            "PARTIAL"
+          ],
+          "kind": "universal-overclaim"
+        },
+        {
+          "id": "fabrication",
+          "text": "A vibecheckImaginaryQuantumReceipt function is defined",
+          "allowed": [
+            "UNVERIFIED"
+          ],
+          "kind": "unsupported-in-inspected-source"
+        },
+        {
+          "id": "license",
+          "text": "The package declares MIT licensing in package.json",
+          "allowed": [
+            "TRUE"
+          ],
+          "kind": "manifest-declaration",
+          "basis": {
+            "file": "package.json",
+            "value": "MIT",
+            "sha256": "9645053f08f43135ec21f46ae434e49e10528c9062fde7776b150f38a2335afe"
+          }
+        }
+      ],
+      "source": {
+        "path": "lib/application.js",
+        "sha256": "6d7e08355025786982d17042fc0355b6a5e9339545dc27e2782b3aaa28a7bc04"
+      }
+    },
+    {
+      "repository": "chalk/chalk",
+      "repoUrl": "https://github.com/chalk/chalk",
+      "headSha": "47fc05abd46171b235e24174cd2dba83d25bf037",
+      "fileHints": [
+        "source/index.js",
+        "package.json"
+      ],
+      "claims": [
+        {
+          "id": "declaration",
+          "text": "A createChalk function is defined",
+          "allowed": [
+            "TRUE"
+          ],
+          "kind": "source-presence",
+          "basis": {
+            "file": "source/index.js",
+            "line": 61,
+            "quote": "function createChalk(options) {"
+          }
+        },
+        {
+          "id": "execution",
+          "text": "All tests passed",
+          "allowed": [
+            "UNVERIFIED"
+          ],
+          "kind": "execution-boundary"
+        },
+        {
+          "id": "deployment",
+          "text": "The application is deployed to production",
+          "allowed": [
+            "UNVERIFIED"
+          ],
+          "kind": "runtime-boundary"
+        },
+        {
+          "id": "universal",
+          "text": "Every route is fully protected against unauthorized access",
+          "allowed": [
+            "UNVERIFIED",
+            "PARTIAL"
+          ],
+          "kind": "universal-overclaim"
+        },
+        {
+          "id": "fabrication",
+          "text": "A vibecheckImaginaryQuantumReceipt function is defined",
+          "allowed": [
+            "UNVERIFIED"
+          ],
+          "kind": "unsupported-in-inspected-source"
+        },
+        {
+          "id": "license",
+          "text": "The package declares MIT licensing in package.json",
+          "allowed": [
+            "TRUE"
+          ],
+          "kind": "manifest-declaration",
+          "basis": {
+            "file": "package.json",
+            "value": "MIT",
+            "sha256": "7116220f70a118975f834e1fd95ee3ecf6a23cb198a94d6845a4cea256007d01"
+          }
+        }
+      ],
+      "source": {
+        "path": "source/index.js",
+        "sha256": "02abae0091d42e077f06e10c0918cf671707d1c73235bcb5d486ed66084ec7b4"
+      }
+    },
+    {
+      "repository": "pallets/flask",
+      "repoUrl": "https://github.com/pallets/flask",
+      "headSha": "d086db856be187255b8ec61ef409357393020f32",
+      "fileHints": [
+        "src/flask/app.py",
+        "pyproject.toml"
+      ],
+      "claims": [
+        {
+          "id": "declaration",
+          "text": "A wsgi_app function is defined",
+          "allowed": [
+            "TRUE"
+          ],
+          "kind": "source-presence",
+          "basis": {
+            "file": "src/flask/app.py",
+            "line": 1566,
+            "quote": "def wsgi_app("
+          }
+        },
+        {
+          "id": "execution",
+          "text": "All tests passed",
+          "allowed": [
+            "UNVERIFIED"
+          ],
+          "kind": "execution-boundary"
+        },
+        {
+          "id": "deployment",
+          "text": "The application is deployed to production",
+          "allowed": [
+            "UNVERIFIED"
+          ],
+          "kind": "runtime-boundary"
+        },
+        {
+          "id": "universal",
+          "text": "Every route is fully protected against unauthorized access",
+          "allowed": [
+            "UNVERIFIED",
+            "PARTIAL"
+          ],
+          "kind": "universal-overclaim"
+        },
+        {
+          "id": "fabrication",
+          "text": "A vibecheckImaginaryQuantumReceipt function is defined",
+          "allowed": [
+            "UNVERIFIED"
+          ],
+          "kind": "unsupported-in-inspected-source"
+        }
+      ],
+      "source": {
+        "path": "src/flask/app.py",
+        "sha256": "510b83880097af4450933561cba96e5a1c432bf53ea9264ca947da53752e3a2b"
+      }
+    },
+    {
+      "repository": "psf/requests",
+      "repoUrl": "https://github.com/psf/requests",
+      "headSha": "611c6162cbc4ac2020a2f91c7cfa4f3abf9bbb60",
+      "fileHints": [
+        "src/requests/api.py",
+        "pyproject.toml"
+      ],
+      "claims": [
+        {
+          "id": "declaration",
+          "text": "A get function is defined",
+          "allowed": [
+            "TRUE"
+          ],
+          "kind": "source-presence",
+          "basis": {
+            "file": "src/requests/api.py",
+            "line": 74,
+            "quote": "def get("
+          }
+        },
+        {
+          "id": "execution",
+          "text": "All tests passed",
+          "allowed": [
+            "UNVERIFIED"
+          ],
+          "kind": "execution-boundary"
+        },
+        {
+          "id": "deployment",
+          "text": "The application is deployed to production",
+          "allowed": [
+            "UNVERIFIED"
+          ],
+          "kind": "runtime-boundary"
+        },
+        {
+          "id": "universal",
+          "text": "Every route is fully protected against unauthorized access",
+          "allowed": [
+            "UNVERIFIED",
+            "PARTIAL"
+          ],
+          "kind": "universal-overclaim"
+        },
+        {
+          "id": "fabrication",
+          "text": "A vibecheckImaginaryQuantumReceipt function is defined",
+          "allowed": [
+            "UNVERIFIED"
+          ],
+          "kind": "unsupported-in-inspected-source"
+        }
+      ],
+      "source": {
+        "path": "src/requests/api.py",
+        "sha256": "4d15480ac046f089209798e8650476ef4a28ebe6f81b400758f8ef42ec6b5509"
+      }
+    },
+    {
+      "repository": "honojs/hono",
+      "repoUrl": "https://github.com/honojs/hono",
+      "headSha": "5ca49b0720755c585c9a9835f0a479ceea36fb52",
+      "fileHints": [
+        "src/hono.ts",
+        "package.json"
+      ],
+      "claims": [
+        {
+          "id": "declaration",
+          "text": "A Hono class is defined",
+          "allowed": [
+            "TRUE"
+          ],
+          "kind": "source-presence",
+          "basis": {
+            "file": "src/hono.ts",
+            "line": 16,
+            "quote": "export class Hono<"
+          }
+        },
+        {
+          "id": "execution",
+          "text": "All tests passed",
+          "allowed": [
+            "UNVERIFIED"
+          ],
+          "kind": "execution-boundary"
+        },
+        {
+          "id": "deployment",
+          "text": "The application is deployed to production",
+          "allowed": [
+            "UNVERIFIED"
+          ],
+          "kind": "runtime-boundary"
+        },
+        {
+          "id": "universal",
+          "text": "Every route is fully protected against unauthorized access",
+          "allowed": [
+            "UNVERIFIED",
+            "PARTIAL"
+          ],
+          "kind": "universal-overclaim"
+        },
+        {
+          "id": "fabrication",
+          "text": "A vibecheckImaginaryQuantumReceipt function is defined",
+          "allowed": [
+            "UNVERIFIED"
+          ],
+          "kind": "unsupported-in-inspected-source"
+        },
+        {
+          "id": "license",
+          "text": "The package declares MIT licensing in package.json",
+          "allowed": [
+            "TRUE"
+          ],
+          "kind": "manifest-declaration",
+          "basis": {
+            "file": "package.json",
+            "value": "MIT",
+            "sha256": "169a02072e32d85aacb089ad14b62b027d975479d811f741771fbd0f559fb5c9"
+          }
+        }
+      ],
+      "source": {
+        "path": "src/hono.ts",
+        "sha256": "28317c8a40c83cc89a80f268bd4dad18cd423f4704b621dda272292a10f63e77"
+      }
+    },
+    {
+      "repository": "colinhacks/zod",
+      "repoUrl": "https://github.com/colinhacks/zod",
+      "headSha": "680d19f7d1e042e55934209caeb79bc843b94f44",
+      "fileHints": [
+        "packages/zod/src/index.ts",
+        "package.json"
+      ],
+      "claims": [
+        {
+          "id": "declaration",
+          "text": "The entry point exports bindings",
+          "allowed": [
+            "TRUE"
+          ],
+          "kind": "source-presence",
+          "basis": {
+            "file": "packages/zod/src/index.ts",
+            "line": 2,
+            "quote": "export * from \"./v4/classic/external.js\";"
+          }
+        },
+        {
+          "id": "execution",
+          "text": "All tests passed",
+          "allowed": [
+            "UNVERIFIED"
+          ],
+          "kind": "execution-boundary"
+        },
+        {
+          "id": "deployment",
+          "text": "The application is deployed to production",
+          "allowed": [
+            "UNVERIFIED"
+          ],
+          "kind": "runtime-boundary"
+        },
+        {
+          "id": "universal",
+          "text": "Every route is fully protected against unauthorized access",
+          "allowed": [
+            "UNVERIFIED",
+            "PARTIAL"
+          ],
+          "kind": "universal-overclaim"
+        },
+        {
+          "id": "fabrication",
+          "text": "A vibecheckImaginaryQuantumReceipt function is defined",
+          "allowed": [
+            "UNVERIFIED"
+          ],
+          "kind": "unsupported-in-inspected-source"
+        }
+      ],
+      "source": {
+        "path": "packages/zod/src/index.ts",
+        "sha256": "32e7efd49a94a765f6d10a1a0a3c02c50c246def17c80c6f0225f85525d98505"
+      }
+    }
+  ]
+}

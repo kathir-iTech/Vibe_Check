@@ -46,6 +46,12 @@ export default function AuditWorkspace({
   const [headSha, setHeadSha] = useState("");
   const [baseSha, setBaseSha] = useState("");
   const [requirements, setRequirements] = useState("");
+  const [fileHints, setFileHints] = useState("");
+  const [checkpoint, setCheckpoint] = useState<{
+    claims: { id: string; text: string }[];
+    repoUrl: string;
+    headSha: string;
+  } | null>(null);
   const [token, setToken] = useState("");
   const [audit, setAudit] = useState<Audit | null>(null);
   const [previous, setPrevious] = useState<Audit | null>(null);
@@ -82,6 +88,8 @@ export default function AuditWorkspace({
       if (saved?.headSha) setHeadSha(saved.headSha);
       if (saved?.baseSha) setBaseSha(saved.baseSha);
       if (saved?.requirements) setRequirements(saved.requirements);
+      if (saved?.fileHints) setFileHints(saved.fileHints);
+      if (saved?.checkpoint) setCheckpoint(saved.checkpoint);
     } catch {
       /* storage is optional */
     }
@@ -104,6 +112,8 @@ export default function AuditWorkspace({
             headSha,
             baseSha,
             requirements,
+            fileHints,
+            checkpoint,
           }),
         );
       } catch {
@@ -123,6 +133,8 @@ export default function AuditWorkspace({
     headSha,
     baseSha,
     requirements,
+    fileHints,
+    checkpoint,
   ]);
   function remember(next: Audit, nextReceipt: string | null) {
     try {
@@ -170,6 +182,10 @@ export default function AuditWorkspace({
           headSha: latest ? "" : headSha,
           baseSha: latest && audit ? audit.headSha : baseSha,
           requirements,
+          fileHints: fileHints
+            .split("\n")
+            .map((s) => s.trim())
+            .filter(Boolean),
         }),
       });
       if (!response.ok) {
@@ -193,6 +209,34 @@ export default function AuditWorkspace({
           if (!line.trim()) continue;
           const event = JSON.parse(line);
           if (event.type === "stage") setStage(event.stage);
+          if (event.type === "checkpoint") {
+            const saved = {
+              claims: event.claims,
+              repoUrl: event.repoUrl,
+              headSha: event.headSha,
+            };
+            setCheckpoint(saved);
+            try {
+              sessionStorage.setItem(
+                STORE,
+                JSON.stringify({
+                  message,
+                  repoUrl,
+                  mode,
+                  sourceUrl,
+                  headSha,
+                  baseSha,
+                  requirements,
+                  fileHints,
+                  checkpoint: saved,
+                  audit,
+                  receipt,
+                }),
+              );
+            } catch {
+              /* optional */
+            }
+          }
           if (event.type === "error") throw new Error(event.error);
           if (event.type === "result") {
             if (audit) setPrevious(audit);
@@ -202,6 +246,7 @@ export default function AuditWorkspace({
             setNotice(event.signingWarning || "");
             setStage("done");
             completed = true;
+            setCheckpoint(null);
           }
         }
         if (chunk.done) break;
@@ -225,6 +270,42 @@ export default function AuditWorkspace({
             : "Audit failed",
       );
       setStage("error");
+    } finally {
+      clearTimeout(timer);
+      setBusy(false);
+      abortRef.current = null;
+    }
+  }
+  async function prepareClaims() {
+    if (busy) return;
+    setBusy(true);
+    setError("");
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const timer = setTimeout(() => controller.abort(), 55000);
+    try {
+      const response = await fetch("/api/extract-claims", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message }),
+        signal: controller.signal,
+      });
+      const body = await response.json();
+      if (!response.ok)
+        throw new Error(body.error || "Could not extract claims");
+      setMessage(body.claims.map((c: { text: string }) => c.text).join("\n"));
+      setMode("claims");
+      setNotice(
+        "Review or edit each claim, then check the proof. No repository assessment has run yet.",
+      );
+    } catch (error) {
+      setError(
+        controller.signal.aborted
+          ? "Claim extraction stopped. Your message is preserved."
+          : error instanceof Error
+            ? error.message
+            : "Could not extract claims",
+      );
     } finally {
       clearTimeout(timer);
       setBusy(false);
@@ -426,6 +507,23 @@ export default function AuditWorkspace({
               <summary>
                 Advanced options <span>+</span>
               </summary>
+              <label htmlFor="file-hints">
+                Relevant files{" "}
+                <span className="quiet">optional · one path per line</span>
+              </label>
+              <textarea
+                id="file-hints"
+                rows={2}
+                maxLength={2400}
+                value={fileHints}
+                onChange={(e) => setFileHints(e.target.value)}
+                disabled={busy}
+                placeholder="src/auth.ts&#10;packages/api/package.json"
+              />
+              <p className="field-help">
+                Up to 8 source paths. Hints guide inspection; they do not
+                establish support.
+              </p>
               <label htmlFor="revision">
                 Inspect a commit <span className="quiet">optional</span>
               </label>
@@ -471,6 +569,16 @@ export default function AuditWorkspace({
               {busy ? "Checking the proof…" : "Check the proof"}
               <span>{busy ? "◌" : "↗"}</span>
             </button>
+            {mode === "message" && (
+              <button
+                className="text-button"
+                type="button"
+                disabled={busy || !storageReady || !message.trim()}
+                onClick={() => void prepareClaims()}
+              >
+                Review extracted claims first →
+              </button>
+            )}
             {busy && (
               <button
                 className="text-button"
@@ -539,6 +647,23 @@ export default function AuditWorkspace({
             <div className="error-message" role="alert">
               <strong>The assessment needs attention</strong>
               <p>{error}</p>
+              {checkpoint && (
+                <button
+                  className="text-button"
+                  disabled={busy}
+                  onClick={() => {
+                    setMode("claims");
+                    setMessage(checkpoint.claims.map((c) => c.text).join("\n"));
+                    setRepoUrl(checkpoint.repoUrl);
+                    setHeadSha(checkpoint.headSha);
+                    setNotice(
+                      "Recovered extracted claims at the original commit. Review them, then retry source inspection.",
+                    );
+                  }}
+                >
+                  Recover extracted claims
+                </button>
+              )}
             </div>
           )}
           {notice && (
@@ -589,8 +714,19 @@ export default function AuditWorkspace({
                 </p>
               )}
               <AuditResults
+                key={`${audit.repoUrl}@${audit.headSha}:${audit.generatedAt}`}
                 audit={audit}
                 previous={previous}
+                onInspectFiles={(text) => {
+                  setMode("claims");
+                  setMessage(text);
+                  setRepoUrl(audit.repoUrl);
+                  setHeadSha(audit.headSha);
+                  setNotice(
+                    "Add relevant file paths under Advanced options, then check this claim at the same commit.",
+                  );
+                  inputRef.current?.focus();
+                }}
                 onCheckRequirement={(text) => {
                   setMode("claims");
                   setMessage(text.slice(0, 300));

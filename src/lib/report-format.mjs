@@ -55,7 +55,7 @@ export function validReportShape(data) {
     return false;
   if (
     !Array.isArray(data.requirements) ||
-    data.requirements.length > 12 ||
+    data.requirements.length > 32 ||
     !Array.isArray(data.sourceDocuments) ||
     !Array.isArray(data.warnings) ||
     !data.warnings.every((v) => typeof v === "string")
@@ -92,6 +92,21 @@ export function validReportShape(data) {
     data.sourceDocuments.some(
       (d) => !d || typeof d.file !== "string" || typeof d.sha256 !== "string",
     )
+  )
+    return false;
+  if (
+    data.executionRecords != null &&
+    (!Array.isArray(data.executionRecords) ||
+      data.executionRecords.length > 100 ||
+      data.executionRecords.some(
+        (r) =>
+          !r ||
+          typeof r.name !== "string" ||
+          typeof r.status !== "string" ||
+          typeof r.conclusion !== "string" ||
+          !/^https:\/\/github\.com\//.test(r.url) ||
+          (r.headSha != null && r.headSha !== data.headSha),
+      ))
   )
     return false;
   const ids = new Set();
