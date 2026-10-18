@@ -2,6 +2,7 @@
 import { useState } from "react";
 import type { Audit, Citation } from "@/types/audit";
 import { compareAudits } from "@/lib/audit-policy.mjs";
+import { repairHandoff } from "@/lib/repair-handoff.mjs";
 
 const labels = {
   TRUE: "Source supported",
@@ -41,12 +42,16 @@ export function AuditResults({
   audit,
   previous,
   onCheckRequirement,
+  onInspectFiles,
 }: {
   audit: Audit;
   previous?: Audit | null;
   onCheckRequirement?: (text: string) => void;
+  onInspectFiles?: (text: string) => void;
 }) {
   const [tab, setTab] = useState("claims");
+  const [matches, setMatches] = useState<Record<string, string>>({});
+  const [copyNotice, setCopyNotice] = useState("");
   const counts = { TRUE: 0, PARTIAL: 0, UNVERIFIED: 0, "SPEC-DRIFT": 0 };
   audit.verdicts.forEach((v) => counts[v.verdict]++);
   return (
@@ -112,61 +117,99 @@ export function AuditResults({
       <div id="audit-tab-panel" role="tabpanel" aria-labelledby={`tab-${tab}`}>
         {tab === "claims" && (
           <div className="finding-list">
-            {audit.claims.map((claim, index) => {
-              const finding = audit.verdicts.find(
-                (v) => v.claimId === claim.id,
-              );
-              if (!finding) return null;
-              return (
-                <article
-                  className={`finding finding-${finding.verdict}`}
-                  key={claim.id}
-                >
-                  <div className="finding-top">
-                    <span className={`verdict tone-${finding.verdict}`}>
-                      {labels[finding.verdict]}
-                    </span>
-                    <span className="mono quiet">
-                      {String(index + 1).padStart(2, "0")} /{" "}
-                      {finding.obligation || "source"}
-                    </span>
-                  </div>
-                  <h3>{claim.text}</h3>
-                  <p>{finding.reason}</p>
-                  {finding.code && (
-                    <EvidenceQuote
-                      audit={audit}
-                      citation={finding.code}
-                      label="Implementation / configuration"
-                    />
-                  )}
-                  {finding.spec && (
-                    <EvidenceQuote
-                      audit={audit}
-                      citation={finding.spec}
-                      label="Planning requirement"
-                    />
-                  )}
-                  {finding.changeEvidence && (
-                    <p className="change-note">↳ {finding.changeEvidence}</p>
-                  )}
-                  {finding.nextEvidence && (
-                    <div className="next-evidence">
-                      <span>Next evidence</span>
-                      {finding.nextEvidence}
+            {[...audit.claims]
+              .sort((a, b) => {
+                const priority = {
+                  "SPEC-DRIFT": 0,
+                  UNVERIFIED: 1,
+                  PARTIAL: 2,
+                  TRUE: 3,
+                };
+                return (
+                  priority[
+                    audit.verdicts.find((v) => v.claimId === a.id)?.verdict ||
+                      "UNVERIFIED"
+                  ] -
+                  priority[
+                    audit.verdicts.find((v) => v.claimId === b.id)?.verdict ||
+                      "UNVERIFIED"
+                  ]
+                );
+              })
+              .map((claim, index) => {
+                const finding = audit.verdicts.find(
+                  (v) => v.claimId === claim.id,
+                );
+                if (!finding) return null;
+                return (
+                  <article
+                    className={`finding finding-${finding.verdict}`}
+                    key={claim.id}
+                  >
+                    <div className="finding-top">
+                      <span className={`verdict tone-${finding.verdict}`}>
+                        {labels[finding.verdict]}
+                      </span>
+                      <span className="mono quiet">
+                        {String(index + 1).padStart(2, "0")} /{" "}
+                        {finding.obligation || "source"}
+                      </span>
                     </div>
-                  )}
-                </article>
-              );
-            })}
+                    <h3>{claim.text}</h3>
+                    <p>{finding.reason}</p>
+                    {finding.contract && (
+                      <details className="report-help">
+                        <summary>What this finding establishes</summary>
+                        <p>{finding.contract.checked}</p>
+                        <p>{finding.contract.established}</p>
+                        <p>{finding.contract.unknown}</p>
+                        {finding.sourceCheck && (
+                          <p>{finding.sourceCheck.note}</p>
+                        )}
+                      </details>
+                    )}
+                    {finding.code && (
+                      <EvidenceQuote
+                        audit={audit}
+                        citation={finding.code}
+                        label="Implementation / configuration"
+                      />
+                    )}
+                    {finding.spec && (
+                      <EvidenceQuote
+                        audit={audit}
+                        citation={finding.spec}
+                        label="Planning requirement"
+                      />
+                    )}
+                    {finding.changeEvidence && (
+                      <p className="change-note">↳ {finding.changeEvidence}</p>
+                    )}
+                    {finding.nextEvidence && (
+                      <div className="next-evidence">
+                        <span>Next evidence</span>
+                        {finding.nextEvidence}
+                      </div>
+                    )}
+                    {finding.verdict !== "TRUE" && onInspectFiles && (
+                      <button
+                        className="text-button"
+                        onClick={() => onInspectFiles(claim.text)}
+                      >
+                        Inspect more evidence →
+                      </button>
+                    )}
+                  </article>
+                );
+              })}
           </div>
         )}
         {tab === "requirements" && (
           <div className="requirements-list">
             <p className="panel-note">
-              Explicit requirement bullets extracted from the inspected
-              documents. Associations help you review omissions; “mentioned”
-              does not certify fulfillment.
+              Requirements extracted from the inspected documents. Associations
+              help you review omissions; “mentioned” does not certify
+              fulfillment.
             </p>
             {audit.requirements?.length ? (
               audit.requirements.map((row) => (
@@ -182,10 +225,17 @@ export function AuditResults({
                     </span>
                   </div>
                   <h3>{row.text}</h3>
+                  {row.strength && (
+                    <span className="quiet">
+                      {row.strength.replace(/-/g, " ")}
+                    </span>
+                  )}
                   <p>
                     {row.claimIds.length
                       ? `Associated claims: ${row.claimIds.join(", ")}`
-                      : "The completion message does not mention this requirement."}
+                      : row.suggestedClaimIds?.length
+                        ? `Possible association: ${row.suggestedClaimIds.join(", ")}. Review before relying on it.`
+                        : "No claim association was established; implementation may still exist."}
                   </p>
                   {onCheckRequirement && (
                     <button
@@ -199,11 +249,12 @@ export function AuditResults({
               ))
             ) : (
               <div className="empty-panel">
-                <h3>No explicit requirement bullets found</h3>
+                <h3>No requirements extracted</h3>
                 <p>
-                  VibeCheck looks for bounded must/shall/never/only statements
-                  in scope.md, prd.md and spec.md at the root, devpost/ or
-                  docs/. Prose requirements still need review.
+                  VibeCheck looks for bounded normative statements and
+                  acceptance items in scope.md, prd.md and spec.md at the root,
+                  devpost/ or docs/. Omitted or ambiguous requirements still
+                  need review.
                 </p>
               </div>
             )}
@@ -213,8 +264,9 @@ export function AuditResults({
           (previous ? (
             <div className="comparison">
               <p className="panel-note">
-                Exact claim text is matched across these two assessments. Model
-                variation can change a finding even when source is unchanged.
+                Claim text is matched exactly unless you confirm equivalence.
+                Model variation can change a finding even when source is
+                unchanged.
               </p>
               <div className="comparison-head">
                 <span>
@@ -224,14 +276,56 @@ export function AuditResults({
                   After <code>{audit.headSha.slice(0, 8)}</code>
                 </span>
               </div>
-              {compareAudits(previous, audit).map((row: any) => (
+              {compareAudits(previous, audit, matches).map((row: any) => (
                 <div className="comparison-row" key={row.text}>
                   <p>{row.text}</p>
-                  <span>{labels[row.before] || "Not checked"}</span>
+                  <span>
+                    {labels[row.before] ||
+                      (row.comparable ? "Not checked" : "Different repository")}
+                  </span>
                   <span>
                     {labels[row.after]}
                     {row.changed ? " ↗" : ""}
                   </span>
+                  {row.contextChanged && (
+                    <small>
+                      Review requirements changed or were not recorded; no
+                      improvement is inferred.
+                    </small>
+                  )}
+                  {row.assessmentChanged && (
+                    <small>
+                      Same source or a different verifier; this is not evidence
+                      of a code improvement.
+                    </small>
+                  )}
+                  {row.comparable && row.matchedBy === "none" && (
+                    <label>
+                      Match an earlier claim{" "}
+                      <select
+                        aria-label={`Earlier claim for ${row.text}`}
+                        value={matches[row.claimId] || ""}
+                        onChange={(e) =>
+                          setMatches((values) => ({
+                            ...values,
+                            [row.claimId]: e.target.value,
+                          }))
+                        }
+                      >
+                        <option value="">Choose only if equivalent</option>
+                        {previous.claims.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.text}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
+                  {row.matchedBy === "user-confirmed" && (
+                    <small>
+                      Equivalence confirmed by you; not inferred by VibeCheck.
+                    </small>
+                  )}
                 </div>
               ))}
             </div>
@@ -307,6 +401,13 @@ export function AuditResults({
                 ))}
               </>
             )}
+            {!!audit.retrieval.fileHints?.length && (
+              <p className="panel-note">
+                User-supplied retrieval hints:{" "}
+                {audit.retrieval.fileHints.join(", ")}. Source support was
+                assessed separately.
+              </p>
+            )}
             {Object.entries(audit.models || {}).map(
               ([stage, model]: [string, any]) => (
                 <div className="model-record" key={stage}>
@@ -338,6 +439,29 @@ export function AuditResults({
           </div>
         )}
       </div>
+      <details className="report-help">
+        <summary>Repair handoff</summary>
+        <p>
+          Unresolved claims, cited constraints and the evidence needed for
+          rechecking.
+        </p>
+        <button
+          className="text-button"
+          onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(repairHandoff(audit));
+              setCopyNotice("Repair handoff copied.");
+            } catch {
+              setCopyNotice(
+                "Clipboard unavailable. Use the Markdown report export.",
+              );
+            }
+          }}
+        >
+          Copy repair checklist
+        </button>
+        <p role="status">{copyNotice}</p>
+      </details>
     </>
   );
 }

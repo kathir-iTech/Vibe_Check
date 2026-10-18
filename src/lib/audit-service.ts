@@ -14,7 +14,9 @@ import {
   mapRequirements,
   validateAuditClaims,
   VERIFIER_VERSION,
+  nextEvidence,
 } from "./audit-policy.mjs";
+import { evidenceContract } from "./evidence-depth.mjs";
 import { tokenize } from "./verification-guards.mjs";
 import type { Audit, Finding } from "@/types/audit";
 
@@ -22,10 +24,13 @@ async function invoke(
   handler: (request: NextRequest) => Promise<Response>,
   body: unknown,
   headers: Headers,
+  signal?: AbortSignal,
 ) {
+  signal?.throwIfAborted();
   const response = await handler({
     json: async () => body,
     headers,
+    signal,
   } as NextRequest);
   const result = await response.json();
   if (!response.ok || result.error)
@@ -36,7 +41,8 @@ async function invoke(
 export async function runAudit(
   input: any,
   headers: Headers,
-  progress: (stage: string) => void = () => {},
+  progress: (stage: string, checkpoint?: any) => void = () => {},
+  signal?: AbortSignal,
 ): Promise<Audit> {
   const started = performance.now();
   const token = headers.get("x-github-token") || undefined;
@@ -46,6 +52,7 @@ export async function runAudit(
   let message = String(input.message || "").trim();
   const models: Record<string, any> = {};
   const warnings: string[] = [];
+  signal?.throwIfAborted();
   progress("source");
   if (input.sourceUrl) {
     const source = await fetchClaimSource(String(input.sourceUrl), token);
@@ -78,6 +85,7 @@ export async function runAudit(
     const extraction = await extractClaimsViaGemini(
       message,
       process.env.GEMINI_API_KEY || "",
+      signal,
     );
     claims = validateAuditClaims(extraction.data);
     models.extract = {
@@ -87,11 +95,23 @@ export async function runAudit(
     };
   }
   const resolvedAt = performance.now();
+  signal?.throwIfAborted();
+  progress("claims-ready", {
+    claims,
+    repoUrl: snapshot.repoUrl,
+    headSha: snapshot.headSha,
+  });
   progress("evidence");
   const ev = await invoke(
     checkEvidence,
-    { repoUrl: snapshot.repoUrl, headSha: snapshot.headSha, claims },
+    {
+      repoUrl: snapshot.repoUrl,
+      headSha: snapshot.headSha,
+      claims,
+      fileHints: input.fileHints,
+    },
     headers,
+    signal,
   );
   if (ev.headSha !== snapshot.headSha)
     throw new Error("Evidence snapshot mismatch");
@@ -108,6 +128,7 @@ export async function runAudit(
       evidence: ev.evidence,
     },
     headers,
+    signal,
   );
   if (assessed.headSha !== snapshot.headSha)
     throw new Error("Assessment snapshot mismatch");
@@ -117,6 +138,19 @@ export async function runAudit(
     usage: assessed.usage,
   };
   let verdicts: Finding[] = assessed.drift;
+  for (const claim of claims) {
+    if (ev.evidence[claim.id])
+      ev.evidence[claim.id].sourceWindows =
+        assessed.sourceWindows?.[claim.id] || [];
+  }
+  if (
+    Object.values(assessed.sourceWindows || {}).some((rows: any) =>
+      rows.some((row: any) => row.truncated),
+    )
+  )
+    warnings.push(
+      "Some source files were inspected in bounded windows. Citations retain original line numbers; omitted regions remain unassessed.",
+    );
   if (baseSha) {
     try {
       const diff = await githubApi(
@@ -185,7 +219,11 @@ export async function runAudit(
   );
   if (!requirements.length)
     warnings.push(
-      "No explicit bounded requirement bullets were extracted. Planning coverage needs human review.",
+      "No bounded requirements were extracted. Planning coverage needs human review.",
+    );
+  if (requirements.length === 32)
+    warnings.push(
+      "Requirement extraction reached its 32-item limit; additional requirements may be omitted.",
     );
   if (ev.retrieval.omittedFiles > 0 || ev.treeTruncated)
     warnings.push(
@@ -199,13 +237,32 @@ export async function runAudit(
         5000,
         token,
       );
-      for (const check of checks.check_runs || [])
+      for (const check of checks.check_runs || []) {
+        if (check.head_sha !== snapshot.headSha) {
+          warnings.push(
+            "A GitHub check with a missing or mismatched revision was excluded.",
+          );
+          continue;
+        }
         executionRecords.push({
           name: check.name,
           status: check.status,
           conclusion: check.conclusion || "pending",
           url: check.html_url,
+          headSha: check.head_sha,
+          completedAt: check.completed_at || null,
+          claimIds: claims
+            .filter(
+              (c) =>
+                c.text
+                  .toLowerCase()
+                  .includes(String(check.name).toLowerCase()) &&
+                String(check.name).length >= 4,
+            )
+            .map((c) => c.id),
+          note: "Provider-reported named check only; does not certify unspecified tests or complete functionality.",
         });
+      }
     } catch {
       warnings.push(
         "CI check records were not accessible. Execution claims remain unverified.",
@@ -213,11 +270,30 @@ export async function runAudit(
     }
   }
   progress("report");
+  signal?.throwIfAborted();
+  verdicts = verdicts.map((finding) => {
+    const updated = {
+      ...finding,
+      nextEvidence: nextEvidence(finding.claimText, finding.verdict),
+    };
+    return { ...updated, contract: evidenceContract(updated) };
+  });
   return {
     verifierVersion: VERIFIER_VERSION,
     repoUrl: snapshot.repoUrl,
     headSha: snapshot.headSha,
     baseSha: baseSha || undefined,
+    reviewContext: createHash("sha256")
+      .update(
+        JSON.stringify({
+          provided: String(input.requirements || "").trim(),
+          docs: (assessed.docs || []).map((d: any) => ({
+            file: d.file,
+            text: d.text,
+          })),
+        }),
+      )
+      .digest("hex"),
     generatedAt: new Date().toISOString(),
     claims,
     evidence: ev.evidence,

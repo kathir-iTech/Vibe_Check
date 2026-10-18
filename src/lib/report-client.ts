@@ -5,6 +5,7 @@ import {
   REPORT_SCHEMA,
 } from "./report-format.mjs";
 import type { Audit } from "@/types/audit";
+import { repairHandoff } from "./repair-handoff.mjs";
 
 export async function verifyDownloadedReport(
   value: unknown,
@@ -78,5 +79,5 @@ export function auditMarkdown(audit: Audit) {
     })
     .join(
       "\n",
-    )}\n\n## Limitations\n${audit.warnings.map((w) => `- ${w}`).join("\n")}\n`;
+    )}\n\n${repairHandoff(audit)}\n\n## Limitations\n${audit.warnings.map((w) => `- ${w}`).join("\n")}\n`;
 }

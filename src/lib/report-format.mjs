@@ -55,7 +55,7 @@ export function validReportShape(data) {
     return false;
   if (
     !Array.isArray(data.requirements) ||
-    data.requirements.length > 12 ||
+    data.requirements.length > 32 ||
     !Array.isArray(data.sourceDocuments) ||
     !Array.isArray(data.warnings) ||
     !data.warnings.every((v) => typeof v === "string")
@@ -94,6 +94,21 @@ export function validReportShape(data) {
     )
   )
     return false;
+  if (
+    data.executionRecords != null &&
+    (!Array.isArray(data.executionRecords) ||
+      data.executionRecords.length > 100 ||
+      data.executionRecords.some(
+        (r) =>
+          !r ||
+          typeof r.name !== "string" ||
+          typeof r.status !== "string" ||
+          typeof r.conclusion !== "string" ||
+          !/^https:\/\/github\.com\//.test(r.url) ||
+          (r.headSha != null && r.headSha !== data.headSha),
+      ))
+  )
+    return false;
   const ids = new Set();
   for (const claim of data.claims) {
     if (
@@ -125,6 +140,26 @@ export function validReportShape(data) {
         "obligation",
         "changeEvidence",
       ].some((k) => verdict[k] != null && typeof verdict[k] !== "string")
+    )
+      return false;
+    if (
+      verdict.contract != null &&
+      (!verdict.contract ||
+        typeof verdict.contract !== "object" ||
+        !["checked", "established", "unknown", "resolve"].every(
+          (k) =>
+            typeof verdict.contract[k] === "string" &&
+            verdict.contract[k].length < 4000,
+        ))
+    )
+      return false;
+    if (
+      verdict.sourceCheck != null &&
+      (!verdict.sourceCheck ||
+        typeof verdict.sourceCheck !== "object" ||
+        !["ceiling", "kind", "note"].every(
+          (k) => typeof verdict.sourceCheck[k] === "string",
+        ))
     )
       return false;
     for (const field of ["code", "spec"])

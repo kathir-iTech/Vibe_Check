@@ -127,6 +127,8 @@ const inputs = [
   "src/lib/report-crypto.mjs",
   "src/lib/report-format.mjs",
   "src/lib/audit-policy.mjs",
+  "src/lib/evidence-depth.mjs",
+  "src/lib/source-window.mjs",
   "src/lib/gemini.ts",
   "src/lib/github.ts",
   "src/lib/audit-service.ts",

@@ -1,5 +1,9 @@
 import { GoogleGenAI } from "@google/genai";
 import {
+  sourceSupportCheck,
+  isDeclarationPresence,
+} from "./evidence-depth.mjs";
+import {
   COMMENT_SPOOF_REASON,
   NEGATION_MISMATCH_REASON,
   NO_CONTRADICTION_KEYWORDS_REASON,
@@ -26,16 +30,20 @@ export {
   tokenize,
 };
 
-const PRIMARY_MODEL = process.env.GEMINI_PRIMARY_MODEL || "gemini-3-flash-preview";
+const PRIMARY_MODEL =
+  process.env.GEMINI_PRIMARY_MODEL || "gemini-3-flash-preview";
 const FALLBACK_MODEL = "gemini-3.1-flash-lite";
 
 export const MAX_MESSAGE_CHARS = 8 * 1024;
-const MESSAGE_TRUNCATION_MARKER = "[VibeCheck truncated this message: over 8KB]";
+const MESSAGE_TRUNCATION_MARKER =
+  "[VibeCheck truncated this message: over 8KB]";
 export const MAX_CLAIMS = 15;
 export const MAX_CLAIM_CHARS = 300;
-const CLAIM_TRUNCATION_MARKER = " [VibeCheck truncated this claim: over 300 chars]";
+const CLAIM_TRUNCATION_MARKER =
+  " [VibeCheck truncated this claim: over 300 chars]";
 const MAX_PROMPT_FILE_CHARS = 100 * 1024;
-const FILE_OMISSION_MARKER = "[VibeCheck omitted N matched file(s) here to stay within the 100KB prompt budget]";
+const FILE_OMISSION_MARKER =
+  "[VibeCheck omitted N matched file(s) here to stay within the 100KB prompt budget]";
 
 function omissionMarker(count: number): string {
   return FILE_OMISSION_MARKER.replace("N", String(count));
@@ -77,7 +85,11 @@ export interface GeminiAnswer<T> {
   timings?: Record<string, number>;
 }
 
-function usageFrom(response: { usageMetadata?: any }, model: string, modelFallback: boolean): GeminiUsage {
+function usageFrom(
+  response: { usageMetadata?: any },
+  model: string,
+  modelFallback: boolean,
+): GeminiUsage {
   const meta = response?.usageMetadata;
   const num = (v: unknown) => (typeof v === "number" ? v : null);
   return {
@@ -96,7 +108,8 @@ function getClient(apiKey: string): GoogleGenAI {
 function httpStatusOf(error: unknown): number | null {
   const direct = (error as { status?: unknown } | null | undefined)?.status;
   if (typeof direct === "number") return direct;
-  if (typeof direct === "string" && /^\d{3}$/.test(direct)) return Number(direct);
+  if (typeof direct === "string" && /^\d{3}$/.test(direct))
+    return Number(direct);
   const message = error instanceof Error ? error.message : "";
   const match = message.match(/(?:\bstatus[:\s]+|"code"\s*:\s*)(\d{3})\b/);
   return match ? Number(match[1]) : null;
@@ -106,20 +119,41 @@ export function isFallbackWorthy(error: unknown): boolean {
   const status = httpStatusOf(error);
   // The primary can return DEADLINE_EXCEEDED (504) even within the client
   // deadline. Make one bounded fallback attempt for transient provider failures.
-  return [404, 408, 429, 500, 502, 503, 504].includes(status ?? 0);
+  return (
+    [404, 408, 429, 500, 502, 503, 504].includes(status ?? 0) ||
+    (error instanceof Error &&
+      (error.name === "AbortError" ||
+        error.name === "TimeoutError" ||
+        /^(?:This operation was aborted|The operation was aborted|Request timed out)\.?$/i.test(
+          error.message,
+        )))
+  );
 }
 
 async function generateText(
   ai: GoogleGenAI,
   prompt: string,
-  temperature: number
-): Promise<{ text: string; model: string; modelFallback: boolean; usage: GeminiUsage; durationMs: number }> {
+  temperature: number,
+  signal?: AbortSignal,
+): Promise<{
+  text: string;
+  model: string;
+  modelFallback: boolean;
+  usage: GeminiUsage;
+  durationMs: number;
+}> {
   const started = performance.now();
+  signal?.throwIfAborted();
   try {
     const response = await ai.models.generateContent({
       model: PRIMARY_MODEL,
       contents: prompt,
-      config: { temperature, responseMimeType: "application/json", httpOptions: { timeout: 25000, retryOptions: { attempts: 1 } } },
+      config: {
+        temperature,
+        abortSignal: signal,
+        responseMimeType: "application/json",
+        httpOptions: { timeout: 25000, retryOptions: { attempts: 1 } },
+      },
     });
     const text = response.text;
     if (!text) {
@@ -133,13 +167,19 @@ async function generateText(
       durationMs: Math.round(performance.now() - started),
     };
   } catch (error) {
+    signal?.throwIfAborted();
     if (!isFallbackWorthy(error) || PRIMARY_MODEL === FALLBACK_MODEL) {
       throw error;
     }
     const response = await ai.models.generateContent({
       model: FALLBACK_MODEL,
       contents: prompt,
-      config: { temperature, responseMimeType: "application/json", httpOptions: { timeout: 25000, retryOptions: { attempts: 1 } } },
+      config: {
+        temperature,
+        abortSignal: signal,
+        responseMimeType: "application/json",
+        httpOptions: { timeout: 25000, retryOptions: { attempts: 1 } },
+      },
     });
     const text = response.text;
     if (!text) {
@@ -168,17 +208,23 @@ export function validateClaims(data: unknown): ParsedClaim[] {
   const ids = new Set<string>();
   return data.slice(0, MAX_CLAIMS).map((item: any, index: number) => {
     if (!item || typeof item !== "object" || typeof item.text !== "string") {
-      throw new Error(`Claim at index ${index} is missing a valid "text" field`);
+      throw new Error(
+        `Claim at index ${index} is missing a valid "text" field`,
+      );
     }
     const id = typeof item.id === "string" ? item.id : `claim-${index + 1}`;
     if (!/^[a-zA-Z0-9_-]{1,64}$/.test(id) || ids.has(id) || !item.text.trim()) {
-      throw new Error("Claims need unique bounded identifiers and nonempty text");
+      throw new Error(
+        "Claims need unique bounded identifiers and nonempty text",
+      );
     }
     ids.add(id);
     return {
       id,
       text: truncateTo(item.text, MAX_CLAIM_CHARS, CLAIM_TRUNCATION_MARKER),
-      evidenceType: Array.isArray(item.evidenceType) ? item.evidenceType : ["file", "commit"],
+      evidenceType: Array.isArray(item.evidenceType)
+        ? item.evidenceType
+        : ["file", "commit"],
     };
   });
 }
@@ -201,7 +247,11 @@ export function extractJson(text: string): unknown {
 }
 
 export function buildExtractionPrompt(message: string, nonce: string): string {
-  const capped = truncateTo(message, MAX_MESSAGE_CHARS, MESSAGE_TRUNCATION_MARKER);
+  const capped = truncateTo(
+    message,
+    MAX_MESSAGE_CHARS,
+    MESSAGE_TRUNCATION_MARKER,
+  );
   return `${untrustedRule(nonce)}
 
 Extract discrete, atomic checkable claims from the agent message in the DATA block below.
@@ -213,7 +263,8 @@ ${untrusted(capped, nonce)}`;
 
 export async function extractClaimsViaGemini(
   message: string,
-  apiKey: string
+  apiKey: string,
+  signal?: AbortSignal,
 ): Promise<GeminiAnswer<ParsedClaim[]>> {
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY not set");
@@ -222,7 +273,12 @@ export async function extractClaimsViaGemini(
   const prompt = buildExtractionPrompt(message, makeNonce());
 
   const ai = getClient(apiKey);
-  const { text, model, modelFallback, usage, durationMs } = await generateText(ai, prompt, 0.1);
+  const { text, model, modelFallback, usage, durationMs } = await generateText(
+    ai,
+    prompt,
+    0.1,
+    signal,
+  );
 
   const parsed = extractJson(text);
   return {
@@ -237,6 +293,8 @@ export async function extractClaimsViaGemini(
 export interface SpecDoc {
   file: string;
   text: string;
+  startLine?: number;
+  nonImplementationLines?: number[];
 }
 
 export interface SpecAssessment {
@@ -253,13 +311,14 @@ export interface SpecAssessment {
   quoteRejected: boolean;
   rejectionReason: string;
   coverage?: "full" | "partial" | "none";
+  sourceCheck?: { ceiling: string; kind: string; note: string };
 }
 
 export function validateAssessments(
   data: unknown,
   claims: { id: string; text: string }[],
   docs: SpecDoc[],
-  supportByClaim: Record<string, SpecDoc[]>
+  supportByClaim: Record<string, SpecDoc[]>,
 ): SpecAssessment[] {
   if (!Array.isArray(data)) {
     throw new Error("Gemini returned a non-array response");
@@ -269,7 +328,7 @@ export function validateAssessments(
     if (!item || typeof item !== "object" || typeof item.claimId !== "string") {
       throw new Error("Gemini assessment missing a claimId");
     }
-    if (byId.has(item.claimId) || !claims.some(c => c.id === item.claimId)) {
+    if (byId.has(item.claimId) || !claims.some((c) => c.id === item.claimId)) {
       throw new Error("Gemini assessment has a duplicate or unknown claimId");
     }
     byId.set(item.claimId, item);
@@ -280,13 +339,16 @@ export function validateAssessments(
       throw new Error(`Gemini returned no assessment for ${claim.id}`);
     }
     if (typeof item.contradicts !== "boolean") {
-      throw new Error(`Gemini assessment for ${claim.id} has no boolean "contradicts"`);
+      throw new Error(
+        `Gemini assessment for ${claim.id} has no boolean "contradicts"`,
+      );
     }
 
     let contradicts = item.contradicts;
     let sourceDoc = typeof item.sourceDoc === "string" ? item.sourceDoc : "";
     let lineNumber = 0;
-    let contradictingLine = typeof item.contradictingLine === "string" ? item.contradictingLine : "";
+    let contradictingLine =
+      typeof item.contradictingLine === "string" ? item.contradictingLine : "";
     let reason = typeof item.reason === "string" ? item.reason : "";
 
     if (contradicts && docs.length === 0) {
@@ -298,7 +360,10 @@ export function validateAssessments(
     // SPEC-DRIFT keyword guard: if the contradicting line doesn't mention the
     // claim's subject (fewer than 2 shared non-stopword keywords), treat it as
     // no contradiction.
-    if (contradicts && hasContradictionKeywords(claim.text, contradictingLine)) {
+    if (
+      contradicts &&
+      hasContradictionKeywords(claim.text, contradictingLine)
+    ) {
       // keep contradicts=true
     } else if (contradicts) {
       contradicts = false;
@@ -310,11 +375,15 @@ export function validateAssessments(
     if (contradicts) {
       const doc = docs.find((d) => d.file === sourceDoc);
       if (!doc) {
-        throw new Error(`Gemini cited unknown document "${sourceDoc}" for ${claim.id}`);
+        throw new Error(
+          `Gemini cited unknown document "${sourceDoc}" for ${claim.id}`,
+        );
       }
       lineNumber = findLineNumber(doc.text, contradictingLine);
       if (lineNumber === -1) {
-        throw new Error(`Gemini quoted text not found in ${sourceDoc} for ${claim.id}: ${contradictingLine}`);
+        throw new Error(
+          `Gemini quoted text not found in ${sourceDoc} for ${claim.id}: ${contradictingLine}`,
+        );
       }
       contradictingLine = doc.text.split("\n")[lineNumber - 1].trim();
       if (!reason) {
@@ -323,16 +392,20 @@ export function validateAssessments(
     }
 
     let supported = item.supported === true;
-    let supportingFile = typeof item.supportingFile === "string" ? item.supportingFile : "";
-    let supportingQuote = typeof item.supportingQuote === "string" ? item.supportingQuote : "";
+    let supportingFile =
+      typeof item.supportingFile === "string" ? item.supportingFile : "";
+    let supportingQuote =
+      typeof item.supportingQuote === "string" ? item.supportingQuote : "";
     let supportingLine = 0;
     let quoteRejected = false;
     let rejectionReason = "";
+    let sourceCheck;
 
     if (supported) {
       const allowed = supportByClaim[claim.id] || [];
       const doc = allowed.find((d) => d.file === supportingFile);
-      const found = doc && supportingQuote ? findLineNumber(doc.text, supportingQuote) : -1;
+      const found =
+        doc && supportingQuote ? findLineNumber(doc.text, supportingQuote) : -1;
       if (found === -1) {
         quoteRejected = Boolean(supportingQuote);
         supported = false;
@@ -342,7 +415,14 @@ export function validateAssessments(
         }
       } else {
         const lineText = doc ? doc.text.split("\n")[found - 1] || "" : "";
-        if (!isExecutableCodeLine(lineText, supportingFile) || !isImplementationLineAt(doc.text, found, supportingFile)) {
+        if (
+          !isExecutableCodeLine(lineText, supportingFile) ||
+          !(doc.nonImplementationLines
+            ? !doc.nonImplementationLines.includes(
+                found + (doc.startLine || 1) - 1,
+              )
+            : isImplementationLineAt(doc.text, found, supportingFile))
+        ) {
           quoteRejected = true;
           supported = false;
           supportingLine = 0;
@@ -352,14 +432,29 @@ export function validateAssessments(
           supported = false;
           supportingLine = 0;
           rejectionReason = NEGATION_MISMATCH_REASON;
-        } else if (isRestatement(claim.text, supportingQuote, lineText)) {
+        } else if (
+          isRestatement(claim.text, supportingQuote, lineText) &&
+          !isDeclarationPresence(claim.text, lineText, supportingFile)
+        ) {
           quoteRejected = true;
           supported = false;
           supportingLine = 0;
           rejectionReason = RESTATEMENT_REASON;
         } else {
-          supportingLine = found;
+          supportingLine = found + (doc.startLine || 1) - 1;
           supportingQuote = lineText.trim();
+          sourceCheck = sourceSupportCheck(
+            claim.text,
+            supportingFile,
+            doc.text,
+            found,
+          );
+          if (sourceCheck.ceiling === "none") {
+            supported = false;
+            quoteRejected = true;
+            rejectionReason = sourceCheck.note;
+            supportingLine = 0;
+          }
         }
       }
     }
@@ -381,12 +476,19 @@ export function validateAssessments(
       supportingLine,
       quoteRejected,
       rejectionReason,
-      coverage: supported ? (item.coverage === "full" ? "full" : "partial") : "none",
+      sourceCheck,
+      coverage: supported
+        ? item.coverage === "full" && sourceCheck?.ceiling !== "partial"
+          ? "full"
+          : "partial"
+        : "none",
     };
   });
 }
 
-function emptyAssessments(claims: { id: string; text: string }[]): SpecAssessment[] {
+function emptyAssessments(
+  claims: { id: string; text: string }[],
+): SpecAssessment[] {
   return claims.map((c) => ({
     claimId: c.id,
     contradicts: false,
@@ -403,14 +505,17 @@ function emptyAssessments(claims: { id: string; text: string }[]): SpecAssessmen
   }));
 }
 
-const numbered = (text: string) =>
-  text.split("\n").map((line, i) => `${i + 1}: ${line}`).join("\n");
+const numbered = (text: string, startLine = 1) =>
+  text
+    .split("\n")
+    .map((line, i) => `${i + startLine}: ${line}`)
+    .join("\n");
 
 export function buildAssessmentPrompt(
   claims: { id: string; text: string }[],
   docs: SpecDoc[],
   supportByClaim: Record<string, SpecDoc[]>,
-  nonce: string
+  nonce: string,
 ): string {
   const docSections = docs
     .map((d) => `=== ${d.file} ===\n${untrusted(numbered(d.text), nonce)}`)
@@ -421,44 +526,61 @@ export function buildAssessmentPrompt(
     text: string;
     claimIds: string[];
     bestRank: number;
+    startLine: number;
+    key: string;
   }
   const distinct = new Map<string, FileEntry>();
   for (const claim of claims) {
     (supportByClaim[claim.id] || []).forEach((f, rank) => {
-      const existing = distinct.get(f.file);
+      const key = `${f.file}:${f.startLine || 1}`;
+      const existing = distinct.get(key);
       if (existing) {
         existing.claimIds.push(claim.id);
         existing.bestRank = Math.min(existing.bestRank, rank);
       } else {
-        distinct.set(f.file, { file: f.file, text: f.text, claimIds: [claim.id], bestRank: rank });
+        distinct.set(key, {
+          file: f.file,
+          text: f.text,
+          claimIds: [claim.id],
+          bestRank: rank,
+          key,
+          startLine: f.startLine || 1,
+        });
       }
     });
   }
 
   const ordered = [...distinct.values()].sort(
-    (a, b) => a.bestRank - b.bestRank || b.claimIds.length - a.claimIds.length
+    (a, b) => a.bestRank - b.bestRank || b.claimIds.length - a.claimIds.length,
   );
 
   const kept = new Set<string>();
   let budget = MAX_PROMPT_FILE_CHARS;
   for (const entry of ordered) {
     if (entry.text.length <= budget) {
-      kept.add(entry.file);
+      kept.add(entry.key);
       budget -= entry.text.length;
     }
   }
 
   const fileSections = ordered
-    .filter((e) => kept.has(e.file))
-    .map((e) => `=== ${e.file} ===\n${untrusted(numbered(e.text), nonce)}`)
+    .filter((e) => kept.has(e.key))
+    .map(
+      (e) =>
+        `=== ${e.file} ===\n${untrusted(numbered(e.text, e.startLine), nonce)}`,
+    )
     .join("\n\n");
 
   const claimFileList = claims
     .map((c) => {
       const matched = supportByClaim[c.id] || [];
-      const keptNames = matched.filter((f) => kept.has(f.file)).map((f) => f.file);
+      const keptNames = matched
+        .filter((f) => kept.has(`${f.file}:${f.startLine || 1}`))
+        .map((f) => `${f.file} (window starts at line ${f.startLine || 1})`);
       const omittedCount = matched.length - keptNames.length;
-      const parts = [`${c.id}: ${keptNames.length ? keptNames.join(", ") : "(none shown)"}`];
+      const parts = [
+        `${c.id}: ${keptNames.length ? keptNames.join(", ") : "(none shown)"}`,
+      ];
       if (omittedCount) parts.push(omissionMarker(omittedCount));
       return untrusted(parts.join(" — "), nonce);
     })
@@ -506,20 +628,37 @@ export async function assessClaimsAgainstSpec(
   claims: { id: string; text: string }[],
   docs: SpecDoc[],
   supportByClaim: Record<string, SpecDoc[]>,
-  apiKey: string
+  apiKey: string,
+  signal?: AbortSignal,
 ): Promise<GeminiAnswer<SpecAssessment[]>> {
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY not set");
   }
-  const hasSupport = claims.some((c) => (supportByClaim[c.id] || []).length > 0);
+  const hasSupport = claims.some(
+    (c) => (supportByClaim[c.id] || []).length > 0,
+  );
   if (!claims.length || (!docs.length && !hasSupport)) {
-    return { data: emptyAssessments(claims), model: null, modelFallback: false };
+    return {
+      data: emptyAssessments(claims),
+      model: null,
+      modelFallback: false,
+    };
   }
 
-  const prompt = buildAssessmentPrompt(claims, docs, supportByClaim, makeNonce());
+  const prompt = buildAssessmentPrompt(
+    claims,
+    docs,
+    supportByClaim,
+    makeNonce(),
+  );
 
   const ai = getClient(apiKey);
-  const { text, model, modelFallback, usage, durationMs } = await generateText(ai, prompt, 0);
+  const { text, model, modelFallback, usage, durationMs } = await generateText(
+    ai,
+    prompt,
+    0,
+    signal,
+  );
 
   const validationStart = performance.now();
   const parsed = extractJson(text);

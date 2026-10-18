@@ -28,6 +28,12 @@ export async function POST(request: NextRequest) {
   const wantsStream = request.headers
     .get("accept")
     ?.includes("application/x-ndjson");
+  const stop = new AbortController();
+  const signal = AbortSignal.any([
+    ...(request.signal ? [request.signal] : []),
+    stop.signal,
+    AbortSignal.timeout(165000),
+  ]);
   const finish = (report: any) => {
     try {
       const signed = encodeSignedReport(report);
@@ -43,9 +49,12 @@ export async function POST(request: NextRequest) {
   };
   if (!wantsStream) {
     try {
-      return NextResponse.json(finish(await runAudit(input, request.headers)), {
-        headers: { "Cache-Control": "no-store" },
-      });
+      return NextResponse.json(
+        finish(await runAudit(input, request.headers, undefined, signal)),
+        {
+          headers: { "Cache-Control": "no-store" },
+        },
+      );
     } catch (error) {
       return NextResponse.json(
         { error: error instanceof Error ? error.message : "Audit failed" },
@@ -66,8 +75,16 @@ export async function POST(request: NextRequest) {
           }
       };
       try {
-        const result = await runAudit(input, request.headers, (stage) =>
-          send({ type: "stage", stage }),
+        const result = await runAudit(
+          input,
+          request.headers,
+          (stage, checkpoint) =>
+            send(
+              checkpoint
+                ? { type: "checkpoint", ...checkpoint }
+                : { type: "stage", stage },
+            ),
+          signal,
         );
         send({ type: "result", ...finish(result) });
       } catch (error) {
@@ -78,6 +95,9 @@ export async function POST(request: NextRequest) {
       } finally {
         if (!closed) controller.close();
       }
+    },
+    cancel() {
+      stop.abort();
     },
   });
   return new Response(stream, {

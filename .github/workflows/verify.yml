@@ -26,4 +26,4 @@ jobs:
       - run: npm run verify
       - run: node scripts/evaluate-verifier.mjs
       - run: npx playwright install --with-deps chrome
-      - run: npx playwright test tests/browser/workspace.spec.ts --workers=1
+      - run: npx playwright test tests/browser/workspace.spec.ts tests/browser/depth.spec.ts --workers=1
