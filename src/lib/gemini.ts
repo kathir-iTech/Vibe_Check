@@ -104,7 +104,9 @@ function httpStatusOf(error: unknown): number | null {
 
 export function isFallbackWorthy(error: unknown): boolean {
   const status = httpStatusOf(error);
-  return status === 429 || status === 503 || status === 404;
+  // The primary can return DEADLINE_EXCEEDED (504) even within the client
+  // deadline. Make one bounded fallback attempt for transient provider failures.
+  return [404, 408, 429, 500, 502, 503, 504].includes(status ?? 0);
 }
 
 async function generateText(
