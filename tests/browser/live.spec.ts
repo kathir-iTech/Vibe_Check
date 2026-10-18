@@ -85,7 +85,10 @@ test("real GitHub and Gemini audit, requirement conflict, export and offline sig
   await page.getByRole("tab", { name: /Requirements/ }).click();
   await expect(page.locator(".requirements-list .tag-conflict")).toHaveCount(1);
   await expect(
-    page.getByText("MIT licensing is forbidden.", { exact: true }),
+    page.getByRole("heading", {
+      name: "MIT licensing is forbidden.",
+      exact: true,
+    }),
   ).toBeVisible();
   await page.screenshot({
     path: "artifacts/live-browser/actual-provider-result.png",

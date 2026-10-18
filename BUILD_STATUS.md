@@ -31,6 +31,7 @@ These two development requests ran while verifier source was changing and are ex
 - An initial staged deployment had a mistyped commit metadata argument. It was removed without promoting the public alias. A replacement built from the verified full source SHA was inspected and promoted only after hosted API/signature checks.
 - CI run `39098987158` passed the production verification gate but rejected a stale published verifier hash: source was committed before the asynchronous evaluation regeneration finished. The regenerated source-bound record is committed separately; no failed run is relabeled successful.
 - Reviewing the successful hosted conflict report also exposed a requirement-map inconsistency: an exact cited conflict was still labeled unmentioned because lexical association ran first. Exact file/line conflict citations now take precedence, with a regression proving that a different line cannot establish the association.
+- The corrected public browser observation at `4a185be` completed the actual audit, export, offline verification and claim/requirement-state assertions. Its final text assertion matched both the filled input and result heading; the test now selects the heading. The subsequent fresh request timed out at the provider. The successful observation and test-harness failure remain separate from that availability failure.
 
 ## Owner feedback and completed verification
 

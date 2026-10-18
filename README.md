@@ -6,6 +6,8 @@ VibeCheck helps solo builders review an AI coding agent's handoff. Paste its com
 
 [Open the workspace](https://vibe-check-dev.vercel.app) · [Illustrative example](https://vibe-check-dev.vercel.app/demo) · [Build record](BUILD_STATUS.md)
 
+[Recorded live audit](https://vibe-check-dev.vercel.app/proof) provides an explicitly labeled actual public-source observation and its original verifiable report without another model call. Its builder-supplied test requirement is disclosed. It is separate from the illustrative example and from a fresh audit.
+
 Built for **Build With AI: Basics** using the Devpost Learn Skill Pack. Original scope, PRD, spec and learning/build history remain in [devpost/](devpost/).
 
 ## Try one handoff

@@ -1,0 +1,339 @@
+{
+  "scope": "Actual builder browser -> server -> GitHub/Gemini -> export -> independent Node signature verification. Review-specific prohibition is supplied by the builder; it is not the repository owner policy.",
+  "pageErrors": [],
+  "service": {
+    "status": "configured",
+    "verifierVersion": "2.0.0",
+    "sourceHead": "4a185bed725413ef70d9f34defb0fb4a278cff87",
+    "gitBranch": "codex/vibecheck-evidence-workspace",
+    "signingConfigured": true,
+    "providerConfigured": true,
+    "scope": "Configuration check only. Provider availability and actual source observations require a completed audit."
+  },
+  "independentSignatureVerified": true,
+  "result": {
+    "verifierVersion": "2.0.0",
+    "source": {
+      "kind": "live",
+      "label": "Server assessment of GitHub source"
+    },
+    "requirements": [
+      {
+        "id": "requirement-1",
+        "text": "MIT licensing is forbidden.",
+        "file": "provided-requirements.md",
+        "line": 1,
+        "quote": "- MIT licensing is forbidden.",
+        "section": "",
+        "status": "conflict",
+        "claimIds": [
+          "claim-1"
+        ],
+        "note": "Keyword association for review; requirement fulfillment is not certified."
+      }
+    ],
+    "sourceDocuments": [
+      {
+        "file": "provided-requirements.md",
+        "sha256": "937f0aba83c83bacc834827755feb37bb9ddb6aefa1510bcfe279677f93e6d77",
+        "truncated": false
+      }
+    ],
+    "models": {
+      "extract": {
+        "model": "gemini-3.1-flash-lite",
+        "fallback": true,
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 197,
+          "candidatesTokenCount": 76,
+          "thoughtsTokenCount": null
+        }
+      },
+      "assessment": {
+        "model": "gemini-3-flash-preview",
+        "fallback": false,
+        "usage": {
+          "model": "gemini-3-flash-preview",
+          "modelFallback": false,
+          "promptTokenCount": 16619,
+          "candidatesTokenCount": 119,
+          "thoughtsTokenCount": 5665
+        }
+      }
+    },
+    "timings": {
+      "sourceAndClaimsMs": 1456,
+      "evidenceMs": 1787,
+      "assessmentMs": 23149,
+      "totalMs": 26392
+    },
+    "warnings": [
+      "Retrieval is bounded. An uninspected file may contain additional evidence; UNVERIFIED does not mean false."
+    ],
+    "retrieval": {
+      "totalFiles": 214,
+      "candidateFiles": 60,
+      "inspectedFiles": 60,
+      "omittedFiles": 154,
+      "treeTruncated": false,
+      "bounded": true
+    },
+    "repoUrl": "https://github.com/expressjs/express",
+    "headSha": "0dee2c52c7c873498f8ed7d8ee4ddd0a04d3ada8",
+    "generatedAt": "2026-10-18T05:08:50.466Z",
+    "claims": [
+      {
+        "id": "claim-1",
+        "text": "This package is MIT licensed.",
+        "evidenceType": [
+          "file",
+          "commit"
+        ]
+      },
+      {
+        "id": "claim-2",
+        "text": "All unit tests passed.",
+        "evidenceType": [
+          "file",
+          "commit"
+        ]
+      }
+    ],
+    "evidence": {
+      "claim-1": {
+        "files": [
+          "package.json",
+          "LICENSE",
+          "index.js",
+          "Readme.md",
+          "History.md"
+        ],
+        "fileMatches": [
+          {
+            "file": "package.json",
+            "hitCount": 0,
+            "matchedTerms": [],
+            "pathMatched": true
+          },
+          {
+            "file": "LICENSE",
+            "hitCount": 0,
+            "matchedTerms": [],
+            "pathMatched": true
+          },
+          {
+            "file": "index.js",
+            "hitCount": 1,
+            "matchedTerms": [
+              "licensed"
+            ],
+            "pathMatched": false
+          },
+          {
+            "file": "Readme.md",
+            "hitCount": 1,
+            "matchedTerms": [
+              "package"
+            ],
+            "pathMatched": false,
+            "lineNumber": 58,
+            "previewLine": "If this is a brand new project, make sure to create a `package.json` first with"
+          },
+          {
+            "file": "History.md",
+            "hitCount": 1,
+            "matchedTerms": [
+              "package"
+            ],
+            "pathMatched": false,
+            "lineNumber": 77,
+            "previewLine": "* Add funding field to package.json"
+          }
+        ],
+        "commits": [
+          {
+            "sha": "a419aa7350389a275ab45fde2e849ed1f02449ef",
+            "message": "Revert \"build(deps-dev): bump supertest from 6.3.0 to 7.3.0 (#7494)\" (#7518)\n\nThis reverts commit 6d2df035a95f3d1002be3e29997b7a4bfe976b5f.",
+            "date": "2026-10-09T16:24:38Z",
+            "author": "krzysdz",
+            "filesChanged": [
+              "package.json",
+              "test/acceptance/downloads.js",
+              "test/express.static.js",
+              "test/support/utils.js"
+            ],
+            "additions": 13,
+            "deletions": 23,
+            "patchPreview": "+    \"supertest\": \"^6.3.0\","
+          },
+          {
+            "sha": "4e65ec983d332edc0dfc0e8b5efb7fa4fbb432d8",
+            "message": "build(deps): bump the github-actions group with 5 updates (#7462)\n\nBumps the github-actions group with 5 updates:\n\n| Package | From | To |\n| --- | --- | --- |\n| [actions/setup-node](https://github.com/actions/setup-node) | `6.4.0` | `7.0.0` |\n| [github/codeql-action/init](https://github.com/github/codeql-action) | `4.36.0` | `4.37.9` |\n| [github/codeql-action/analyze](https://github.com/github/codeql-action) | `4.36.0` | `4.37.9` |\n| [ossf/scorecard-action](https://github.com/ossf/scorecard-action) | `2.4.3` | `2.4.4` |\n| [github/codeql-action/upload-sarif](https://github.com/github/codeql-action) | `4.37.3` | `4.37.9` |\n\n\nUpdates `actions/setup-node` from 6.4.0 to 7.0.0\n- [Release notes](https://github.com/actions/setup-node/releases)\n- [Commits](https://github.com/actions/setup-node/compare/48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e...820762786026740c76f36085b0efc47a31fe5020)\n\nUpdates `github/codeql-action/init` from 4.36.0 to 4.37.9\n- [Release notes](https://github.com/github/codeql-action/releases)\n- [Changelog](https://github.com/github/codeql-action/blob/main/CHANGELOG.md)\n- [Commits](https://github.com/github/codeql-action/compare/7211b7c8077ea37d8641b6271f6a365a22a5fbfa...cdf488f595d80d6e07e03d4674febd5ab45fa938)\n\nUpdates `github/codeql-action/analyze` from 4.36.0 to 4.37.9\n- [Release notes](https://github.com/github/codeql-action/releases)\n- [Changelog](https://github.com/github/codeql-action/blob/main/CHANGELOG.md)\n- [Commits](https://github.com/github/codeql-action/compare/7211b7c8077ea37d8641b6271f6a365a22a5fbfa...cdf488f595d80d6e07e03d4674febd5ab45fa938)\n\nUpdates `ossf/scorecard-action` from 2.4.3 to 2.4.4\n- [Release notes](https://github.com/ossf/scorecard-action/releases)\n- [Changelog](https://github.com/ossf/scorecard-action/blob/main/RELEASE.md)\n- [Commits](https://github.com/ossf/scorecard-action/compare/4eaacf0543bb3f2c246792bd56e8cdeffafb205a...2d1146689b8cda280b9bc96326124645441f03bc)\n\nUpdates `github/codeql-action/upload-sarif` from 4.37.3 to 4.37.9\n- [Release notes](https://github.com/github/codeql-action/releases)\n- [Changelog](https://github.com/github/codeql-action/blob/main/CHANGELOG.md)\n- [Commits](https://github.com/github/codeql-action/compare/e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81...cdf488f595d80d6e07e03d4674febd5ab45fa938)\n\n---\nupdated-dependencies:\n- dependency-name: actions/setup-node\n  dependency-version: 7.0.0\n  dependency-type: direct:production\n  update-type: version-update:semver-major\n  dependency-group: github-actions\n- dependency-name: github/codeql-action/init\n  dependency-version: 4.37.9\n  dependency-type: direct:production\n  update-type: version-update:semver-minor\n  dependency-group: github-actions\n- dependency-name: github/codeql-action/analyze\n  dependency-version: 4.37.9\n  dependency-type: direct:production\n  update-type: version-update:semver-minor\n  dependency-group: github-actions\n- dependency-name: ossf/scorecard-action\n  dependency-version: 2.4.4\n  dependency-type: direct:production\n  update-type: version-update:semver-patch\n  dependency-group: github-actions\n- dependency-name: github/codeql-action/upload-sarif\n  dependency-version: 4.37.9\n  dependency-type: direct:production\n  update-type: version-update:semver-patch\n  dependency-group: github-actions\n...\n\nSigned-off-by: dependabot[bot] <support@github.com>\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>",
+            "date": "2026-09-08T13:32:19Z",
+            "author": "dependabot[bot]",
+            "filesChanged": [
+              ".github/workflows/ci.yml",
+              ".github/workflows/codeql.yml",
+              ".github/workflows/legacy.yml",
+              ".github/workflows/scorecard.yml"
+            ],
+            "additions": 7,
+            "deletions": 7,
+            "patchPreview": "+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0 +        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0"
+          }
+        ],
+        "matchedTerms": [
+          "package",
+          "licensed"
+        ],
+        "totalFilesInRepo": 214,
+        "defaultBranch": "master",
+        "headSha": "0dee2c52c7c873498f8ed7d8ee4ddd0a04d3ada8",
+        "treeTruncated": false
+      },
+      "claim-2": {
+        "files": [
+          "test/res.json.js",
+          "test/res.jsonp.js",
+          "Readme.md",
+          "test/app.js",
+          "test/Route.js"
+        ],
+        "fileMatches": [
+          {
+            "file": "test/res.json.js",
+            "hitCount": 1,
+            "matchedTerms": [
+              "passed"
+            ],
+            "pathMatched": true,
+            "lineNumber": 144,
+            "previewLine": "it('should be passed to JSON.stringify()', function(done){"
+          },
+          {
+            "file": "test/res.jsonp.js",
+            "hitCount": 1,
+            "matchedTerms": [
+              "passed"
+            ],
+            "pathMatched": true,
+            "lineNumber": 288,
+            "previewLine": "it('should be passed to JSON.stringify()', function(done){"
+          },
+          {
+            "file": "Readme.md",
+            "hitCount": 2,
+            "matchedTerms": [
+              "unit",
+              "tests"
+            ],
+            "pathMatched": false,
+            "lineNumber": 14,
+            "previewLine": "- [Docs \\& Community](#docs--community)"
+          },
+          {
+            "file": "test/app.js",
+            "hitCount": 0,
+            "matchedTerms": [],
+            "pathMatched": true
+          },
+          {
+            "file": "test/Route.js",
+            "hitCount": 0,
+            "matchedTerms": [],
+            "pathMatched": true
+          }
+        ],
+        "commits": [
+          {
+            "sha": "a419aa7350389a275ab45fde2e849ed1f02449ef",
+            "message": "Revert \"build(deps-dev): bump supertest from 6.3.0 to 7.3.0 (#7494)\" (#7518)\n\nThis reverts commit 6d2df035a95f3d1002be3e29997b7a4bfe976b5f.",
+            "date": "2026-10-09T16:24:38Z",
+            "author": "krzysdz",
+            "filesChanged": [
+              "package.json",
+              "test/acceptance/downloads.js",
+              "test/express.static.js",
+              "test/support/utils.js"
+            ],
+            "additions": 13,
+            "deletions": 23,
+            "patchPreview": "+    \"supertest\": \"^6.3.0\","
+          }
+        ],
+        "matchedTerms": [
+          "tests",
+          "unit",
+          "passed"
+        ],
+        "totalFilesInRepo": 214,
+        "defaultBranch": "master",
+        "headSha": "0dee2c52c7c873498f8ed7d8ee4ddd0a04d3ada8",
+        "treeTruncated": false
+      }
+    },
+    "verdicts": [
+      {
+        "claimId": "claim-1",
+        "claimText": "This package is MIT licensed.",
+        "verdict": "SPEC-DRIFT",
+        "reason": "The claim asserts the package is MIT licensed, which is explicitly forbidden by the requirements.",
+        "specReference": "provided-requirements.md:1: - MIT licensing is forbidden.",
+        "supportingReference": "package.json:15: \"license\": \"MIT\",",
+        "code": {
+          "file": "package.json",
+          "line": 15,
+          "quote": "\"license\": \"MIT\","
+        },
+        "spec": {
+          "file": "provided-requirements.md",
+          "line": 1,
+          "quote": "- MIT licensing is forbidden."
+        },
+        "obligation": "configuration",
+        "nextEvidence": "Resolve the cited requirement conflict or obtain an explicit scope change, then recheck."
+      },
+      {
+        "claimId": "claim-2",
+        "claimText": "All unit tests passed.",
+        "verdict": "UNVERIFIED",
+        "reason": "This claim needs an execution or deployment record for the inspected commit. Source code alone cannot establish the outcome.",
+        "specReference": "",
+        "obligation": "execution",
+        "nextEvidence": "Attach a completed CI check for this commit, including its name and result."
+      }
+    ],
+    "executionRecords": [
+      {
+        "name": "Socket Security: Project Report",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/expressjs/express/runs/117448081612"
+      },
+      {
+        "name": "Analyze (actions)",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/expressjs/express/actions/runs/39050551246/job/117448075024"
+      },
+      {
+        "name": "Analyze (javascript)",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/expressjs/express/actions/runs/39050551246/job/117448074791"
+      },
+      {
+        "name": "Scorecard analysis",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/expressjs/express/actions/runs/39050551226/job/117448074726"
+      }
+    ],
+    "schema": "vibecheck/audit/v2",
+    "keyId": "127987f5e2ec7540",
+    "sig": "cI1BXs8d7eAzjbPGmHSS5F-Q7Hk8BzzyJagEfbcIVoMi3uGTx9eAEKkHIifYW7NhfXnVidErrnMbpffEr0EYDQ"
+  },
+  "testOutcome": "The actual audit/export/offline verification and claim/requirement-status assertions completed. Final text assertion failed because it matched both textarea and heading; a role-scoped correction and confirmation run are recorded separately."
+}

@@ -217,7 +217,9 @@ export default function AuditWorkspace({
           : err instanceof Error
             ? /DEADLINE_EXCEEDED|Deadline expired|timed out/i.test(err.message)
               ? "The AI provider timed out. Your input is saved; please retry."
-              : /RESOURCE_EXHAUSTED|UNAVAILABLE|high demand|\"code\":429/i.test(err.message)
+              : /RESOURCE_EXHAUSTED|UNAVAILABLE|high demand|\"code\":429/i.test(
+                    err.message,
+                  )
                 ? "The AI provider is at capacity. Your input is saved; try again shortly."
                 : err.message
             : "Audit failed",
@@ -777,6 +779,13 @@ export default function AuditWorkspace({
           rel="noreferrer"
         >
           Inspect the evaluation records ↗
+        </a>
+        <a
+          className="text-button"
+          href="/proof"
+          style={{ display: "inline-block", marginLeft: 20 }}
+        >
+          Open a recorded live audit ↗
         </a>
       </section>
       <footer className="workspace-footer">
