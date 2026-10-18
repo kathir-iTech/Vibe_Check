@@ -26,6 +26,7 @@ Official Stage Two criteria are equally weighted Design, Potential Impact, Innov
 - Removed unnecessary standalone output configuration so documented `npm run build` and `npm start` use the supported standard server path.
 - A real message audit exposed a missed supplied license prohibition. A narrow parsed-manifest check now flags that explicit conflict only after full source support, excludes ambiguous/negated/conditional/example text and compares complete license identifiers. This is a review-constraint check, not legal license analysis. Failed actual observations remain recorded.
 - Private-source options disclose that matched excerpts are sent to Google Gemini. Detailed evidence is deliberately kept accessible on the evaluation page without occupying the workspace's first screen.
+- Shared-report fragment changes now trigger fresh verification, clear the earlier result and reject obsolete asynchronous completions. A browser regression covers valid report switching, invalid fragments and Back navigation; the actual pre-fix public failure remains in the raw observations.
 - Patched Next.js and @next/env to 16.3.8 and updated compatible runtime transitive dependencies. The locked production dependency scan reports zero known advisories. The full tree retains seven high and two moderate findings in the Tailwind 3 / Next ESLint glob-processing build-tool stack; current compatible versions do not resolve those reported ranges. These are development tooling findings, not a claim that public requests exploit them. No blanket security certification is made. Exact package names and registry advisory links are retained in `benchmark/v3/dependency-audit.json`.
 
 ## Remaining evidence limits
@@ -34,4 +35,21 @@ No independent testers exist yet, as confirmed by the owner. Independent compreh
 
 Actual provider timeouts/capacity failures remain recorded. A successful fresh request does not establish sustained availability. Source inspection, quotation checks and conservative heuristics cannot establish runtime semantics or defeat every adversarial input. These limits are not solved by adding website features or changing a numerical rating.
 
-Validation and deployed revision are recorded in BUILD_STATUS.md after delivery.
+## Final validation and delivery
+
+The public website runs application revision `7c6c501a7a49b13952a438eb4de79694f9736070`, verifier 2.2.0. [CI 39119560968](https://github.com/kathir-iTech/Vibe_Check/actions/runs/39119560968) passed all 37 production tests, 14 controlled browser workflows, 15 source-bound manufactured cases, lint, TypeScript and the production build.
+
+Authenticated staging and anonymous public readback passed actual GitHub retrieval, report issuance, independent Node Ed25519 verification and sharing, with zero model calls. Public Chrome verified historical and newly issued reports, the fresh actual local message report, fragment switching, the supplied requirement conflict and the retained 32/33 counter, with zero page errors or mobile overflow. `benchmark/v3/final-delivery.json` preserves the observations. The separate fresh actual model observation matched three selected expectations and independently verified its export; earlier provider failures and the missed conflict remain recorded. This does not measure independent users or general accuracy.
+
+Subsequent documentation/evidence commits do not change application source. BUILD_STATUS.md records delivery details and unresolved evidence. Temporary package caches remain local, ignored and excluded from deployment after automated review blocked recursive cleanup; tracked source cleanup is complete.
+
+## Strict product-only estimate
+
+| Criterion | Estimate / 100 | Reason and limit |
+| --- | ---: | --- |
+| Design | 92 | Compact first workflow, visible actual proof, accessible responsive controls, recovery and inspectable evidence. Independent first-use comprehension remains unmeasured. |
+| Potential Impact | 82 | A concrete review problem and actionable evidence boundaries. No independent corrected decision, adoption or measured time savings yet. |
+| Innovation / Idea | 84 | Commit-bound source/requirement review, conservative evidence ceilings, signed complete reports and rechecks form a coherent product. Competitive superiority and broad semantic coverage are not demonstrated. |
+| Normalized total | **86** | Equal weighting of the three retained official criteria. Presentation, video and submission quality are entirely excluded. |
+
+This estimate is subjective and not an official jury score or winning probability. A 97+ assessment is not supported by the present evidence. Adding controls, rewriting website copy or passing more builder-selected cases cannot substitute for independent impact observations, blinded evaluation on previously unseen repositories, or demonstrated advantage over simpler tools. A real model audit matching three selected expectations does not change the retained six-repository live evaluation from 32/33 to a new accuracy claim.
