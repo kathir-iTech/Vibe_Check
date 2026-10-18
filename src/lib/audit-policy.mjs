@@ -97,21 +97,23 @@ export function extractRequirements(docs) {
 
 export function mapRequirements(requirements, claims, verdicts, tokenize) {
   return requirements.map((row) => {
+    const conflicts = verdicts.filter(
+      (v) =>
+        v.verdict === "SPEC-DRIFT" &&
+        v.spec?.file === row.file &&
+        v.spec?.line === row.line &&
+        claims.some((claim) => claim.id === v.claimId),
+    );
     const words = new Set(tokenize(row.text).filter((w) => w.length > 3));
     const related = claims.filter(
       (c) =>
+        conflicts.some((v) => v.claimId === c.id) ||
         [...new Set(tokenize(c.text))].filter((w) => words.has(w)).length >= 2,
     );
-    const flags = related.map((c) => verdicts.find((v) => v.claimId === c.id));
     return {
       ...row,
       claimIds: related.map((c) => c.id),
-      status: flags.some(
-        (v) =>
-          v?.verdict === "SPEC-DRIFT" &&
-          v?.spec?.file === row.file &&
-          v?.spec?.line === row.line,
-      )
+      status: conflicts.length
         ? "conflict"
         : related.length
           ? "mentioned"

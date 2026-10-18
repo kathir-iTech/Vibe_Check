@@ -122,3 +122,30 @@ test("runtime obligations distinguish a passing result from a source declaration
     "configuration",
   );
 });
+
+test("an exact conflict citation takes precedence over a weak lexical requirement association", () => {
+  const rows = [
+    {
+      id: "r1",
+      file: "provided-requirements.md",
+      line: 1,
+      text: "MIT licensing is forbidden.",
+    },
+  ];
+  const claims = [{ id: "license", text: "This package is MIT licensed." }];
+  const verdicts = [
+    {
+      claimId: "license",
+      verdict: "SPEC-DRIFT",
+      spec: { file: "provided-requirements.md", line: 1 },
+    },
+  ];
+  const [row] = mapRequirements(rows, claims, verdicts, tokenize);
+  assert.equal(row.status, "conflict");
+  assert.deepEqual(row.claimIds, ["license"]);
+  verdicts[0].spec.line = 2;
+  assert.equal(
+    mapRequirements(rows, claims, verdicts, tokenize)[0].status,
+    "not-mentioned",
+  );
+});
