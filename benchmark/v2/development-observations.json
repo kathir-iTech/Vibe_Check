@@ -1,0 +1,187 @@
+{
+  "scope": "Actual builder GitHub/Gemini development observations. Verifier source was not frozen. These are not part of live-evaluation.json or a current accuracy denominator.",
+  "observations": [
+    {
+      "attempt": 1,
+      "phase": "development; verifier changed during requests",
+      "verifierRevision": null,
+      "note": "Dependency false negative exposed retrieval ranking; retained as failure.",
+      "repoUrl": "https://github.com/kathir-iTech/Vibe_Check",
+      "headSha": "0bb49508c85aa6a1eafbf13a9c1849ef8a14464c",
+      "generatedAt": "2026-10-18T03:54:07.837Z",
+      "claims": [
+        {
+          "id": "c1",
+          "text": "Next.js is a project dependency.",
+          "evidenceType": [
+            "file",
+            "commit"
+          ]
+        },
+        {
+          "id": "c2",
+          "text": "All unit tests passed.",
+          "evidenceType": [
+            "file",
+            "commit"
+          ]
+        }
+      ],
+      "verdicts": [
+        {
+          "claimId": "c1",
+          "claimText": "Next.js is a project dependency.",
+          "verdict": "UNVERIFIED",
+          "reason": "The cited line is a code comment or TODO/placeholder, not executable implementation evidence.",
+          "specReference": "",
+          "obligation": "configuration",
+          "nextEvidence": "Identify the implementation file or narrow the claim, then recheck the same revision."
+        },
+        {
+          "claimId": "c2",
+          "claimText": "All unit tests passed.",
+          "verdict": "UNVERIFIED",
+          "reason": "This claim needs an execution or deployment record for the inspected commit. Source code alone cannot establish the outcome.",
+          "specReference": "",
+          "obligation": "execution",
+          "nextEvidence": "Attach a completed CI check for this commit, including its name and result."
+        }
+      ],
+      "retrieval": {
+        "totalFiles": 55,
+        "candidateFiles": 49,
+        "inspectedFiles": 49,
+        "omittedFiles": 6,
+        "treeTruncated": false,
+        "bounded": true
+      },
+      "models": {
+        "assessment": {
+          "model": "gemini-3.1-flash-lite",
+          "fallback": true,
+          "usage": {
+            "model": "gemini-3.1-flash-lite",
+            "modelFallback": true,
+            "promptTokenCount": 13888,
+            "candidatesTokenCount": 116,
+            "thoughtsTokenCount": null
+          }
+        }
+      },
+      "timings": {
+        "sourceAndClaimsMs": 5332,
+        "evidenceMs": 16499,
+        "assessmentMs": 35952,
+        "totalMs": 57783
+      },
+      "warnings": [
+        "Retrieval is bounded. An uninspected file may contain additional evidence; UNVERIFIED does not mean false."
+      ]
+    },
+    {
+      "attempt": 2,
+      "phase": "development; verifier changed during requests",
+      "verifierRevision": null,
+      "note": "After retrieval correction; excluded from frozen-version evaluation.",
+      "repoUrl": "https://github.com/kathir-iTech/Vibe_Check",
+      "headSha": "0bb49508c85aa6a1eafbf13a9c1849ef8a14464c",
+      "generatedAt": "2026-10-18T03:58:22.236Z",
+      "claims": [
+        {
+          "id": "c1",
+          "text": "Next.js is a project dependency.",
+          "evidenceType": [
+            "file",
+            "commit"
+          ]
+        },
+        {
+          "id": "c2",
+          "text": "All unit tests passed.",
+          "evidenceType": [
+            "file",
+            "commit"
+          ]
+        },
+        {
+          "id": "c3",
+          "text": "Google OAuth login is implemented.",
+          "evidenceType": [
+            "file",
+            "commit"
+          ]
+        }
+      ],
+      "verdicts": [
+        {
+          "claimId": "c1",
+          "claimText": "Next.js is a project dependency.",
+          "verdict": "TRUE",
+          "reason": "The package.json file confirms Next.js is a dependency, which aligns with the framework choice in the planning documents.",
+          "specReference": "package.json:21: \"next\": \"16.3.5\",",
+          "code": {
+            "file": "package.json",
+            "line": 21,
+            "quote": "\"next\": \"16.3.5\","
+          },
+          "obligation": "configuration",
+          "nextEvidence": "Inspect the cited implementation; use an execution check before relying on runtime behavior."
+        },
+        {
+          "claimId": "c2",
+          "claimText": "All unit tests passed.",
+          "verdict": "UNVERIFIED",
+          "reason": "This claim needs an execution or deployment record for the inspected commit. Source code alone cannot establish the outcome.",
+          "specReference": "",
+          "obligation": "execution",
+          "nextEvidence": "Attach a completed CI check for this commit, including its name and result."
+        },
+        {
+          "claimId": "c3",
+          "claimText": "Google OAuth login is implemented.",
+          "verdict": "UNVERIFIED",
+          "reason": "No verified supporting line found in the matched files.",
+          "specReference": "",
+          "obligation": "implementation",
+          "nextEvidence": "Identify the implementation file or narrow the claim, then recheck the same revision."
+        }
+      ],
+      "retrieval": {
+        "totalFiles": 55,
+        "candidateFiles": 49,
+        "inspectedFiles": 40,
+        "omittedFiles": 15,
+        "treeTruncated": false,
+        "bounded": true
+      },
+      "models": {
+        "assessment": {
+          "model": "gemini-3-flash-preview",
+          "fallback": false,
+          "usage": {
+            "model": "gemini-3-flash-preview",
+            "modelFallback": false,
+            "promptTokenCount": 28095,
+            "candidatesTokenCount": 218,
+            "thoughtsTokenCount": 3666
+          }
+        }
+      },
+      "timings": {
+        "sourceAndClaimsMs": 1804,
+        "evidenceMs": 22764,
+        "assessmentMs": 31871,
+        "totalMs": 56440
+      },
+      "warnings": [
+        "No comparison base selected. Source support establishes presence, not when a feature was added.",
+        "Retrieval is bounded. An uninspected file may contain additional evidence; UNVERIFIED does not mean false."
+      ]
+    }
+  ],
+  "browserAttempt": {
+    "outcome": "failed",
+    "failure": "Primary provider returned HTTP 504 DEADLINE_EXCEEDED. The response observer also failed after teardown; no successful browser observation was recorded.",
+    "followup": "Added one bounded transient-error fallback and removed the test-only asynchronous response observer. A later attempt is recorded separately."
+  }
+}

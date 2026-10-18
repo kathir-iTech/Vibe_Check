@@ -1,0 +1,369 @@
+{
+  "verifierVersion": "2.0.0",
+  "source": {
+    "kind": "live",
+    "label": "Server assessment of GitHub source"
+  },
+  "requirements": [],
+  "sourceDocuments": [],
+  "models": {
+    "assessment": {
+      "model": "gemini-3-flash-preview",
+      "fallback": false,
+      "usage": {
+        "model": "gemini-3-flash-preview",
+        "modelFallback": false,
+        "promptTokenCount": 7509,
+        "candidatesTokenCount": 283,
+        "thoughtsTokenCount": 1996
+      }
+    }
+  },
+  "timings": {
+    "sourceAndClaimsMs": 1071,
+    "evidenceMs": 4957,
+    "assessmentMs": 12777,
+    "totalMs": 18804
+  },
+  "warnings": [
+    "No explicit bounded requirement bullets were extracted. Planning coverage needs human review.",
+    "Retrieval is bounded. An uninspected file may contain additional evidence; UNVERIFIED does not mean false."
+  ],
+  "retrieval": {
+    "totalFiles": 35,
+    "candidateFiles": 28,
+    "inspectedFiles": 28,
+    "omittedFiles": 7,
+    "treeTruncated": false,
+    "bounded": true
+  },
+  "repoUrl": "https://github.com/chalk/chalk",
+  "headSha": "47fc05abd46171b235e24174cd2dba83d25bf037",
+  "generatedAt": "2026-10-18T04:20:46.039Z",
+  "claims": [
+    {
+      "id": "license",
+      "text": "This package is MIT licensed.",
+      "evidenceType": [
+        "file",
+        "commit"
+      ]
+    },
+    {
+      "id": "manifest",
+      "text": "The package is configured for ES modules.",
+      "evidenceType": [
+        "file",
+        "commit"
+      ]
+    },
+    {
+      "id": "absent",
+      "text": "The package declares @google/genai as a dependency.",
+      "evidenceType": [
+        "file",
+        "commit"
+      ]
+    },
+    {
+      "id": "execution",
+      "text": "All unit tests passed.",
+      "evidenceType": [
+        "file",
+        "commit"
+      ]
+    }
+  ],
+  "evidence": {
+    "license": {
+      "files": [
+        "package.json",
+        "license",
+        "readme.md"
+      ],
+      "fileMatches": [
+        {
+          "file": "package.json",
+          "hitCount": 0,
+          "matchedTerms": [],
+          "pathMatched": true
+        },
+        {
+          "file": "license",
+          "hitCount": 0,
+          "matchedTerms": [],
+          "pathMatched": true
+        },
+        {
+          "file": "readme.md",
+          "hitCount": 1,
+          "matchedTerms": [
+            "package"
+          ],
+          "pathMatched": false,
+          "lineNumber": 13,
+          "previewLine": "[![npm dependents](https://badgen.net/npm/dependents/chalk)](https://www.npmjs.com/package/chalk?activeTab=dependents)"
+        }
+      ],
+      "commits": [
+        {
+          "sha": "47fc05abd46171b235e24174cd2dba83d25bf037",
+          "message": "6.0.1",
+          "date": "2026-09-27T03:37:26Z",
+          "author": "Sindre Sorhus",
+          "filesChanged": [
+            "package.json"
+          ],
+          "additions": 1,
+          "deletions": 1,
+          "patchPreview": "+\t\"version\": \"6.0.1\","
+        }
+      ],
+      "matchedTerms": [
+        "package",
+        "licensed"
+      ],
+      "totalFilesInRepo": 35,
+      "defaultBranch": "main",
+      "headSha": "47fc05abd46171b235e24174cd2dba83d25bf037",
+      "treeTruncated": false
+    },
+    "manifest": {
+      "files": [
+        "package.json",
+        "readme.md"
+      ],
+      "fileMatches": [
+        {
+          "file": "package.json",
+          "hitCount": 0,
+          "matchedTerms": [],
+          "pathMatched": true
+        },
+        {
+          "file": "readme.md",
+          "hitCount": 2,
+          "matchedTerms": [
+            "package",
+            "configured"
+          ],
+          "pathMatched": false,
+          "lineNumber": 13,
+          "previewLine": "[![npm dependents](https://badgen.net/npm/dependents/chalk)](https://www.npmjs.com/package/chalk?activeTab=dependents)"
+        }
+      ],
+      "commits": [
+        {
+          "sha": "47fc05abd46171b235e24174cd2dba83d25bf037",
+          "message": "6.0.1",
+          "date": "2026-09-27T03:37:26Z",
+          "author": "Sindre Sorhus",
+          "filesChanged": [
+            "package.json"
+          ],
+          "additions": 1,
+          "deletions": 1,
+          "patchPreview": "+\t\"version\": \"6.0.1\","
+        }
+      ],
+      "matchedTerms": [
+        "package",
+        "configured"
+      ],
+      "totalFilesInRepo": 35,
+      "defaultBranch": "main",
+      "headSha": "47fc05abd46171b235e24174cd2dba83d25bf037",
+      "treeTruncated": false
+    },
+    "absent": {
+      "files": [
+        "package.json",
+        "readme.md"
+      ],
+      "fileMatches": [
+        {
+          "file": "package.json",
+          "hitCount": 0,
+          "matchedTerms": [],
+          "pathMatched": true
+        },
+        {
+          "file": "readme.md",
+          "hitCount": 2,
+          "matchedTerms": [
+            "package",
+            "dependency"
+          ],
+          "pathMatched": false,
+          "lineNumber": 296,
+          "previewLine": "Chalk is also likely already in your dependency tree (since 100K+ packages depend on it), so switching won’t save space—in fact, it might in"
+        }
+      ],
+      "commits": [
+        {
+          "sha": "47fc05abd46171b235e24174cd2dba83d25bf037",
+          "message": "6.0.1",
+          "date": "2026-09-27T03:37:26Z",
+          "author": "Sindre Sorhus",
+          "filesChanged": [
+            "package.json"
+          ],
+          "additions": 1,
+          "deletions": 1,
+          "patchPreview": "+\t\"version\": \"6.0.1\","
+        }
+      ],
+      "matchedTerms": [
+        "package",
+        "dependency"
+      ],
+      "totalFilesInRepo": 35,
+      "defaultBranch": "main",
+      "headSha": "47fc05abd46171b235e24174cd2dba83d25bf037",
+      "treeTruncated": false
+    },
+    "execution": {
+      "files": [
+        "test/force-color.js",
+        "test/chalk.js",
+        "test/level.js",
+        "test/visible.js",
+        "test/_fixture.js"
+      ],
+      "fileMatches": [
+        {
+          "file": "test/force-color.js",
+          "hitCount": 1,
+          "matchedTerms": [
+            "tests"
+          ],
+          "pathMatched": true
+        },
+        {
+          "file": "test/chalk.js",
+          "hitCount": 0,
+          "matchedTerms": [],
+          "pathMatched": true
+        },
+        {
+          "file": "test/level.js",
+          "hitCount": 0,
+          "matchedTerms": [],
+          "pathMatched": true
+        },
+        {
+          "file": "test/visible.js",
+          "hitCount": 0,
+          "matchedTerms": [],
+          "pathMatched": true
+        },
+        {
+          "file": "test/_fixture.js",
+          "hitCount": 0,
+          "matchedTerms": [],
+          "pathMatched": true
+        }
+      ],
+      "commits": [
+        {
+          "sha": "9c93a04eae27fb1801764fbd60eb0811e2068b83",
+          "message": "Fix inconsistent coercion of two arguments\n\nFixes #691",
+          "date": "2026-09-27T03:29:39Z",
+          "author": "Sindre Sorhus",
+          "filesChanged": [
+            "source/index.js",
+            "test/chalk.js"
+          ],
+          "additions": 15,
+          "deletions": 1,
+          "patchPreview": "+\t\t\t// The template literal matches `Array#join` coercion (`null` and `undefined` become empty, objects use `toString`) while being faster. +\t\t\treturn applyStyle(builder, `${arguments_[0] ?? ''} ${arguments_[1] ?? ''}`);"
+        }
+      ],
+      "matchedTerms": [
+        "tests",
+        "unit"
+      ],
+      "totalFilesInRepo": 35,
+      "defaultBranch": "main",
+      "headSha": "47fc05abd46171b235e24174cd2dba83d25bf037",
+      "treeTruncated": false
+    }
+  },
+  "verdicts": [
+    {
+      "claimId": "license",
+      "claimText": "This package is MIT licensed.",
+      "verdict": "TRUE",
+      "reason": "Verified supporting line in package.json",
+      "specReference": "package.json:5: \"license\": \"MIT\",",
+      "code": {
+        "file": "package.json",
+        "line": 5,
+        "quote": "\"license\": \"MIT\","
+      },
+      "obligation": "configuration",
+      "nextEvidence": "Inspect the cited implementation; use an execution check before relying on runtime behavior."
+    },
+    {
+      "claimId": "manifest",
+      "claimText": "The package is configured for ES modules.",
+      "verdict": "TRUE",
+      "reason": "Verified supporting line in package.json",
+      "specReference": "package.json:8: \"type\": \"module\",",
+      "code": {
+        "file": "package.json",
+        "line": 8,
+        "quote": "\"type\": \"module\","
+      },
+      "obligation": "configuration",
+      "nextEvidence": "Inspect the cited implementation; use an execution check before relying on runtime behavior."
+    },
+    {
+      "claimId": "absent",
+      "claimText": "The package declares @google/genai as a dependency.",
+      "verdict": "UNVERIFIED",
+      "reason": "No verified supporting line found in the matched files.",
+      "specReference": "",
+      "obligation": "configuration",
+      "nextEvidence": "Identify the implementation file or narrow the claim, then recheck the same revision."
+    },
+    {
+      "claimId": "execution",
+      "claimText": "All unit tests passed.",
+      "verdict": "UNVERIFIED",
+      "reason": "This claim needs an execution or deployment record for the inspected commit. Source code alone cannot establish the outcome.",
+      "specReference": "",
+      "obligation": "execution",
+      "nextEvidence": "Attach a completed CI check for this commit, including its name and result."
+    }
+  ],
+  "executionRecords": [
+    {
+      "name": "Node.js 26",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/chalk/chalk/actions/runs/36291955143/job/108543618010"
+    },
+    {
+      "name": "Node.js 22",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/chalk/chalk/actions/runs/36291955143/job/108543617887"
+    },
+    {
+      "name": "Node.js 26",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/chalk/chalk/actions/runs/36291955059/job/108543617591"
+    },
+    {
+      "name": "Node.js 22",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/chalk/chalk/actions/runs/36291955059/job/108543617484"
+    }
+  ],
+  "schema": "vibecheck/audit/v2",
+  "keyId": "127987f5e2ec7540",
+  "sig": "JESAubKLlf_dYFXN1Jmj3M0iCl-0U5W1jWsOjHBG4a1ZO2wizfAGedFMHX4ysSUDkpL0kK4zIKB1u0wT3xVGBg"
+}

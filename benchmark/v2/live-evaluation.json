@@ -1,0 +1,87 @@
+{
+  "schema": "vibecheck/live-source-evaluation/v1",
+  "scope": "Actual builder API requests on two external public repositories. Labels are derived from the pinned package manifest. This is a small selected demonstration, not independent-user testing or a population accuracy estimate.",
+  "startedAt": "2026-10-18T04:19:56.705Z",
+  "verifierRevision": "5121ca1e3443a6078453c80c8ed621b49d6e1434",
+  "verifierInputHashes": {
+    "src/lib/verification-guards.mjs": "dbf42f111676be61e96eed1ec7e3d55271400e365b7a2cae5ad4ce7434163160",
+    "src/lib/report-crypto.mjs": "dd188c4d6b82634dcbdce6ae0ff255a801f3012461ab096b2e24b9e8ee7c5f13",
+    "src/lib/report-format.mjs": "d03225fd2b60095795bfac0c80ca31bb91e00502fbbe7c07b6ec10c29a848582",
+    "src/lib/audit-policy.mjs": "d32903b409b2942462211fff2c8bc34a1ae98c70a8776fd2259046819b08c6c6",
+    "src/lib/gemini.ts": "2891b9d3fe84f7220d5b53c5e9377cc0b2d716f810c0cc49ed6ae21923b9b163",
+    "src/lib/github.ts": "b1026d7dd2a7db42c62656ba9807fa22ddf00e6aac2cdb60e41b6de588a82dfc",
+    "src/lib/audit-service.ts": "161b222687d10fb9b7a05506b4fccdbf4934f79161462e547ca628320d1969fb",
+    "src/app/api/audit/route.ts": "17db5c2714d06b3941070657d35fb6da9d7bbeaa7ffe1a65c18f34642143c558",
+    "src/app/api/check-evidence/route.ts": "d2012c6eebb3e4c56e3af450368dd7bc7f45c0af59f5e07280e21ddc0918b231",
+    "src/app/api/check-spec-drift/route.ts": "4c489d8a5422eab359c7b148ee424b71a99985a23990f9276b08bd54176feed5",
+    "src/app/api/generate-report/route.ts": "b8dca623a81d239237deb700111c1c7f23d8e3e0b1f80e162c333157e92ab192"
+  },
+  "attempts": [
+    {
+      "repository": "expressjs/express",
+      "startedAt": "2026-10-18T04:19:57.034Z",
+      "headSha": "0dee2c52c7c873498f8ed7d8ee4ddd0a04d3ada8",
+      "expected": {
+        "license": "TRUE",
+        "manifest": "TRUE",
+        "absent": "UNVERIFIED",
+        "execution": "UNVERIFIED"
+      },
+      "groundTruth": {
+        "path": "package.json",
+        "sha256": "9645053f08f43135ec21f46ae434e49e10528c9062fde7776b150f38a2335afe",
+        "license": "MIT",
+        "type": null,
+        "accepts": "^2.0.0",
+        "hasGoogleGenai": false
+      },
+      "httpStatus": 200,
+      "actual": {
+        "license": "TRUE",
+        "manifest": "TRUE",
+        "absent": "UNVERIFIED",
+        "execution": "UNVERIFIED"
+      },
+      "matches": 4,
+      "resultFile": "live/expressjs-express.json",
+      "finishedAt": "2026-10-18T04:20:24.437Z"
+    },
+    {
+      "repository": "chalk/chalk",
+      "startedAt": "2026-10-18T04:20:24.438Z",
+      "headSha": "47fc05abd46171b235e24174cd2dba83d25bf037",
+      "expected": {
+        "license": "TRUE",
+        "manifest": "TRUE",
+        "absent": "UNVERIFIED",
+        "execution": "UNVERIFIED"
+      },
+      "groundTruth": {
+        "path": "package.json",
+        "sha256": "7116220f70a118975f834e1fd95ee3ecf6a23cb198a94d6845a4cea256007d01",
+        "license": "MIT",
+        "type": "module",
+        "accepts": null,
+        "hasGoogleGenai": false
+      },
+      "httpStatus": 200,
+      "actual": {
+        "license": "TRUE",
+        "manifest": "TRUE",
+        "absent": "UNVERIFIED",
+        "execution": "UNVERIFIED"
+      },
+      "matches": 4,
+      "resultFile": "live/chalk-chalk.json",
+      "finishedAt": "2026-10-18T04:20:46.052Z"
+    }
+  ],
+  "finishedAt": "2026-10-18T04:20:46.053Z",
+  "summary": {
+    "requests": 2,
+    "completed": 2,
+    "labeledClaims": 8,
+    "matchedOutcomes": 8,
+    "errors": 0
+  }
+}
