@@ -91,3 +91,11 @@ The full MVP with all 5 features: claim extractor, repo evidence checker, spec-d
 - How detailed should the Gemini claim extraction be? (likely: discrete, actionable claims)
 - What format should the shareable report be in? (PDF, markdown, or web page)
 - How to handle rate limits on GitHub API for large repos?
+
+## Evidence-workspace acceptance revision — 18 October 2026
+
+The approved continuation adds a second-look journey inside the existing five features. The builder pastes a message, edits an atomic claim list or imports a PR/commit. The server resolves one immutable source revision, reads its code and available root/devpost/docs planning files, and returns source-supported, partial, unverified or planning-conflict assessments. TRUE is a source-support label, never a production guarantee; PARTIAL retains incomplete support. Runtime claims require execution evidence. UNVERIFIED is not a finding of dishonesty.
+
+The builder can inspect precise source and planning citations, see bounded-retrieval omissions and unmentioned requirement bullets, select a requirement for assessment, compare a later audit, and export or share the result. Requirement associations are review aids and do not certify fulfillment. Added-line attribution requires an explicit valid comparison base. PR/commit input selects the actual imported revision.
+
+Demo, cached, imported and live material remain distinguishable. Complete report signatures are issued from actual server assessments; arbitrary client-authored verdicts cannot obtain that status. JSON reports can be checked against a separately trusted public key without any private credentials. A signature authenticates report provenance and bytes, not the model's conclusions. Missing signing or provider configuration produces an explicit state. Ordinary export stays available.

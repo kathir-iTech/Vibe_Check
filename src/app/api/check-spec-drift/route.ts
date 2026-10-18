@@ -83,6 +83,8 @@ export async function POST(request: NextRequest) {
     if (Object.values(evidence).some((e: any) => e?.headSha && e.headSha !== headSha)) throw new Error("Evidence snapshot mismatch");
     const paths = Array.isArray(body.planningFiles) ? body.planningFiles.filter((p: unknown) => typeof p === "string" && /^(?:devpost\/|docs\/)?(?:scope|prd|spec)\.md$/i.test(p)).slice(0, 6) : ["devpost/scope.md", "devpost/prd.md", "devpost/spec.md", "scope.md", "prd.md", "spec.md"];
     docs = (await Promise.all(paths.map(async (file: string) => ({file, text: await fetchDoc(base, file, userToken, headSha) || ""})))).filter(d => d.text.trim());
+    if (body.requirements != null && (typeof body.requirements !== "string" || body.requirements.length > 3000)) throw new Error("Review requirements must be at most 3000 characters");
+    if (typeof body.requirements === "string" && body.requirements.trim()) docs.unshift({file:"provided-requirements.md",text:body.requirements.split("\n").map((line:string)=>line.trim()).filter(Boolean).map((line:string)=>`- ${line.replace(/^[-*]\s*/,"")}`).join("\n")});
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
@@ -165,7 +167,7 @@ export async function POST(request: NextRequest) {
     for (const a of answer.data) {
       const claim = toAssess.find((c) => c.id === a.claimId);
       const claimText = claim?.text || a.claimId;
-      if (a.contradicts && a.supported && a.supportingLine > 0) {
+      if (a.contradicts && a.supported && a.supportingLine > 0 && a.coverage === "full") {
         outcomes.set(a.claimId, {
           claimId: a.claimId,
           claimText,

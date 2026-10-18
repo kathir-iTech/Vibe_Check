@@ -5,6 +5,16 @@ status: approved
 
 # VibeCheck — Technical Spec
 
+## Approved implementation revision — 18 October 2026
+
+Verifier v2 preserves the static/API-only boundary and adds `/api/audit` for server-orchestrated, progress-streamed source resolution, claim extraction, evidence retrieval, assessment and complete report issuance. Existing lower-level routes remain available for bounded inspection. All reads use one resolved Git SHA. Imported PRs use their source repository/head revision; explicit base comparisons require an ancestor revision.
+
+The current report schema is `vibecheck/audit/v2`: repository/head/base, atomic claims, evidence, verdicts, requirement review rows, document hashes, retrieval coverage, model usage, timings, provenance and warnings. Verdicts are TRUE, PARTIAL, UNVERIFIED or SPEC-DRIFT. Runtime obligations cannot be certified from source alone. A planning-conflict result needs implementation support and a cited conflicting planning line. Quote matching preserves source case and literal whitespace. Bounded lexical requirement associations do not establish semantic fulfillment.
+
+Reports use complete Ed25519 signatures derived from a dedicated `REPORT_SIGNING_SECRET`; provider credentials and public fallback secrets are not used. `/api/report-key` publishes only the verification key. `/api/generate-report` accepts only an intact server audit receipt. New links store the report in the URL fragment at `/report/view`; it is not sent as a long server path. The browser verifies against this service's public key before rendering shared signed results. The standard-library Node verifier requires a separately trusted key. Historical partial HMAC signatures are not promoted to complete-report provenance.
+
+The workspace stores optional working state only in the current browser tab. GitHub tokens remain in component memory, are sent only to the application's routes for GitHub reads, and are excluded from storage and exports. Public service credentials cannot expose a private repository; the visitor must supply their own authorized token. Tests include actual production route handlers with controlled provider responses and separate disclosed live-provider observations. Historical benchmark and self-audit records remain separate from current evaluation.
+
 ## How This Works, In Plain Language
 VibeCheck takes an AI agent's claim message and a GitHub repo URL, extracts discrete checkable claims using Gemini, then cross-checks each claim against real GitHub repo data (commits, files, diffs) and the repo's own planning documents. It returns a verdict per claim: TRUE (evidence found), UNVERIFIED (no evidence), or SPEC-DRIFT (contradicts the repo's own spec). No code is executed — all evidence checks are static/API-based. This is a deliberate design boundary.
 

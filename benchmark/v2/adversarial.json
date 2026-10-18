@@ -1,0 +1,150 @@
+{
+  "schema": "vibecheck/manufactured-verifier-evaluation/v1",
+  "scope": "Deliberately manufactured regression counterexamples evaluated against actual preserved legacy and current production functions/routes. No new model calls, independent-user evidence or population accuracy estimate.",
+  "legacyRevision": "0bb49508c85aa6a1eafbf13a9c1849ef8a14464c",
+  "currentInputHashes": {
+    "src/lib/verification-guards.mjs": "dbf42f111676be61e96eed1ec7e3d55271400e365b7a2cae5ad4ce7434163160",
+    "src/lib/report-crypto.mjs": "dd188c4d6b82634dcbdce6ae0ff255a801f3012461ab096b2e24b9e8ee7c5f13",
+    "src/lib/report-format.mjs": "d03225fd2b60095795bfac0c80ca31bb91e00502fbbe7c07b6ec10c29a848582",
+    "src/lib/audit-policy.mjs": "d32903b409b2942462211fff2c8bc34a1ae98c70a8776fd2259046819b08c6c6",
+    "src/lib/gemini.ts": "2891b9d3fe84f7220d5b53c5e9377cc0b2d716f810c0cc49ed6ae21923b9b163",
+    "src/lib/github.ts": "b1026d7dd2a7db42c62656ba9807fa22ddf00e6aac2cdb60e41b6de588a82dfc",
+    "src/lib/audit-service.ts": "161b222687d10fb9b7a05506b4fccdbf4934f79161462e547ca628320d1969fb",
+    "src/app/api/audit/route.ts": "17db5c2714d06b3941070657d35fb6da9d7bbeaa7ffe1a65c18f34642143c558",
+    "src/app/api/check-evidence/route.ts": "d2012c6eebb3e4c56e3af450368dd7bc7f45c0af59f5e07280e21ddc0918b231",
+    "src/app/api/check-spec-drift/route.ts": "4c489d8a5422eab359c7b148ee424b71a99985a23990f9276b08bd54176feed5",
+    "src/app/api/generate-report/route.ts": "b8dca623a81d239237deb700111c1c7f23d8e3e0b1f80e162c333157e92ab192"
+  },
+  "cases": [
+    {
+      "id": "string-case",
+      "type": "manufactured-source-quote",
+      "source": "const method = \"GET\";",
+      "quote": "const method = \"get\";",
+      "expectedAccepted": false,
+      "legacyAccepted": true,
+      "currentAccepted": false
+    },
+    {
+      "id": "identifier-case",
+      "type": "manufactured-source-quote",
+      "source": "const UserID = 1;",
+      "quote": "const userID = 1;",
+      "expectedAccepted": false,
+      "legacyAccepted": true,
+      "currentAccepted": false
+    },
+    {
+      "id": "literal-whitespace",
+      "type": "manufactured-source-quote",
+      "source": "const value = \"a  b\";",
+      "quote": "const value = \"a b\";",
+      "expectedAccepted": false,
+      "legacyAccepted": true,
+      "currentAccepted": false
+    },
+    {
+      "id": "literal-escape",
+      "type": "manufactured-source-quote",
+      "source": "const value = \"$\";",
+      "quote": "const value = \"\\$\";",
+      "expectedAccepted": false,
+      "legacyAccepted": true,
+      "currentAccepted": false
+    },
+    {
+      "id": "partial-dead-code",
+      "type": "manufactured-source-quote",
+      "source": "if (false) { authenticate(); }",
+      "quote": "authenticate();",
+      "expectedAccepted": false,
+      "legacyAccepted": true,
+      "currentAccepted": false
+    },
+    {
+      "id": "identifier-underscores",
+      "type": "manufactured-source-quote",
+      "source": "const __role = \"admin\";",
+      "quote": "const role = \"admin\";",
+      "expectedAccepted": false,
+      "legacyAccepted": true,
+      "currentAccepted": false
+    },
+    {
+      "id": "invented-code",
+      "type": "manufactured-source-quote",
+      "source": "const exists = 1;",
+      "quote": "const fabricated = 9;",
+      "expectedAccepted": false,
+      "legacyAccepted": false,
+      "currentAccepted": false
+    },
+    {
+      "id": "exact-code",
+      "type": "manufactured-source-quote",
+      "source": "const exists = 1;",
+      "quote": "const exists = 1;",
+      "expectedAccepted": true,
+      "legacyAccepted": true,
+      "currentAccepted": true
+    },
+    {
+      "id": "line-prefix",
+      "type": "manufactured-source-quote",
+      "source": "const exists = 1;",
+      "quote": "1: const exists = 1;",
+      "expectedAccepted": true,
+      "legacyAccepted": true,
+      "currentAccepted": true
+    },
+    {
+      "id": "evidence-filename",
+      "type": "manufactured-report-tamper",
+      "expectedAccepted": false,
+      "legacyAccepted": true,
+      "currentAccepted": false
+    },
+    {
+      "id": "verdict-reason",
+      "type": "manufactured-report-tamper",
+      "expectedAccepted": false,
+      "legacyAccepted": true,
+      "currentAccepted": false
+    },
+    {
+      "id": "supporting-quote",
+      "type": "manufactured-report-tamper",
+      "expectedAccepted": false,
+      "legacyAccepted": true,
+      "currentAccepted": false
+    },
+    {
+      "id": "source-mode",
+      "type": "manufactured-report-tamper",
+      "expectedAccepted": false,
+      "legacyAccepted": true,
+      "currentAccepted": false
+    },
+    {
+      "id": "verdict-change",
+      "type": "manufactured-report-tamper",
+      "expectedAccepted": false,
+      "legacyAccepted": false,
+      "currentAccepted": false
+    },
+    {
+      "id": "caller-authored-verdict",
+      "type": "manufactured-route-request",
+      "expectedAccepted": false,
+      "legacyAccepted": true,
+      "currentAccepted": false
+    }
+  ],
+  "summary": {
+    "cases": 15,
+    "currentExpectedOutcomes": 15,
+    "unsafeCases": 13,
+    "legacyUnsafeAccepted": 11,
+    "currentUnsafeAccepted": 0
+  }
+}
