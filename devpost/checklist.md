@@ -51,7 +51,7 @@ The owner approved implementing the reviewed next-level plan and delegated imple
   Learner check: Compare source/version identities and inspect an actual failure as well as successes.
   Commit: `test: publish bounded current-verifier evaluation and limitations`
 
-- [ ] **25. Reviewed delivery**
+- [x] **25. Reviewed delivery**
   Becomes usable: The tested workspace is available from the existing public website and GitHub repository.
   Why now: Delivery must follow successful implementation and verification.
   PRD ref: `prd.md > What We're Building`
@@ -205,6 +205,8 @@ Reflection: Already covered through the build's core takeaway — never trust an
 Activity mode: Focused alternative + reference app map (`devpost/app-map.html`).
 
 ## Revisions
+
+- 18 October evidence-workspace delivery: owner inspected the workspace and requested shorter copy and a distinct theme/font/color identity. Those changes were applied and mechanically verified. Current delivery evidence is in `BUILD_STATUS.md` and `benchmark/v2/delivery.json`; the current implementation map is `APP_MAP_V2.md`. This records the received feedback and engineering response, without claiming a further owner sign-off or a new learning activity. Fresh provider requests can still fail; the recorded actual report is explicitly separate from a fresh audit.
 
 - Fix 7 (learner-issued after Fix 6 verification): added slice 7 — PR/commit URL as an alternate claim source. New `lib/github.ts` helper + `/api/claim-source` route only.
 - Fix 8 (learner-issued after Fix 7 verification): added slice 8 — sessionStorage result caching for Check Claims and self-audit, with visible cached/live labels, an always-available force-live path, and fail-open storage handling.

@@ -10,3 +10,5 @@ Updated 18 October 2026. `app-map.html` preserves the earlier learning tour; thi
 To inspect this boundary, export a signed report, obtain the public key separately from `/api/report-key`, then run `node scripts/verify-report.mjs audit.json trusted-key.json`. Change a quotation and verify again; integrity checking should fail.
 
 `npm run verify` covers lint, preserved historical checks, production-function/route tests and the production build. Browser fixtures and optional actual-provider browser checks are separate. `benchmark/v2/` contains manufactured comparisons, selected actual public-source observations and development failures. The completed earlier learning activity remains recorded in the checklist; this update does not invent a new learner exercise.
+
+`src/app/proof/page.tsx` discloses a recorded actual public-source observation, its date and the builder-supplied test requirement. Its link opens the original complete signed report at the public issuer, which verifies the signature before displaying evidence. This path consumes no new model capacity and does not present recorded output as a fresh audit.
