@@ -1,6 +1,19 @@
 import type { Metadata } from "next";
+import localFont from "next/font/local";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import "./globals.css";
+const bodyFont = localFont({
+  src: "../../public/fonts/dm-sans.ttf",
+  variable: "--font-body",
+  display: "swap",
+  weight: "100 1000",
+});
+const displayFont = localFont({
+  src: "../../public/fonts/space-grotesk.ttf",
+  variable: "--font-display",
+  display: "swap",
+  weight: "300 700",
+});
 export const metadata: Metadata = {
   title: "VibeCheck — Inspect the AI handoff",
   description:
@@ -12,12 +25,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html
+      lang="en"
+      className={`${bodyFont.variable} ${displayFont.variable} dark`}
+      suppressHydrationWarning
+    >
       <head>
         <script
           dangerouslySetInnerHTML={{
             __html:
-              "try{document.documentElement.classList.toggle('dark',localStorage.getItem('vibecheck-theme')==='dark')}catch(e){}",
+              "try{document.documentElement.classList.toggle('dark',localStorage.getItem('vibecheck-theme')!=='light')}catch(e){}",
           }}
         />
       </head>
@@ -31,13 +48,12 @@ export default function RootLayout({
               <span className="brand-mark">
                 V<span>✓</span>
               </span>
-              vibecheck
-              <span className="brand-caption">THE HANDOFF, INSPECTED.</span>
+              vibecheck<span className="brand-period">.</span>
             </a>
             <nav aria-label="Main navigation">
               <a href="/#inspector">Workspace</a>
-              <a href="/#method">Method</a>
-              <a href="/#evaluation">Evaluation</a>
+              <a href="/#method">How it works</a>
+              <a href="/#evaluation">Proof</a>
               <a
                 href="https://github.com/kathir-iTech/Vibe_Check"
                 target="_blank"

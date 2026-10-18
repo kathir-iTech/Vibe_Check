@@ -23,7 +23,20 @@ These two development requests ran while verifier source was changing and are ex
 - The first new browser suite passed five checks and failed two assertions because the selectors also matched Next.js's route announcer. The product's rejection/recovery messages were present. Narrowed selectors passed both targeted reruns.
 - Source edits invalidated historical self-audit line numbers. The record was preserved; its public source bytes at the original reviewed baseline are archived and hash checked rather than changing old outcomes into current results.
 - Initial Vercel inspection used the domain alias as the project name and returned project-not-found. Authenticated discovery identified the actual existing project `vibe-check`; linking and target verification succeeded. No project was created.
+- The first actual-provider browser attempt failed on provider HTTP 504, followed by an asynchronous test-observer error during teardown. The transient-error fallback now includes provider deadlines; production-function tests verify one fallback and no credential-error retry.
+- A subsequent browser attempt navigated to the native form URL while the development page was initializing. Interactive audit/import actions now wait for client readiness, and the live browser test waits before filling input. This attempt is not counted as a successful audit.
+- During the design revision, the first controlled browser run passed five cases and failed an outdated heading assertion and an import-readiness assertion. After correcting the heading and gating imports on readiness, all seven cases passed together.
+
+## Owner feedback and completed verification
+
+The owner inspected the workspace and asked for fewer words and a distinct theme, fonts and colors. The revised first screen uses a short headline and two primary inputs. Requirements, revision controls, sample messages and evaluation caveats expand on demand. Midnight indigo/lilac surfaces, an orange primary action and self-hosted Space Grotesk/DM Sans replace the earlier green/Arial design. Both themes and widths 320/390/1440 were checked.
+
+- `npm run verify`: passed lint, preserved seed and 72-entry historical benchmark recomputation, seven core suites, exact-evidence checks, all 15 production-function/route tests, TypeScript and production build (14 routes).
+- `node scripts/evaluate-verifier.mjs`: 15/15 manufactured expected outcomes; zero of 13 unsafe cases accepted, compared with 11 accepted by the actual preserved legacy implementation. Selected cases only.
+- `npx playwright test tests/browser/workspace.spec.ts --workers=1`: seven passed together after the readiness correction.
+- `benchmark/v2/live-evaluation.json`: two actual public-source requests, eight labeled claim outcomes matched. Raw signed results, immutable subject SHAs and verifier source hashes are recorded. Development failures remain separate.
+- Public-history review found no tracked local environment/private learner-profile history and no match for the reviewed provider-token patterns. Deployment dry-run excluded local secrets, private learner context, tools and artifact contents. This is a scoped publication review, not a general security certification.
 
 ## Remaining delivery work
 
-Finish versioned adversarial/current-source evaluation, the complete regression gate, reviewed GitHub publication, staged production verification and production readback. Independent-user outcomes remain unmeasured. A final numerical jury score or winning probability cannot be certified from engineering checks.
+Finish the final live-browser observation, staged production verification and production readback. Independent-user outcomes remain unmeasured. A final numerical jury score or winning probability cannot be certified from engineering checks.

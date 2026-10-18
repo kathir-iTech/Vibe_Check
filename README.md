@@ -10,9 +10,9 @@ Built for **Build With AI: Basics** using the Devpost Learn Skill Pack. Original
 
 ## Try one handoff
 
-1. Open the workspace and select **Mixed handoff**, or paste your agent's own message.
+1. Open the workspace and paste your agent's message, or use **Try an example** to inspect illustrative results.
 2. Enter a public GitHub repository. For private source, use your own authorized read token in the advanced options.
-3. Select **Audit this handoff**. Watch the actual source, extraction, retrieval, assessment and report stages.
+3. Select **Check the proof**. Watch the actual source, extraction, retrieval, assessment and report stages.
 4. Inspect each claim's evidence and next step. Open **Requirements** for explicit planning statements absent from the completion message.
 5. Download JSON, copy PR Markdown or copy a verified report link. Signed reports are checked against the service's public key before they are displayed.
 6. After a fix, select **Recheck latest revision**. **Compare** matches exact claim text between the earlier and later assessments.
@@ -21,12 +21,12 @@ The example uses disclosed illustrative data and makes no model calls. It cannot
 
 ## What the findings mean
 
-| Internal result | Workspace label | Meaning |
-|---|---|---|
-| TRUE | Source supported | A supporting line was checked against inspected source. Runtime behavior is not certified. |
-| PARTIAL | Partial support | Some support exists, but the full claim or claimed change is not established. |
-| UNVERIFIED | Needs evidence | The inspected material does not establish the claim. This does not prove the claim is false. |
-| SPEC-DRIFT | Planning conflict | The assessment cites implementation support and a conflicting planning line. The semantic conflict remains a model judgment. |
+| Internal result | Workspace label   | Meaning                                                                                                                      |
+| --------------- | ----------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| TRUE            | Source supported  | A supporting line was checked against inspected source. Runtime behavior is not certified.                                   |
+| PARTIAL         | Partial support   | Some support exists, but the full claim or claimed change is not established.                                                |
+| UNVERIFIED      | Needs evidence    | The inspected material does not establish the claim. This does not prove the claim is false.                                 |
+| SPEC-DRIFT      | Planning conflict | The assessment cites implementation support and a conflicting planning line. The semantic conflict remains a model judgment. |
 
 A test script cannot prove a test run passed. A source file cannot prove a deployment succeeded. GitHub check-run records, when accessible, are shown as attributed provider observations at the selected SHA; generic “all tests passed” claims remain unverified without sufficient specific execution evidence.
 
@@ -92,22 +92,26 @@ The browser suite starts/reuses port 3018. Production verification, including ac
 - `npm run check-benchmark` recomputes that historical summary from its raw records.
 - `node scripts/evaluate-verifier.mjs` recomputes the current manufactured regression comparison using actual preserved legacy and current production functions/routes. It also checks declared source hashes.
 - `node scripts/evaluate-verifier.mjs --write` records a new manufactured result after intentional verifier changes; review the changed inputs and results before publication.
+- [Current live source observations](benchmark/v2/live-evaluation.json): eight labeled claims across pinned Express and Chalk revisions matched their expected outcomes. These selected builder requests use actual GitHub and Gemini responses. They are separate from the manufactured regression cases and historical benchmark.
+- `node scripts/live-evaluation.mjs` runs another explicit provider-consuming observation against a local service. Archive the existing records first; this intentionally writes a new run.
 - [Build record](BUILD_STATUS.md) discloses actual live-provider observations, setup/test failures and limits. Controlled tests, illustrative examples and real provider runs are labeled separately.
 
 No population success rate, independent-user adoption, financial savings or numerical winning probability is established. External testing would strengthen the impact evidence, but is not fabricated from the builder's own runs.
 
 ## Main interfaces
 
-| Route | Purpose |
-|---|---|
-| POST `/api/audit` | Server-orchestrated audit; JSON or NDJSON progress |
-| POST `/api/check-evidence` | Immutable source retrieval and coverage |
-| POST `/api/check-spec-drift` | Source-supported assessments and evidence obligations |
-| POST `/api/claim-source` | Legacy text-only source import; the workspace uses revision-bound import |
-| POST `/api/generate-report` | Validate an existing server audit receipt and produce a fragment link |
-| GET `/api/report-key` | Public Ed25519 verification key |
-| GET `/api/health` | Configuration/version information; not a completed provider check |
+| Route                        | Purpose                                                                  |
+| ---------------------------- | ------------------------------------------------------------------------ |
+| POST `/api/audit`            | Server-orchestrated audit; JSON or NDJSON progress                       |
+| POST `/api/check-evidence`   | Immutable source retrieval and coverage                                  |
+| POST `/api/check-spec-drift` | Source-supported assessments and evidence obligations                    |
+| POST `/api/claim-source`     | Legacy text-only source import; the workspace uses revision-bound import |
+| POST `/api/generate-report`  | Validate an existing server audit receipt and produce a fragment link    |
+| GET `/api/report-key`        | Public Ed25519 verification key                                          |
+| GET `/api/health`            | Configuration/version information; not a completed provider check        |
 
 ## License
 
 [MIT](LICENSE). Third-party framework and SDK licenses remain their own.
+
+Self-hosted DM Sans and Space Grotesk come from the Google Fonts repository and retain their SIL Open Font License notices in `public/fonts/`.

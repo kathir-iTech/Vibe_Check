@@ -10,7 +10,7 @@ test("first visit shows an honest idle state and an explicitly illustrative exam
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { name: "“Done” deserves a second look." }),
+    page.getByRole("heading", { name: "Less guessing. More evidence." }),
   ).toBeVisible();
   await expect(
     page.getByText("Live server assessment", { exact: true }),
@@ -20,7 +20,7 @@ test("first visit shows an honest idle state and an explicitly illustrative exam
     path: "artifacts/ui/light-desktop.png",
     fullPage: true,
   });
-  await page.getByRole("button", { name: "Explore an example audit" }).click();
+  await page.getByRole("button", { name: "Try an example" }).click();
   await expect(
     page.getByText("Example · illustrative", { exact: true }),
   ).toBeVisible();
@@ -43,17 +43,16 @@ for (const width of [320, 390, 1440])
   }) => {
     await page.setViewportSize({ width, height: 1000 });
     await page.goto("/");
-    await page
-      .getByRole("button", { name: "Explore an example audit" })
-      .click();
+    await page.getByRole("button", { name: "Try an example" }).click();
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,
       ),
     ).toBe(true);
-    await page.getByRole("button", { name: "Switch to dark mode" }).click();
+    await page.getByRole("button", { name: "Switch to light mode" }).click();
     await page.reload();
-    await expect(page.locator("html")).toHaveClass(/dark/);
+    await expect(page.locator("html")).not.toHaveClass(/dark/);
+    await page.getByRole("button", { name: "Switch to dark mode" }).click();
     await page.screenshot({
       path: `artifacts/ui/dark-${width}.png`,
       fullPage: true,
@@ -106,7 +105,7 @@ test("workspace consumes server progress, exports, verifies reports and rejects 
     }),
   );
   await page.goto("/");
-  await page.getByRole("button", { name: "Audit this handoff" }).click();
+  await page.getByRole("button", { name: "Check the proof" }).click();
   await expect(
     page.getByText("Live server assessment", { exact: true }),
   ).toBeVisible();
@@ -136,13 +135,14 @@ test("workspace consumes server progress, exports, verifies reports and rejects 
   await page.goto("/");
   const changed = structuredClone(signed.signedPayload);
   changed.verdicts[0].reason = "invented evidence";
-  await page
-    .getByLabel("Import audit report")
-    .setInputFiles({
-      name: "changed.json",
-      mimeType: "application/json",
-      buffer: Buffer.from(JSON.stringify(changed)),
-    });
+  await expect(
+    page.getByRole("button", { name: "Import & verify JSON" }),
+  ).toBeEnabled();
+  await page.getByLabel("Import audit report").setInputFiles({
+    name: "changed.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(changed)),
+  });
   await expect(page.locator(".error-message")).toContainText(
     "signed content was changed",
   );
@@ -167,7 +167,7 @@ test("interrupted audit keeps input and lets the user retry", async ({
     }),
   );
   await page.goto("/");
-  await page.getByRole("button", { name: "Audit this handoff" }).click();
+  await page.getByRole("button", { name: "Check the proof" }).click();
   await expect(page.locator(".error-message")).toContainText(
     "connection ended",
   );
@@ -175,6 +175,6 @@ test("interrupted audit keeps input and lets the user retry", async ({
     /Next.js/,
   );
   await expect(
-    page.getByRole("button", { name: "Audit this handoff" }),
+    page.getByRole("button", { name: "Check the proof" }),
   ).toBeEnabled();
 });

@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 
 test("real GitHub and Gemini audit, requirement conflict, export and offline signature verification", async ({
@@ -13,33 +13,20 @@ test("real GitHub and Gemini audit, requirement conflict, export and offline sig
   test.setTimeout(220000);
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  let result: any;
-  page.on("response", async (response) => {
-    if (response.url().endsWith("/api/audit")) {
-      const events = (await response.text())
-        .trim()
-        .split("\n")
-        .map((line) => JSON.parse(line));
-      result = events.find((row) => row.type === "result");
-    }
-  });
   await page.goto("/");
+  await expect(page.getByRole("button", { name: "Check the proof" })).toBeEnabled();
   await page
     .getByLabel("Agent completion message")
     .fill("Next.js is listed as a project dependency. All unit tests passed.");
-  await page
-    .getByText("Task requirements for this review", { exact: false })
-    .click();
+  await page.getByText("Add requirements", { exact: false }).click();
   await page
     .getByLabel("Optional requirements · one per line")
     .fill("Next.js dependency is forbidden.");
-  await page
-    .getByText("Revision, comparison & private access", { exact: false })
-    .click();
+  await page.getByText("Advanced options", { exact: false }).click();
   await page
     .getByLabel("Inspect a commit")
     .fill("0bb49508c85aa6a1eafbf13a9c1849ef8a14464c");
-  await page.getByRole("button", { name: "Audit this handoff" }).click();
+  await page.getByRole("button", { name: "Check the proof" }).click();
   await expect(
     page.getByText("Live server assessment", { exact: true }),
   ).toBeVisible({ timeout: 190000 });
@@ -81,7 +68,9 @@ test("real GitHub and Gemini audit, requirement conflict, export and offline sig
         scope:
           "Actual builder browser -> server -> GitHub/Gemini -> export -> independent Node signature verification. Review-specific prohibition is supplied by the builder; it is not the repository owner policy.",
         pageErrors: errors,
-        result,
+        result: JSON.parse(
+          readFileSync("artifacts/live-browser/audit.json", "utf8"),
+        ),
       },
       null,
       2,

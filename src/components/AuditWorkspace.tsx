@@ -8,7 +8,8 @@ import {
   downloadFile,
   verifyDownloadedReport,
 } from "@/lib/report-client";
-import benchmark from "benchmark/results.json";
+import adversarial from "benchmark/v2/adversarial.json";
+import liveEvaluation from "benchmark/v2/live-evaluation.json";
 
 const defaultMessage =
   "Configured Next.js and Tailwind CSS. All tests passed. Added Google OAuth login.";
@@ -214,7 +215,11 @@ export default function AuditWorkspace({
         controller.signal.aborted
           ? "Audit stopped. Your input and earlier result are preserved."
           : err instanceof Error
-            ? err.message
+            ? /DEADLINE_EXCEEDED|Deadline expired|timed out/i.test(err.message)
+              ? "The AI provider timed out. Your input is saved; please retry."
+              : /RESOURCE_EXHAUSTED|\"code\":429/i.test(err.message)
+                ? "The AI provider is at capacity. Your input is saved; try again shortly."
+                : err.message
             : "Audit failed",
       );
       setStage("error");
@@ -285,37 +290,37 @@ export default function AuditWorkspace({
     <main className="workspace-shell" id="inspector">
       <section className="workspace-intro">
         <div>
-          <p className="eyebrow">BEFORE YOU ACCEPT “DONE”</p>
+          <p className="eyebrow">AI HANDOFFS. REAL EVIDENCE.</p>
           <h1>
-            Trust the handoff.
+            AI says done.
             <br />
-            <span>Inspect the evidence.</span>
+            <span>Check the proof.</span>
           </h1>
           <p className="intro-copy">
-            Check your AI agent’s completion claims against the code and the
-            plan. See what is supported, what conflicts, and what still needs
-            proof.
+            Match your agent’s claims to the code. Know what still needs proof.
           </p>
         </div>
         <div className="intro-aside">
-          <span className="outline-tag">A SECOND LOOK FOR SOLO BUILDERS</span>
-          <p>
-            Your agent wrote the summary.
-            <br />
-            Your repository gets a say.
-          </p>
-          <button className="text-button" onClick={example}>
-            Explore an example audit <span>↗</span>
+          <button
+            className="example-button"
+            onClick={example}
+            disabled={!storageReady}
+          >
+            <span className="play-icon" aria-hidden="true">
+              ▶
+            </span>
+            Try an example <span aria-hidden="true">↗</span>
           </button>
+          <span className="example-caption">No setup. No API call.</span>
         </div>
       </section>
       <div className="workspace-grid">
         <aside className="input-panel">
           <div className="panel-heading">
-            <span className="eyebrow">01 / THE HANDOFF</span>
-            <span className="small-tag">Read-only inspection</span>
+            <span className="eyebrow">01 / INPUT</span>
+            <span className="small-tag">Read-only</span>
           </div>
-          <h2>What did your agent claim?</h2>
+          <h2>What did your agent say?</h2>
           <div
             className="input-tabs"
             role="group"
@@ -368,7 +373,7 @@ export default function AuditWorkspace({
                 <textarea
                   ref={inputRef}
                   id="agent-message"
-                  rows={7}
+                  rows={4}
                   maxLength={8192}
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
@@ -379,7 +384,7 @@ export default function AuditWorkspace({
                   <span>
                     {mode === "claims"
                       ? "Up to 15 claims · 300 characters each"
-                      : "Claims are extracted and assessed individually"}
+                      : "We’ll check each claim"}
                   </span>
                   <span>{message.length}/8192</span>
                 </div>
@@ -396,7 +401,7 @@ export default function AuditWorkspace({
             />
             <details className="advanced-options">
               <summary>
-                Task requirements for this review <span>+</span>
+                Add requirements <span>+</span>
               </summary>
               <label htmlFor="review-requirements">
                 Optional requirements · one per line
@@ -411,14 +416,13 @@ export default function AuditWorkspace({
                 placeholder="Must preserve the existing API.&#10;Redis caching is forbidden."
               />
               <p className="field-help">
-                These are supplied by you for this review and labeled separately
-                from repository planning documents. A conflict does not mean the
-                repository owner approved this requirement.
+                Your review requirements are labeled separately from the
+                repository’s own plan.
               </p>
             </details>
             <details className="advanced-options">
               <summary>
-                Revision, comparison & private access <span>+</span>
+                Advanced options <span>+</span>
               </summary>
               <label htmlFor="revision">
                 Inspect a commit <span className="quiet">optional</span>
@@ -459,10 +463,10 @@ export default function AuditWorkspace({
             </details>
             <button
               className="primary-button audit-button"
-              disabled={busy}
+              disabled={busy || !storageReady}
               type="submit"
             >
-              {busy ? "Inspecting the handoff…" : "Audit this handoff"}
+              {busy ? "Checking the proof…" : "Check the proof"}
               <span>{busy ? "◌" : "↗"}</span>
             </button>
             {busy && (
@@ -475,8 +479,8 @@ export default function AuditWorkspace({
               </button>
             )}
           </form>
-          <div className="presets">
-            <span className="eyebrow">TRY A COMPLETION MESSAGE</span>
+          <details className="presets">
+            <summary>Need a sample message?</summary>
             {presets.map(([label, text]) => (
               <button
                 key={label}
@@ -491,15 +495,14 @@ export default function AuditWorkspace({
                 <span>↗</span>
               </button>
             ))}
-          </div>
+          </details>
           <p className="input-footnote">
-            Source inspection runs on a fixed commit. VibeCheck does not execute
-            the repository’s code.
+            One fixed commit. Source inspection only; no code execution.
           </p>
         </aside>
         <section className="results-panel" aria-label="Audit results">
           <div className="panel-heading">
-            <span className="eyebrow">02 / THE EVIDENCE</span>
+            <span className="eyebrow">02 / RESULTS</span>
             {audit && (
               <span className={`source-tag ${live ? "source-live" : ""}`}>
                 {restored
@@ -558,8 +561,8 @@ export default function AuditWorkspace({
               <div className="audit-title">
                 <h2>
                   {audit.source.kind === "demo"
-                    ? "An example, with the evidence in view."
-                    : "Here is what the source supports."}
+                    ? "A quick look at the results."
+                    : "Here’s what holds up."}
                 </h2>
                 <p>
                   <a
@@ -580,8 +583,7 @@ export default function AuditWorkspace({
               </div>
               {audit.source.kind === "demo" && (
                 <p className="example-notice">
-                  Illustrative example. These sample assessments were not
-                  generated by a live audit.
+                  Sample results for illustration. No live audit was run.
                 </p>
               )}
               <AuditResults
@@ -623,49 +625,58 @@ export default function AuditWorkspace({
                   Recheck latest revision
                 </button>
               </div>
-              <p className="report-help">
-                {receipt
-                  ? "Complete report signed by this service. Source conclusions still require judgment."
-                  : "This assessment has no shareable server receipt. Unsigned exports retain their source label."}{" "}
-                Reports include source excerpts; share only material you intend
-                to disclose.
-              </p>
+              <details className="report-help">
+                <summary>About this report</summary>
+                <p>
+                  {receipt
+                    ? "Complete report signed by this service. Source conclusions still require judgment."
+                    : "This assessment has no shareable server receipt. Unsigned exports retain their source label."}{" "}
+                  Reports include source excerpts; share only material you
+                  intend to disclose.
+                </p>
+              </details>
             </>
           ) : (
             <div className="empty-audit">
-              <div className="empty-symbol">
-                ✓<span>?</span>
+              <div className="signal-visual" aria-hidden="true">
+                <span />
+                <span />
+                <span />
+                <b>✓</b>
+                <span />
+                <span />
+                <span />
               </div>
-              <p className="eyebrow">
-                A COMPLETION MESSAGE IS THE STARTING POINT
-              </p>
               <h2>
-                “Done” deserves
-                <br />a second look.
+                Less guessing.
+                <br />
+                More evidence.
               </h2>
-              <p>
-                Paste the handoff. We’ll inspect one source revision and return
-                a claim-by-claim assessment with citations and the next evidence
-                to collect.
-              </p>
-              <div className="empty-example">
-                <span className="mono">Agent says</span>
-                <p>“Added login. All tests passed.”</p>
+              <p>Paste a message and add its GitHub repo to start.</p>
+              <div
+                className="result-preview"
+                aria-label="Possible result types, not live results"
+              >
                 <div>
-                  <span className="small-tag">Implementation evidence</span>
-                  <span className="small-tag">Execution evidence</span>
+                  <span className="preview-dot supported" />
+                  Source supported<span>Code backs it up</span>
+                </div>
+                <div>
+                  <span className="preview-dot unverified" />
+                  Needs evidence<span>Proof is missing</span>
+                </div>
+                <div>
+                  <span className="preview-dot conflict" />
+                  Planning conflict<span>Check the requirements</span>
                 </div>
               </div>
-              <button className="text-button" onClick={example}>
-                Explore the example without an API call →
-              </button>
             </div>
           )}
           <div className="import-bar">
-            <span>Have an earlier report?</span>
+            <span>Already have a report?</span>
             <button
               className="text-button"
-              disabled={busy}
+              disabled={busy || !storageReady}
               onClick={() => uploadRef.current?.click()}
             >
               Import & verify JSON ↗
@@ -675,6 +686,7 @@ export default function AuditWorkspace({
               type="file"
               accept="application/json,.json"
               aria-label="Import audit report"
+              disabled={busy || !storageReady}
               ref={uploadRef}
               onChange={(e) => {
                 const file = e.target.files?.[0];
@@ -687,75 +699,77 @@ export default function AuditWorkspace({
       </div>
       <section className="method-section" id="method">
         <div>
-          <p className="eyebrow">HOW THE SECOND LOOK WORKS</p>
+          <p className="eyebrow">HOW IT WORKS</p>
           <h2>
-            Every conclusion
+            From “done”
             <br />
-            has an evidence obligation.
+            to documented.
           </h2>
         </div>
         <div className="method-grid">
           <article>
             <span>01</span>
-            <h3>One revision.</h3>
+            <h3>Pin the code.</h3>
             <p>
-              Resolve the repository or PR to a fixed commit. Read code and
-              planning documents from that exact snapshot.
+              Check one fixed commit, so every citation points to the same code.
             </p>
           </article>
           <article>
             <span>02</span>
-            <h3>The right kind of proof.</h3>
+            <h3>Check each claim.</h3>
             <p>
-              A dependency can be established from configuration. A passing test
-              needs a completed execution record.
+              Read the code and plan. A test script alone doesn’t prove tests
+              passed.
             </p>
           </article>
           <article>
             <span>03</span>
-            <h3>A traceable handoff.</h3>
+            <h3>Keep the evidence.</h3>
             <p>
-              Inspect citations, review unmentioned requirements, compare a
-              recheck and export the complete assessment.
+              Follow the citations, recheck a fix, and share a signed report.
             </p>
           </article>
         </div>
       </section>
       <section className="evaluation-section" id="evaluation">
         <div>
-          <p className="eyebrow">MEASURED, WITH LIMITS</p>
-          <h2>Evidence for the checker, too.</h2>
-          <p>
-            The original evaluation remains available. It concerns a curated set
-            on this repository and predates the current verifier.
-          </p>
+          <p className="eyebrow">CHECK THE CHECKER</p>
+          <h2>Proof, including ours.</h2>
+          <p>Small, reproducible checks. Open results, including failures.</p>
         </div>
         <div className="historical-metrics">
           <div>
             <strong>
-              {benchmark.summary.falseClaimsReturnedTrue.count}/
-              {benchmark.summary.falseClaimsReturnedTrue.total}
+              {adversarial.summary.currentExpectedOutcomes}/
+              {adversarial.summary.cases}
             </strong>
-            <span>False claims returned TRUE</span>
+            <span>Controlled verification cases passed</span>
           </div>
           <div>
             <strong>
-              {benchmark.summary.trueClaimsReturnedTrue.count}/
-              {benchmark.summary.trueClaimsReturnedTrue.total}
+              {adversarial.summary.currentUnsafeAccepted}/
+              {adversarial.summary.unsafeCases}
             </strong>
-            <span>True claims source-supported</span>
+            <span>Unsafe cases accepted in that set</span>
           </div>
           <div>
-            <strong>24 × 3</strong>
-            <span>Claims × repeated observations</span>
+            <strong>
+              {liveEvaluation.summary.matchedOutcomes}/
+              {liveEvaluation.summary.labeledClaims}
+            </strong>
+            <span>Live labeled claims matched · 2 public repos</span>
           </div>
         </div>
-        <p className="panel-note">
-          Historical record at <code>{benchmark.headSha.slice(0, 8)}</code>.
-          These are bounded observations, not a general accuracy guarantee.
-          Current adversarial evaluation and reproduction details are in the
-          repository.
-        </p>
+        <details className="evaluation-details">
+          <summary>What these numbers mean</summary>
+          <p className="panel-note">
+            The 15 manufactured cases test quote validation and report
+            integrity. The 8 live claims concern selected package-manifest facts
+            and execution overclaims on Express and Chalk. These builder-run
+            checks are not an independent study or a general accuracy estimate.
+            Historical results are preserved separately.
+          </p>
+        </details>
         <a
           className="text-button"
           href="https://github.com/kathir-iTech/Vibe_Check/tree/codex/vibecheck-evidence-workspace/benchmark"

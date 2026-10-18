@@ -11,7 +11,7 @@ Build mode: fast — learner issues scoped Fix prompts, agent builds/verifies/co
 
 The owner approved implementing the reviewed next-level plan and delegated implementation, verification, GitHub pushes and existing Vercel delivery. Continue fast mode. Preserve earlier planning and measured results; extend the five existing features with evidence provenance, requirement coverage and comparison. The static/API-only execution boundary remains. External user recruitment and personal submission/video actions remain outside implementation.
 
-- [ ] **21. Trustworthy evidence and reports**
+- [x] **21. Trustworthy evidence and reports**
   Becomes usable: Quotes preserve code semantics and reports cannot authenticate changed or client-invented audit results.
   Why now: Direct counterexamples defeat the current trust promise.
   PRD ref: `prd.md > Features and Behavior > Shareable Verdict Report`
@@ -21,7 +21,7 @@ The owner approved implementing the reviewed next-level plan and delegated imple
   Learner check: Open a verified report; change its evidence and observe rejection.
   Commit: `fix: bind reports to complete server audit evidence`
 
-- [ ] **22. One snapshot and precise evidence obligations**
+- [x] **22. One snapshot and precise evidence obligations**
   Becomes usable: An audit reads one commit and distinguishes source support from runtime claims and new changes.
   Why now: Requirements and comparisons need stable evidence identities.
   PRD ref: `prd.md > Features and Behavior > Repo Evidence Checker`
@@ -31,7 +31,7 @@ The owner approved implementing the reviewed next-level plan and delegated imple
   Learner check: Inspect every citation at the displayed commit and distinguish configuration from execution proof.
   Commit: `feat: audit claims and requirements at an immutable source revision`
 
-- [ ] **23. Clear audit, requirement and recheck workspace**
+- [x] **23. Clear audit, requirement and recheck workspace**
   Becomes usable: Inspect evidence, omissions, next actions and changes between audits; export results with persistent provenance.
   Why now: Makes the stronger verification accessible in the existing core journey.
   PRD ref: `prd.md > The Core Journey`, `prd.md > Screens and Layout`
@@ -41,7 +41,7 @@ The owner approved implementing the reviewed next-level plan and delegated imple
   Learner check: Run a claim, inspect its evidence and missing-proof request, then compare a recheck.
   Commit: `feat: build an evidence-first audit and recheck workspace`
 
-- [ ] **24. Reproducible adversarial evaluation**
+- [x] **24. Reproducible adversarial evaluation**
   Becomes usable: Inspect current verifier tests and held-out model results without confusing them with historical benchmarks.
   Why now: New behavior needs measured evidence beyond curated examples.
   PRD ref: `prd.md > Product Decisions`
