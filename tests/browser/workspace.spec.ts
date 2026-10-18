@@ -156,6 +156,49 @@ test("workspace consumes server progress, exports, verifies reports and rejects 
   );
 });
 
+test("shared reports reverify changed fragments and recover after invalid links", async ({
+  page,
+}) => {
+  const first = {
+    ...EXAMPLE_AUDIT,
+    source: { kind: "live" as const, label: "Synthetic navigation fixture" },
+    generatedAt: "2026-10-18T00:00:00Z",
+  };
+  const second = { ...first, headSha: "b".repeat(40) };
+  const fragment = (audit: typeof first) =>
+    Buffer.from(
+      JSON.stringify(encodeSignedReport(audit).signedPayload),
+    ).toString("base64url");
+  await page.goto(`/report/view#${fragment(first)}`);
+  await expect(page.locator(".verified-report .panel-note code")).toHaveText(
+    first.headSha.slice(0, 12),
+  );
+  await page.evaluate((hash) => {
+    location.hash = hash;
+  }, fragment(second));
+  await expect(page.locator(".verified-report .panel-note code")).toHaveText(
+    second.headSha.slice(0, 12),
+  );
+  await expect(
+    page.getByRole("heading", {
+      name: "The report is intact. Inspect the evidence.",
+    }),
+  ).toBeVisible();
+  await page.evaluate(() => {
+    location.hash = "invalid-report";
+  });
+  await expect(
+    page.getByRole("heading", { name: "This report could not be verified." }),
+  ).toBeVisible();
+  await expect(page.getByRole("tablist", { name: "Audit views" })).toHaveCount(
+    0,
+  );
+  await page.goBack();
+  await expect(page.locator(".verified-report .panel-note code")).toHaveText(
+    second.headSha.slice(0, 12),
+  );
+});
+
 test("actual report API refuses fabricated client verdicts without invoking a model", async ({
   request,
 }) => {

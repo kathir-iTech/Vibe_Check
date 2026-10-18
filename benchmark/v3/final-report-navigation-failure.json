@@ -1,0 +1,16 @@
+{
+  "scope": "Actual anonymous Chrome release check. Two different signed reports were opened sequentially using report/view fragments. The second same-document navigation retained the first report. This is a product failure, not a provider failure or evidence of a successful final release check.",
+  "observedDate": "2026-10-18",
+  "origin": "https://vibe-check-dev.vercel.app",
+  "applicationRevision": "efe5e3aa8c75b16e45d512c026d10642f73c3e69",
+  "verifierVersion": "2.2.0",
+  "observed": {
+    "secondReportExpectedClaims": 3,
+    "retainedFirstReportClaims": 1,
+    "secondReportExpectedRequirements": 1,
+    "retainedFirstReportRequirements": 0,
+    "assertion": "Requirements conflict row was absent; the accessibility snapshot still showed the earlier one-claim report."
+  },
+  "cause": "The report page verified location.hash only on initial mount and did not observe hashchange.",
+  "resolution": "Listen for fragment changes, clear prior results, and ignore obsolete asynchronous verification completions. A controlled browser regression covers changed valid fragments, invalid fragments and back navigation. Final passing readback is recorded separately."
+}
