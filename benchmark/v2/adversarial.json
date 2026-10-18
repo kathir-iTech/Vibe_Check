@@ -3,7 +3,7 @@
   "scope": "Deliberately manufactured regression counterexamples evaluated against actual preserved legacy and current production functions/routes. No new model calls, independent-user evidence or population accuracy estimate.",
   "legacyRevision": "0bb49508c85aa6a1eafbf13a9c1849ef8a14464c",
   "currentInputHashes": {
-    "src/lib/verification-guards.mjs": "edfc9e1de93c6c25cec4b521ee528735fe14c30325455aeaf02545638a682a1f",
+    "src/lib/verification-guards.mjs": "83104a270b75dbd2dfa0a05631fa56f4a96586e0c3fb064c12f14787fc38ffc9",
     "src/lib/report-crypto.mjs": "dd188c4d6b82634dcbdce6ae0ff255a801f3012461ab096b2e24b9e8ee7c5f13",
     "src/lib/report-format.mjs": "d03225fd2b60095795bfac0c80ca31bb91e00502fbbe7c07b6ec10c29a848582",
     "src/lib/audit-policy.mjs": "d32903b409b2942462211fff2c8bc34a1ae98c70a8776fd2259046819b08c6c6",
