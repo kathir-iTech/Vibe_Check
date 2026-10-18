@@ -9,7 +9,7 @@ import { loadProduction } from "./test-support.mjs";
 nextEnv.loadEnvConfig(process.cwd());
 if (!process.env.GEMINI_API_KEY)
   throw new Error("A configured provider is required.");
-const planBytes = readFileSync("benchmark/v3/plan.json");
+const planBytes = readFileSync("benchmark/v3/plan.json", "utf8").replace(/\r\n/g, "\n");
 const plan = JSON.parse(planBytes);
 const runName = process.argv[2];
 if (!/^[a-z0-9-]{1,48}$/.test(runName || ""))

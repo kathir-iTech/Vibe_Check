@@ -33,6 +33,30 @@ test("actual claim review reaches pinned code, requirement conflict and independ
     .fill("47fc05abd46171b235e24174cd2dba83d25bf037");
   await page.getByLabel(/Relevant files/).fill("source/index.js\npackage.json");
   await page.getByRole("button", { name: /Check the proof/ }).click();
+  await Promise.race([
+    page
+      .getByText("Live server assessment", { exact: true })
+      .waitFor({ timeout: 180000 }),
+    page.locator(".error-message").waitFor({ timeout: 180000 }),
+  ]);
+  if (await page.locator(".error-message").isVisible()) {
+    mkdirSync("artifacts/live-depth", { recursive: true });
+    writeFileSync(
+      "artifacts/live-depth/failure.json",
+      JSON.stringify(
+        {
+          scope:
+            "Actual browser attempt failed before a complete report; no successful audit or signature verification is inferred.",
+          observedAt: new Date().toISOString(),
+          error: await page.locator(".error-message").innerText(),
+          pageErrors: errors,
+        },
+        null,
+        2,
+      ) + "\n",
+    );
+    throw new Error(await page.locator(".error-message").innerText());
+  }
   await expect(
     page.getByText("Live server assessment", { exact: true }),
   ).toBeVisible({ timeout: 180000 });

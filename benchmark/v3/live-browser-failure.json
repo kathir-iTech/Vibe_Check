@@ -1,0 +1,11 @@
+{
+  "scope": "Actual local builder browser attempt failed before report issuance. The UI reported provider capacity; upstream status was not captured. No completed audit or signature check is inferred.",
+  "observedAt": "2026-10-18T07:29:31.012Z",
+  "sourceRevision": "cb7fcb1",
+  "repository": "chalk/chalk",
+  "headSha": "47fc05abd46171b235e24174cd2dba83d25bf037",
+  "testStatus": "failed",
+  "uiError": "The AI provider is at capacity. Your input is saved; try again shortly.",
+  "recoveryControlObserved": true,
+  "observerFailure": "Waited for a successful result instead of ending promptly on the explicit error. The observer now records that error immediately."
+}

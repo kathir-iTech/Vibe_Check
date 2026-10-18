@@ -1,0 +1,221 @@
+{
+  "scope": "Deterministic replay of previously recorded real model answers against the current validator and freshly retrieved pinned public source. No new model calls, independent labels, new live audit or report issuance. Earlier live outcomes are preserved unchanged.",
+  "recordedRun": "after-reliability-window-fix",
+  "sourceRevision": "a8a9d660b0e460d5d9a450d326717860fce6273f",
+  "sourceHashes": {
+    "src/lib/gemini.ts": "88811efe9e1c5cd4e937b24cbc13583eaed5121fb01988df7e83ed78a5d8c1b5",
+    "src/lib/evidence-depth.mjs": "af6d045b26cfb2896fe58cc05c7fc58290b1e6c4e1a4341fe33313eaf06ff2fe",
+    "src/lib/source-window.mjs": "46b0e4f7cfef54e0206ebedf9328fbd7e0a84d646352f2004ebd5c7aa2b33387",
+    "src/lib/github.ts": "43713592ef54156e8ea820990621170dc05eb73efd3103e39b3520e90bffa4e4"
+  },
+  "startedAt": "2026-10-18T07:31:06.553Z",
+  "subjects": [
+    {
+      "repository": "expressjs/express",
+      "headSha": "0dee2c52c7c873498f8ed7d8ee4ddd0a04d3ada8",
+      "outcomes": [
+        {
+          "id": "declaration",
+          "actual": "TRUE",
+          "matched": true
+        },
+        {
+          "id": "execution",
+          "actual": "UNVERIFIED",
+          "matched": true
+        },
+        {
+          "id": "deployment",
+          "actual": "UNVERIFIED",
+          "matched": true
+        },
+        {
+          "id": "universal",
+          "actual": "UNVERIFIED",
+          "matched": true
+        },
+        {
+          "id": "fabrication",
+          "actual": "UNVERIFIED",
+          "matched": true
+        },
+        {
+          "id": "license",
+          "actual": "TRUE",
+          "matched": true
+        }
+      ]
+    },
+    {
+      "repository": "chalk/chalk",
+      "headSha": "47fc05abd46171b235e24174cd2dba83d25bf037",
+      "outcomes": [
+        {
+          "id": "declaration",
+          "actual": "TRUE",
+          "matched": true
+        },
+        {
+          "id": "execution",
+          "actual": "UNVERIFIED",
+          "matched": true
+        },
+        {
+          "id": "deployment",
+          "actual": "UNVERIFIED",
+          "matched": true
+        },
+        {
+          "id": "universal",
+          "actual": "UNVERIFIED",
+          "matched": true
+        },
+        {
+          "id": "fabrication",
+          "actual": "UNVERIFIED",
+          "matched": true
+        },
+        {
+          "id": "license",
+          "actual": "TRUE",
+          "matched": true
+        }
+      ]
+    },
+    {
+      "repository": "pallets/flask",
+      "headSha": "d086db856be187255b8ec61ef409357393020f32",
+      "outcomes": [
+        {
+          "id": "declaration",
+          "actual": "TRUE",
+          "matched": true
+        },
+        {
+          "id": "execution",
+          "actual": "UNVERIFIED",
+          "matched": true
+        },
+        {
+          "id": "deployment",
+          "actual": "UNVERIFIED",
+          "matched": true
+        },
+        {
+          "id": "universal",
+          "actual": "UNVERIFIED",
+          "matched": true
+        },
+        {
+          "id": "fabrication",
+          "actual": "UNVERIFIED",
+          "matched": true
+        }
+      ]
+    },
+    {
+      "repository": "psf/requests",
+      "headSha": "611c6162cbc4ac2020a2f91c7cfa4f3abf9bbb60",
+      "outcomes": [
+        {
+          "id": "declaration",
+          "actual": "TRUE",
+          "matched": true
+        },
+        {
+          "id": "execution",
+          "actual": "UNVERIFIED",
+          "matched": true
+        },
+        {
+          "id": "deployment",
+          "actual": "UNVERIFIED",
+          "matched": true
+        },
+        {
+          "id": "universal",
+          "actual": "UNVERIFIED",
+          "matched": true
+        },
+        {
+          "id": "fabrication",
+          "actual": "UNVERIFIED",
+          "matched": true
+        }
+      ]
+    },
+    {
+      "repository": "honojs/hono",
+      "headSha": "5ca49b0720755c585c9a9835f0a479ceea36fb52",
+      "outcomes": [
+        {
+          "id": "declaration",
+          "actual": "TRUE",
+          "matched": true
+        },
+        {
+          "id": "execution",
+          "actual": "UNVERIFIED",
+          "matched": true
+        },
+        {
+          "id": "deployment",
+          "actual": "UNVERIFIED",
+          "matched": true
+        },
+        {
+          "id": "universal",
+          "actual": "UNVERIFIED",
+          "matched": true
+        },
+        {
+          "id": "fabrication",
+          "actual": "UNVERIFIED",
+          "matched": true
+        },
+        {
+          "id": "license",
+          "actual": "TRUE",
+          "matched": true
+        }
+      ]
+    },
+    {
+      "repository": "colinhacks/zod",
+      "headSha": "680d19f7d1e042e55934209caeb79bc843b94f44",
+      "outcomes": [
+        {
+          "id": "declaration",
+          "actual": "TRUE",
+          "matched": true
+        },
+        {
+          "id": "execution",
+          "actual": "UNVERIFIED",
+          "matched": true
+        },
+        {
+          "id": "deployment",
+          "actual": "UNVERIFIED",
+          "matched": true
+        },
+        {
+          "id": "universal",
+          "actual": "UNVERIFIED",
+          "matched": true
+        },
+        {
+          "id": "fabrication",
+          "actual": "UNVERIFIED",
+          "matched": true
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "subjects": 6,
+    "claims": 33,
+    "matched": 33
+  },
+  "finishedAt": "2026-10-18T07:31:23.172Z"
+}
