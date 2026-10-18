@@ -45,7 +45,7 @@ export async function POST() {
   let driftData: any;
   try {
     const res = await checkSpecDrift(
-      fakeRequest({ repoUrl: REPO_URL, claims: SELF_CLAIMS, evidence })
+      fakeRequest({ repoUrl: REPO_URL, claims: SELF_CLAIMS, evidence, headSha: evidenceData.headSha })
     );
     driftData = await res.json();
   } catch (error) {

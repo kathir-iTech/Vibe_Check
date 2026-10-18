@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { fetchFileContentsForClaims, githubApi, parseGitHubRepoUrl } from "@/lib/github";
+import { fetchFileContentsForClaims, githubApi, parseGitHubRepoUrl, resolveSnapshot, safeRepoPath } from "@/lib/github";
+import { evidenceObligation, nextEvidence, RUNTIME_EVIDENCE_REASON, validateAuditClaims } from "@/lib/audit-policy.mjs";
 import {
   assessClaimsAgainstSpec,
   GeminiUsage,
@@ -13,10 +14,10 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 
 export const maxDuration = 60;
 
-async function fetchDoc(base: string, file: string, userToken?: string): Promise<string | null> {
+async function fetchDoc(base: string, file: string, userToken?: string, ref?: string): Promise<string | null> {
   try {
-    const data = await githubApi(`${base}/contents/${file}`, 8000, userToken);
-    return Buffer.from(data.content, "base64").toString();
+    const data = await githubApi(`${base}/contents/${safeRepoPath(file)}?ref=${ref}`, 8000, userToken);
+    return Buffer.from(data.content, "base64").toString().slice(0, 20 * 1024);
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     if (/GitHub API error: 404\b/.test(msg)) return null;
@@ -44,7 +45,9 @@ export async function POST(request: NextRequest) {
   }
 
   const repoUrl = typeof body?.repoUrl === "string" ? body.repoUrl.trim() : "";
-  const rawClaims = Array.isArray(body?.claims) ? body.claims.slice(0, MAX_CLAIMS) : [];
+  let rawClaims: {id: string; text: string}[];
+  try { rawClaims = validateAuditClaims(body?.claims); }
+  catch (error) { return NextResponse.json({ error: String(error), drift: [] }, { status: 400 }); }
   const evidence = body?.evidence && typeof body.evidence === "object" ? body.evidence : {};
   const userToken = request.headers?.get?.("x-github-token") || undefined;
 
@@ -73,17 +76,13 @@ export async function POST(request: NextRequest) {
   const base = `https://api.github.com/repos/${owner}/${cleanRepo}`;
 
   let docs: SpecDoc[];
+  let headSha: string;
   try {
-    const [scopeContent, prdContent, specContent] = await Promise.all([
-      fetchDoc(base, "devpost/scope.md", userToken),
-      fetchDoc(base, "devpost/prd.md", userToken),
-      fetchDoc(base, "devpost/spec.md", userToken),
-    ]);
-    docs = [
-      { file: "devpost/scope.md", text: scopeContent || "" },
-      { file: "devpost/prd.md", text: prdContent || "" },
-      { file: "devpost/spec.md", text: specContent || "" },
-    ].filter((d) => d.text.trim().length > 0);
+    const inheritedSha = body.headSha || Object.values(evidence).map((e: any) => e?.headSha).find(Boolean) || "";
+    headSha = (await resolveSnapshot(repoUrl, inheritedSha, userToken)).headSha;
+    if (Object.values(evidence).some((e: any) => e?.headSha && e.headSha !== headSha)) throw new Error("Evidence snapshot mismatch");
+    const paths = Array.isArray(body.planningFiles) ? body.planningFiles.filter((p: unknown) => typeof p === "string" && /^(?:devpost\/|docs\/)?(?:scope|prd|spec)\.md$/i.test(p)).slice(0, 6) : ["devpost/scope.md", "devpost/prd.md", "devpost/spec.md", "scope.md", "prd.md", "spec.md"];
+    docs = (await Promise.all(paths.map(async (file: string) => ({file, text: await fetchDoc(base, file, userToken, headSha) || ""})))).filter(d => d.text.trim());
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
@@ -99,7 +98,9 @@ export async function POST(request: NextRequest) {
   for (const claim of rawClaims) {
     const claimText = String(claim?.text || claim || "").slice(0, MAX_CLAIM_CHARS);
     const claimId = String(claim?.id || claimText);
-    if (hasRealEvidence(evidence[claimId])) {
+    if (["execution", "runtime"].includes(evidenceObligation(claimText))) {
+      outcomes.set(claimId, { claimId, claimText, verdict: "UNVERIFIED", reason: RUNTIME_EVIDENCE_REASON, specReference: "", obligation: evidenceObligation(claimText) });
+    } else if (hasRealEvidence(evidence[claimId])) {
       toAssess.push({ id: claimId, text: claimText });
     } else {
       outcomes.set(claimId, {
@@ -124,7 +125,7 @@ export async function POST(request: NextRequest) {
       filesByClaim[c.id] = Array.isArray(entry?.files) ? entry.files.slice(0, 5) : [];
     }
     try {
-      supportFiles = await fetchFileContentsForClaims(base, filesByClaim, userToken);
+      supportFiles = await fetchFileContentsForClaims(base, filesByClaim, userToken, headSha);
     } catch {
       supportFiles = {};
     }
@@ -164,13 +165,14 @@ export async function POST(request: NextRequest) {
     for (const a of answer.data) {
       const claim = toAssess.find((c) => c.id === a.claimId);
       const claimText = claim?.text || a.claimId;
-      if (a.contradicts) {
+      if (a.contradicts && a.supported && a.supportingLine > 0) {
         outcomes.set(a.claimId, {
           claimId: a.claimId,
           claimText,
           verdict: "SPEC-DRIFT",
           reason: a.reason,
           specReference: `${a.sourceDoc}:${a.lineNumber}: ${a.contradictingLine}`,
+          supportingReference: `${a.supportingFile}:${a.supportingLine}: ${a.supportingQuote}`,
         });
       } else if (a.supported && a.supportingLine > 0) {
         outcomes.set(a.claimId, {
@@ -207,7 +209,7 @@ export async function POST(request: NextRequest) {
 
   const finalTimings = timings.finish();
   return NextResponse.json(
-    { drift, model, modelFallback, usage, timings: finalTimings },
+    { drift: drift.map((v: any) => ({...v, obligation: evidenceObligation(v.claimText), nextEvidence: nextEvidence(v.claimText, v.verdict)})), headSha, docs, model, modelFallback, usage, timings: finalTimings },
     { headers: { "Server-Timing": serverTimingHeader(finalTimings) } }
   );
 }
