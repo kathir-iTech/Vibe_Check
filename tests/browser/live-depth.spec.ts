@@ -14,11 +14,13 @@ test("actual claim review reaches pinned code, requirement conflict and independ
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("/");
-  await page.getByRole("button", { name: "Claim list", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: /Check the proof/ }),
+  ).toBeEnabled();
   await page
-    .getByLabel("One claim per line")
+    .getByLabel("Agent completion message")
     .fill(
-      "A createChalk function is defined.\nThis package is MIT licensed.\nAll tests passed.",
+      "A createChalk function is defined. This package is MIT licensed. All tests passed.",
     );
   await page
     .getByLabel("GitHub repository")
@@ -101,9 +103,9 @@ test("actual claim review reaches pinned code, requirement conflict and independ
   expect(
     audit.verdicts.find((v) => v.claimText.startsWith("A createChalk")).verdict,
   ).toBe("TRUE");
-  expect(
-    audit.verdicts.find((v) => v.claimText.startsWith("This package")).verdict,
-  ).toBe("SPEC-DRIFT");
+  expect(audit.verdicts.find((v) => /\bMIT\b/.test(v.claimText)).verdict).toBe(
+    "SPEC-DRIFT",
+  );
   expect(
     audit.verdicts.find((v) => v.claimText.startsWith("All tests")).verdict,
   ).toBe("UNVERIFIED");

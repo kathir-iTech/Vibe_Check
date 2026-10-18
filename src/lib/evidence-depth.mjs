@@ -78,7 +78,13 @@ export function sourceSupportCheck(claim, file, text, line) {
         manifest.license === value &&
         /\blicen[cs]/i.test(claim)
       ) {
-        if (!String(claim).toLowerCase().includes(value.toLowerCase()))
+        const licenseToken = value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        if (
+          !new RegExp(
+            `(?:^|[^a-z0-9_.+-])${licenseToken}(?:$|[^a-z0-9_.+-])`,
+            "i",
+          ).test(String(claim))
+        )
           return result(
             "none",
             "manifest-value",
@@ -184,6 +190,53 @@ export function sourceSupportCheck(claim, file, text, line) {
     "configuration-line",
     "Exact source declaration; runtime behavior is not established.",
   );
+}
+
+// A literal review restriction on a parsed manifest value, not a legal-license
+// analysis. Deliberately excludes repository prose, examples and conditional rules.
+export function explicitLicenseConflict(file, source, docs) {
+  if (!/(?:^|\/)package\.json$/i.test(file)) return null;
+  let license;
+  try {
+    license = JSON.parse(source).license;
+  } catch {
+    return null;
+  }
+  if (typeof license !== "string" || !/^[a-z0-9.+-]{1,64}$/i.test(license))
+    return null;
+  const doc = docs.find(
+    (entry) =>
+      entry.file === "provided-requirements.md" && entry.provided === true,
+  );
+  if (!doc) return null;
+  let fence = null;
+  const lines = doc.text.split("\n");
+  for (let index = 0; index < lines.length; index++) {
+    const line = lines[index].trim();
+    const marker = line.replace(/^[-*]\s+/, "").match(/^(`{3,}|~{3,})(.*)$/);
+    if (marker) {
+      if (!fence) fence = { char: marker[1][0], length: marker[1].length };
+      else if (
+        marker[1][0] === fence.char &&
+        marker[1].length >= fence.length &&
+        !marker[2].trim()
+      )
+        fence = null;
+      continue;
+    }
+    if (fence) continue;
+    const rule = line.match(
+      /^(?:[-*]\s+|\d+[.)]\s+)?([a-z0-9.+-]{1,64})\s+(?:licensing|licenses?)\s+(?:(?:is|are)\s+)?(?:forbidden|prohibited|not allowed)\.?$/i,
+    );
+    if (rule && rule[1].toLowerCase() === license.toLowerCase())
+      return {
+        file: doc.file,
+        line: index + 1,
+        quote: line,
+        license,
+      };
+  }
+  return null;
 }
 
 export function evidenceContract(finding) {

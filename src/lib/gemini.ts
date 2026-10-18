@@ -2,6 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 import {
   sourceSupportCheck,
   isDeclarationPresence,
+  explicitLicenseConflict,
 } from "./evidence-depth.mjs";
 import {
   COMMENT_SPOOF_REASON,
@@ -330,6 +331,7 @@ export async function extractClaimsViaGemini(
 export interface SpecDoc {
   file: string;
   text: string;
+  provided?: boolean;
   startLine?: number;
   nonImplementationLines?: number[];
 }
@@ -493,6 +495,31 @@ export function validateAssessments(
             supportingLine = 0;
           }
         }
+      }
+    }
+
+    if (
+      supported &&
+      !contradicts &&
+      item.coverage === "full" &&
+      sourceCheck?.ceiling === "full" &&
+      sourceCheck.kind === "manifest-value"
+    ) {
+      const doc = (supportByClaim[claim.id] || []).find(
+        (entry) => entry.file === supportingFile,
+      );
+      const restriction =
+        doc && explicitLicenseConflict(supportingFile, doc.text, docs);
+      if (restriction) {
+        contradicts = true;
+        sourceDoc = restriction.file;
+        lineNumber = restriction.line;
+        contradictingLine = restriction.quote;
+        reason = `The manifest declares ${restriction.license}; your supplied review requirement forbids that license declaration.`;
+        sourceCheck = {
+          ...sourceCheck,
+          note: `${sourceCheck.note} Explicit supplied license restriction matched.`,
+        };
       }
     }
 

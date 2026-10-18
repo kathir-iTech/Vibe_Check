@@ -31,7 +31,7 @@ The example uses disclosed illustrative data and makes no model calls. It cannot
 | TRUE            | Source supported  | A supporting line was checked against inspected source. Runtime behavior is not certified.                                   |
 | PARTIAL         | Partial support   | Some support exists, but the full claim or claimed change is not established.                                                |
 | UNVERIFIED      | Needs evidence    | The inspected material does not establish the claim. This does not prove the claim is false.                                 |
-| SPEC-DRIFT      | Planning conflict | The assessment cites implementation support and a conflicting planning line. The semantic conflict remains a model judgment. |
+| SPEC-DRIFT      | Planning conflict | Cited source support conflicts with a cited planning line. Most conflicts remain model judgments; an exact supplied license prohibition also has a narrow manifest check. |
 
 A test script cannot prove a test run passed. A source file cannot prove a deployment succeeded. GitHub check-run records, when accessible, are shown as attributed provider observations at the selected SHA; generic “all tests passed” claims remain unverified without sufficient specific execution evidence.
 
@@ -45,6 +45,7 @@ Requirement extraction examines up to 32 normative prose statements and acceptan
 - A supplied comparison base must be a valid ancestor. An observed added supporting line is narrower evidence than “the feature was newly implemented.”
 - Quote checks preserve case and literal whitespace. Comment, restatement and disabled-setting guards are defensive heuristics, not a proof of program semantics.
 - Additional checks parse package manifests, reject mismatched dependency/license subjects, and cap support from imports, declarations, documentation and universal claims. A dependency declaration does not establish an integrated feature. These checks only limit model support; they do not promote a model rejection into success.
+- When a model-supported, fully checked manifest license matches an explicit supplied license prohibition, a deterministic check surfaces the conflict and its exact review line. It excludes conditional/negated rules, fenced examples, repository prose, partial evidence and compound SPDX expressions. It compares declarations with review constraints; it does not assess legal licensing obligations.
 - **No repository code is executed.** Prompt delimiters, quote checks and bounded inputs reduce some attacks; they do not eliminate prompt injection or model mistakes.
 - A public service token cannot grant an anonymous visitor private repository access. Private inspection requires the visitor's own GitHub authority.
 
@@ -55,6 +56,8 @@ Verifier v2 signs the complete report with Ed25519 using a dedicated `REPORT_SIG
 A signature authenticates what this service issued. It does not prove that a model's conclusion is correct. Legacy partial HMAC signatures are not promoted to complete-report provenance.
 
 New share links keep report data in the URL fragment at `/report/view`. Anyone given a link can read its included source excerpts. Review private material before sharing. Browser working state is stored only in the current tab; optional GitHub tokens are never cached or exported.
+
+Claims and matched source excerpts are sent to Google Gemini for assessment. A visitor's GitHub token is used for authorized GitHub reads, not included in model prompts. Review the source-sharing implications before inspecting private repositories.
 
 Verify downloaded JSON without installing project dependencies:
 

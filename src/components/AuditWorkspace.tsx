@@ -624,7 +624,8 @@ export default function AuditWorkspace({
               />
               <p className="field-help">
                 Sent to this service and GitHub for this request. Never stored
-                in the browser cache or included in a report.
+                in the browser cache or included in a report. Matched source
+                excerpts are sent to Google Gemini for assessment.
               </p>
             </details>
             <button

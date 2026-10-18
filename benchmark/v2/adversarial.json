@@ -7,14 +7,14 @@
     "src/lib/report-crypto.mjs": "dd188c4d6b82634dcbdce6ae0ff255a801f3012461ab096b2e24b9e8ee7c5f13",
     "src/lib/report-format.mjs": "d71d32a3716795edd364ae681013960ec9bc7e835f4206b180dd7b963847a95d",
     "src/lib/audit-policy.mjs": "2376785c201cac52d9d54e2c0ae2836496f41f36012a68fc889944a804fd5bdc",
-    "src/lib/evidence-depth.mjs": "af6d045b26cfb2896fe58cc05c7fc58290b1e6c4e1a4341fe33313eaf06ff2fe",
+    "src/lib/evidence-depth.mjs": "787bab81b07b142d3f341a391a6b3333cf13a0c69b3bdf33b67b1603fd450745",
     "src/lib/source-window.mjs": "46b0e4f7cfef54e0206ebedf9328fbd7e0a84d646352f2004ebd5c7aa2b33387",
-    "src/lib/gemini.ts": "1c1feb6556d04e53f93db1d56508829e8cd950ce2f9c00a1d723c3826f213d72",
+    "src/lib/gemini.ts": "91090af923a5ab3a260a61b2944f3fdd53875c0742384473360c5d25196834dd",
     "src/lib/github.ts": "43713592ef54156e8ea820990621170dc05eb73efd3103e39b3520e90bffa4e4",
     "src/lib/audit-service.ts": "6023dbf5d03f1d0f7b00235e5cc5edba55ef3d90f622ab0ff6977742e9895820",
     "src/app/api/audit/route.ts": "c79541ffeba8df85906e27adf47abf6c177ea579a4193841d962d1f2b6673511",
     "src/app/api/check-evidence/route.ts": "8d2bbf087e8ad22d1503b8b83b23a0897950da18efaefd6f13a038f021ea718f",
-    "src/app/api/check-spec-drift/route.ts": "63bfdb29f7bdca1a69c4fe9cc952acd3997f685b9cc123347cb0766dc83e6d48",
+    "src/app/api/check-spec-drift/route.ts": "11106f6777c75332cb65e78f7d79c06b4e1e1671ba5b2246a4451da45352434a",
     "src/app/api/generate-report/route.ts": "b8dca623a81d239237deb700111c1c7f23d8e3e0b1f80e162c333157e92ab192"
   },
   "cases": [
