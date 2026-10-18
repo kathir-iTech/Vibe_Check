@@ -190,6 +190,7 @@ test("recheck preserves the earlier revision and shows changed claim assessments
   const before = {
     ...EXAMPLE_AUDIT,
     source: { kind: "live" as const, label: "Controlled recheck fixture" },
+    generatedAt: "2026-10-18T00:00:00Z",
   };
   const after = structuredClone(before);
   after.headSha = "b".repeat(40);
