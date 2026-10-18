@@ -1,0 +1,39 @@
+{
+  "scope": "Descriptive builder-run comparison on one frozen plan. Completed and failed requests remain separate. Repeated evaluation, provider variation and code changes prevent causal or population-accuracy conclusions. The baseline is an ablation of the same answers, not a competing product.",
+  "runs": [
+    {
+      "run": "first-observation",
+      "planSha256": "85e0b9a7b0dc27098ea0f225680e4ea584aabb2570a5351a38c0485252e1a43d",
+      "sourceRevision": "5a2a2066df3d83ba05d5e47eca2ffca194ceb1f5",
+      "completed": 4,
+      "planned": 6,
+      "assessed": 21,
+      "plannedClaims": 33,
+      "expectedOutcomes": 19,
+      "sourceSupportRecovered": 3,
+      "sourceSupportExpected": 5,
+      "unsupportedFullSupport": 0,
+      "unsupportedAssessed": 16,
+      "baselineExpectedOutcomes": 19,
+      "medianCompletedRequestMs": 20631,
+      "providerFailures": 3
+    },
+    {
+      "run": "after-reliability-window-fix",
+      "planSha256": "85e0b9a7b0dc27098ea0f225680e4ea584aabb2570a5351a38c0485252e1a43d",
+      "sourceRevision": "06b284cc0c29cbe3954865d5bd5c64d804616b99",
+      "completed": 6,
+      "planned": 6,
+      "assessed": 33,
+      "plannedClaims": 33,
+      "expectedOutcomes": 32,
+      "sourceSupportRecovered": 8,
+      "sourceSupportExpected": 9,
+      "unsupportedFullSupport": 0,
+      "unsupportedAssessed": 24,
+      "baselineExpectedOutcomes": 33,
+      "medianCompletedRequestMs": 28131,
+      "providerFailures": 1
+    }
+  ]
+}

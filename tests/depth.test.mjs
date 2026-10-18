@@ -357,3 +357,36 @@ test("late-file windows retain absolute citations and whole-source comment bound
   );
   assert.equal(rejected.supported, false);
 });
+
+test("structural presence assertions survive lexical overlap but embedded prose and broader claims do not", () => {
+  const { validateAssessments } = loadProduction("src/lib/gemini.ts");
+  const claim = { id: "c", text: "A createPalette function is defined" };
+  const row = {
+    claimId: "c",
+    contradicts: false,
+    supported: true,
+    coverage: "full",
+    supportingFile: "index.js",
+    supportingQuote: "function createPalette(options) {",
+  };
+  const [actual] = validateAssessments([row], [claim], [], {
+    c: [{ file: "index.js", text: row.supportingQuote }],
+  });
+  assert.equal(actual.supported, true);
+  assert.equal(actual.coverage, "full");
+  const spoof = 'const note = "A createPalette function is defined";';
+  const [rejected] = validateAssessments(
+    [{ ...row, supportingQuote: spoof }],
+    [claim],
+    [],
+    { c: [{ file: "index.js", text: spoof }] },
+  );
+  assert.equal(rejected.supported, false);
+  const [partial] = validateAssessments(
+    [row],
+    [{ ...claim, text: "The createPalette feature is complete" }],
+    [],
+    { c: [{ file: "index.js", text: row.supportingQuote }] },
+  );
+  assert.equal(partial.coverage, "partial");
+});

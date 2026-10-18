@@ -4,6 +4,21 @@ const CODE = /\.(?:[cm]?[jt]sx?|py|go|rs|java|rb|php)$/i;
 const PRESENCE =
   /\b(?:exists?|declares?|declaration|defined|definition|imports?|dependency|dependencies|listed|exports?)\b/i;
 
+export function isDeclarationPresence(claim, line, file) {
+  if (!CODE.test(file)) return false;
+  const declaration = String(line)
+    .trim()
+    .match(
+      /^(?:(?:export|default|async|public|static)\s+)*(?:function|def|class)\s+([A-Za-z_$][\w$]*)\b/,
+    );
+  const assertion = String(claim)
+    .trim()
+    .match(
+      /^(?:An?|The)\s+([A-Za-z_$][\w$]*)\s+(?:function|class)\s+(?:exists?|is\s+(?:defined|declared))\.?$/i,
+    );
+  return Boolean(declaration && assertion && declaration[1] === assertion[1]);
+}
+
 export function splitClaimText(value) {
   const text = String(value || "").trim();
   // Split only explicit independent predicates. Preserve noun lists and

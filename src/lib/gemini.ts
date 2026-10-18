@@ -1,5 +1,8 @@
 import { GoogleGenAI } from "@google/genai";
-import { sourceSupportCheck } from "./evidence-depth.mjs";
+import {
+  sourceSupportCheck,
+  isDeclarationPresence,
+} from "./evidence-depth.mjs";
 import {
   COMMENT_SPOOF_REASON,
   NEGATION_MISMATCH_REASON,
@@ -429,7 +432,10 @@ export function validateAssessments(
           supported = false;
           supportingLine = 0;
           rejectionReason = NEGATION_MISMATCH_REASON;
-        } else if (isRestatement(claim.text, supportingQuote, lineText)) {
+        } else if (
+          isRestatement(claim.text, supportingQuote, lineText) &&
+          !isDeclarationPresence(claim.text, lineText, supportingFile)
+        ) {
           quoteRejected = true;
           supported = false;
           supportingLine = 0;

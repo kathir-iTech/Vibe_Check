@@ -38,7 +38,7 @@ test("review extraction precedes inspection and accepts explicit source hints", 
     "A login function exists\nAll tests passed",
   );
   expect(inspected).toBe(false);
-  await page.getByText("Advanced options", { exact: false }).click();
+  await page.locator("summary").filter({ hasText: "Advanced options" }).click();
   await page.getByLabel(/Relevant files/).fill("src/auth.ts");
   await page.getByRole("button", { name: /Check the proof/ }).click();
   await expect(
@@ -70,8 +70,8 @@ test("a failed later stage preserves extracted claims at the original revision",
   );
   await page.goto("/");
   await page.getByRole("button", { name: /Check the proof/ }).click();
-  await expect(page.getByRole("alert")).toContainText(
-    "Provider temporarily unavailable",
+  await expect(page.locator(".error-message")).toContainText(
+    "The AI provider is at capacity",
   );
   await page.getByRole("button", { name: "Recover extracted claims" }).click();
   await expect(page.getByLabel("One atomic claim per line")).toHaveValue(
@@ -80,7 +80,7 @@ test("a failed later stage preserves extracted claims at the original revision",
   await expect(page.getByLabel("GitHub repository")).toHaveValue(
     "https://github.com/acme/app",
   );
-  await page.getByText("Advanced options", { exact: false }).click();
+  await page.locator("summary").filter({ hasText: "Advanced options" }).click();
   await expect(page.getByLabel("Inspect a commit")).toHaveValue(sha);
 });
 
@@ -98,7 +98,7 @@ test("inspect-more keeps the report revision and repair handoffs contain unresol
   await expect(page.getByLabel("One atomic claim per line")).toHaveValue(
     "All tests passed.",
   );
-  await page.getByText("Advanced options", { exact: false }).click();
+  await page.locator("summary").filter({ hasText: "Advanced options" }).click();
   await expect(page.getByLabel("Inspect a commit")).toHaveValue(
     EXAMPLE_AUDIT.headSha,
   );

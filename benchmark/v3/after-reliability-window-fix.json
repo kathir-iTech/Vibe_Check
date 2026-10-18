@@ -1,0 +1,1663 @@
+{
+  "schema": "vibecheck/product-assessment-observation/v1",
+  "scope": "Actual GitHub and Gemini calls through the production assessment handler, with builder-authored frozen evidence-class labels. Retrieval uses explicit pinned file hints; this does not measure automatic discovery. The baseline is the same real model response interpreted before deterministic validation, not a competitor product or independent user study.",
+  "planSha256": "85e0b9a7b0dc27098ea0f225680e4ea584aabb2570a5351a38c0485252e1a43d",
+  "sourceRevision": "06b284cc0c29cbe3954865d5bd5c64d804616b99",
+  "sourceHashes": {
+    "src/lib/gemini.ts": "dd74005758fdbcd32ab443e98acf9aa2624903373cbeb8da6e382ab2164e1fdf",
+    "src/lib/evidence-depth.mjs": "6aea31cf68b5a9cb1cb1fd704c4825b6e3a8deebca69133effd221155e5eeeb6",
+    "src/lib/source-window.mjs": "46b0e4f7cfef54e0206ebedf9328fbd7e0a84d646352f2004ebd5c7aa2b33387",
+    "src/lib/audit-policy.mjs": "2376785c201cac52d9d54e2c0ae2836496f41f36012a68fc889944a804fd5bdc",
+    "src/lib/github.ts": "43713592ef54156e8ea820990621170dc05eb73efd3103e39b3520e90bffa4e4",
+    "src/app/api/check-spec-drift/route.ts": "63bfdb29f7bdca1a69c4fe9cc952acd3997f685b9cc123347cb0766dc83e6d48"
+  },
+  "startedAt": "2026-10-18T07:18:59.315Z",
+  "attempts": [
+    {
+      "repository": "expressjs/express",
+      "headSha": "0dee2c52c7c873498f8ed7d8ee4ddd0a04d3ada8",
+      "startedAt": "2026-10-18T07:19:11.097Z",
+      "providerCalls": [
+        {
+          "model": "gemini-3-flash-preview",
+          "status": "completed",
+          "durationMs": 20616
+        }
+      ],
+      "httpStatus": 200,
+      "result": {
+        "drift": [
+          {
+            "claimId": "declaration",
+            "claimText": "An app.handle function is defined",
+            "verdict": "TRUE",
+            "reason": "Verified supporting line in lib/application.js",
+            "specReference": "lib/application.js:152: app.handle = function handle(req, res, callback) {",
+            "code": {
+              "file": "lib/application.js",
+              "line": 152,
+              "quote": "app.handle = function handle(req, res, callback) {"
+            },
+            "sourceCheck": {
+              "ceiling": "full",
+              "kind": "source-line",
+              "note": "Exact source support; reachability and execution remain outside this check."
+            },
+            "obligation": "implementation",
+            "nextEvidence": "Inspect the cited implementation; use an execution check before relying on runtime behavior.",
+            "contract": {
+              "checked": "Bounded source inspection at the recorded commit.",
+              "established": "The cited source supports this bounded claim.",
+              "unknown": "Uninspected files, execution and complete behavior are not established.",
+              "resolve": "Inspect the cited implementation; use an execution check before relying on runtime behavior."
+            }
+          },
+          {
+            "claimId": "execution",
+            "claimText": "All tests passed",
+            "verdict": "UNVERIFIED",
+            "reason": "This claim needs an execution or deployment record for the inspected commit. Source code alone cannot establish the outcome.",
+            "specReference": "",
+            "obligation": "execution",
+            "nextEvidence": "Attach a completed CI check for this commit, including its name and result.",
+            "contract": {
+              "checked": "Source and separately attributed records; no repository code executed.",
+              "established": "No sufficient source support established.",
+              "unknown": "The claimed execution or deployment outcome is not certified.",
+              "resolve": "Attach a completed CI check for this commit, including its name and result."
+            }
+          },
+          {
+            "claimId": "deployment",
+            "claimText": "The application is deployed to production",
+            "verdict": "UNVERIFIED",
+            "reason": "This claim needs an execution or deployment record for the inspected commit. Source code alone cannot establish the outcome.",
+            "specReference": "",
+            "obligation": "runtime",
+            "nextEvidence": "Provide a deployment or runtime observation bound to this commit.",
+            "contract": {
+              "checked": "Source and separately attributed records; no repository code executed.",
+              "established": "No sufficient source support established.",
+              "unknown": "The claimed execution or deployment outcome is not certified.",
+              "resolve": "Provide a deployment or runtime observation bound to this commit."
+            }
+          },
+          {
+            "claimId": "universal",
+            "claimText": "Every route is fully protected against unauthorized access",
+            "verdict": "UNVERIFIED",
+            "reason": "No verified supporting line found in the matched files.",
+            "specReference": "",
+            "obligation": "implementation",
+            "nextEvidence": "Identify the implementation file or narrow the claim, then recheck the same revision.",
+            "contract": {
+              "checked": "Bounded source inspection at the recorded commit.",
+              "established": "No sufficient source support established.",
+              "unknown": "Uninspected files, execution and complete behavior are not established.",
+              "resolve": "Identify the implementation file or narrow the claim, then recheck the same revision."
+            }
+          },
+          {
+            "claimId": "fabrication",
+            "claimText": "A vibecheckImaginaryQuantumReceipt function is defined",
+            "verdict": "UNVERIFIED",
+            "reason": "No verified supporting line found in the matched files.",
+            "specReference": "",
+            "obligation": "implementation",
+            "nextEvidence": "Identify the implementation file or narrow the claim, then recheck the same revision.",
+            "contract": {
+              "checked": "Bounded source inspection at the recorded commit.",
+              "established": "No sufficient source support established.",
+              "unknown": "Uninspected files, execution and complete behavior are not established.",
+              "resolve": "Identify the implementation file or narrow the claim, then recheck the same revision."
+            }
+          },
+          {
+            "claimId": "license",
+            "claimText": "The package declares MIT licensing in package.json",
+            "verdict": "TRUE",
+            "reason": "Verified supporting line in package.json",
+            "specReference": "package.json:15: \"license\": \"MIT\",",
+            "code": {
+              "file": "package.json",
+              "line": 15,
+              "quote": "\"license\": \"MIT\","
+            },
+            "sourceCheck": {
+              "ceiling": "full",
+              "kind": "manifest-value",
+              "note": "Parsed manifest license declaration; licensing obligations are not assessed."
+            },
+            "obligation": "implementation",
+            "nextEvidence": "Inspect the cited implementation; use an execution check before relying on runtime behavior.",
+            "contract": {
+              "checked": "Bounded source inspection at the recorded commit.",
+              "established": "The cited source supports this bounded claim.",
+              "unknown": "Uninspected files, execution and complete behavior are not established.",
+              "resolve": "Inspect the cited implementation; use an execution check before relying on runtime behavior."
+            }
+          }
+        ],
+        "headSha": "0dee2c52c7c873498f8ed7d8ee4ddd0a04d3ada8",
+        "docs": [],
+        "sourceWindows": {
+          "declaration": [
+            {
+              "file": "lib/application.js",
+              "startLine": 1,
+              "endLine": 632,
+              "truncated": false
+            },
+            {
+              "file": "package.json",
+              "startLine": 1,
+              "endLine": 100,
+              "truncated": false
+            }
+          ],
+          "universal": [
+            {
+              "file": "lib/application.js",
+              "startLine": 1,
+              "endLine": 632,
+              "truncated": false
+            },
+            {
+              "file": "package.json",
+              "startLine": 1,
+              "endLine": 100,
+              "truncated": false
+            }
+          ],
+          "fabrication": [
+            {
+              "file": "lib/application.js",
+              "startLine": 1,
+              "endLine": 632,
+              "truncated": false
+            },
+            {
+              "file": "package.json",
+              "startLine": 1,
+              "endLine": 100,
+              "truncated": false
+            }
+          ],
+          "license": [
+            {
+              "file": "lib/application.js",
+              "startLine": 1,
+              "endLine": 632,
+              "truncated": false
+            },
+            {
+              "file": "package.json",
+              "startLine": 1,
+              "endLine": 100,
+              "truncated": false
+            }
+          ]
+        },
+        "model": "gemini-3-flash-preview",
+        "modelFallback": false,
+        "usage": {
+          "model": "gemini-3-flash-preview",
+          "modelFallback": false,
+          "promptTokenCount": 9379,
+          "candidatesTokenCount": 362,
+          "thoughtsTokenCount": 4586
+        },
+        "timings": {
+          "specDocFetch": 4393,
+          "supportFileFetch": 1593,
+          "gemini": 20617,
+          "validation": 18,
+          "total": 26708
+        }
+      },
+      "providerAnswers": [
+        {
+          "model": "gemini-3-flash-preview",
+          "text": "[\n  {\n    \"claimId\": \"declaration\",\n    \"contradicts\": false,\n    \"sourceDoc\": \"\",\n    \"contradictingLine\": \"\",\n    \"reason\": \"\",\n    \"supported\": true,\n    \"coverage\": \"full\",\n    \"supportingFile\": \"lib/application.js\",\n    \"supportingQuote\": \"app.handle = function handle(req, res, callback) {\"\n  },\n  {\n    \"claimId\": \"universal\",\n    \"contradicts\": false,\n    \"sourceDoc\": \"\",\n    \"contradictingLine\": \"\",\n    \"reason\": \"The provided files do not contain any logic for authorization or access protection.\",\n    \"supported\": false,\n    \"coverage\": \"none\",\n    \"supportingFile\": \"\",\n    \"supportingQuote\": \"\"\n  },\n  {\n    \"claimId\": \"fabrication\",\n    \"contradicts\": false,\n    \"sourceDoc\": \"\",\n    \"contradictingLine\": \"\",\n    \"reason\": \"No function named vibecheckImaginaryQuantumReceipt is defined in the provided files.\",\n    \"supported\": false,\n    \"coverage\": \"none\",\n    \"supportingFile\": \"\",\n    \"supportingQuote\": \"\"\n  },\n  {\n    \"claimId\": \"license\",\n    \"contradicts\": false,\n    \"sourceDoc\": \"\",\n    \"contradictingLine\": \"\",\n    \"reason\": \"\",\n    \"supported\": true,\n    \"coverage\": \"full\",\n    \"supportingFile\": \"package.json\",\n    \"supportingQuote\": \"  \\\"license\\\": \\\"MIT\\\",\"\n  }\n]",
+          "usage": {
+            "promptTokenCount": 9379,
+            "candidatesTokenCount": 362,
+            "totalTokenCount": 14327,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 9379
+              }
+            ],
+            "thoughtsTokenCount": 4586,
+            "serviceTier": "standard"
+          }
+        }
+      ],
+      "outcomes": [
+        {
+          "id": "declaration",
+          "kind": "source-presence",
+          "allowed": [
+            "TRUE"
+          ],
+          "actual": "TRUE",
+          "baseline": "TRUE",
+          "matched": true,
+          "baselineMatched": true
+        },
+        {
+          "id": "execution",
+          "kind": "execution-boundary",
+          "allowed": [
+            "UNVERIFIED"
+          ],
+          "actual": "UNVERIFIED",
+          "baseline": "UNVERIFIED",
+          "matched": true,
+          "baselineMatched": true
+        },
+        {
+          "id": "deployment",
+          "kind": "runtime-boundary",
+          "allowed": [
+            "UNVERIFIED"
+          ],
+          "actual": "UNVERIFIED",
+          "baseline": "UNVERIFIED",
+          "matched": true,
+          "baselineMatched": true
+        },
+        {
+          "id": "universal",
+          "kind": "universal-overclaim",
+          "allowed": [
+            "UNVERIFIED",
+            "PARTIAL"
+          ],
+          "actual": "UNVERIFIED",
+          "baseline": "UNVERIFIED",
+          "matched": true,
+          "baselineMatched": true
+        },
+        {
+          "id": "fabrication",
+          "kind": "unsupported-in-inspected-source",
+          "allowed": [
+            "UNVERIFIED"
+          ],
+          "actual": "UNVERIFIED",
+          "baseline": "UNVERIFIED",
+          "matched": true,
+          "baselineMatched": true
+        },
+        {
+          "id": "license",
+          "kind": "manifest-declaration",
+          "allowed": [
+            "TRUE"
+          ],
+          "actual": "TRUE",
+          "baseline": "TRUE",
+          "matched": true,
+          "baselineMatched": true
+        }
+      ],
+      "durationMs": 28131,
+      "finishedAt": "2026-10-18T07:19:39.229Z"
+    },
+    {
+      "repository": "chalk/chalk",
+      "headSha": "47fc05abd46171b235e24174cd2dba83d25bf037",
+      "startedAt": "2026-10-18T07:19:46.519Z",
+      "providerCalls": [
+        {
+          "model": "gemini-3-flash-preview",
+          "status": "completed",
+          "durationMs": 24422
+        }
+      ],
+      "httpStatus": 200,
+      "result": {
+        "drift": [
+          {
+            "claimId": "declaration",
+            "claimText": "A createChalk function is defined",
+            "verdict": "UNVERIFIED",
+            "reason": "The cited line restates the claim; a restatement is not evidence.",
+            "specReference": "",
+            "obligation": "implementation",
+            "nextEvidence": "Identify the implementation file or narrow the claim, then recheck the same revision.",
+            "contract": {
+              "checked": "Bounded source inspection at the recorded commit.",
+              "established": "No sufficient source support established.",
+              "unknown": "Uninspected files, execution and complete behavior are not established.",
+              "resolve": "Identify the implementation file or narrow the claim, then recheck the same revision."
+            }
+          },
+          {
+            "claimId": "execution",
+            "claimText": "All tests passed",
+            "verdict": "UNVERIFIED",
+            "reason": "This claim needs an execution or deployment record for the inspected commit. Source code alone cannot establish the outcome.",
+            "specReference": "",
+            "obligation": "execution",
+            "nextEvidence": "Attach a completed CI check for this commit, including its name and result.",
+            "contract": {
+              "checked": "Source and separately attributed records; no repository code executed.",
+              "established": "No sufficient source support established.",
+              "unknown": "The claimed execution or deployment outcome is not certified.",
+              "resolve": "Attach a completed CI check for this commit, including its name and result."
+            }
+          },
+          {
+            "claimId": "deployment",
+            "claimText": "The application is deployed to production",
+            "verdict": "UNVERIFIED",
+            "reason": "This claim needs an execution or deployment record for the inspected commit. Source code alone cannot establish the outcome.",
+            "specReference": "",
+            "obligation": "runtime",
+            "nextEvidence": "Provide a deployment or runtime observation bound to this commit.",
+            "contract": {
+              "checked": "Source and separately attributed records; no repository code executed.",
+              "established": "No sufficient source support established.",
+              "unknown": "The claimed execution or deployment outcome is not certified.",
+              "resolve": "Provide a deployment or runtime observation bound to this commit."
+            }
+          },
+          {
+            "claimId": "universal",
+            "claimText": "Every route is fully protected against unauthorized access",
+            "verdict": "UNVERIFIED",
+            "reason": "No verified supporting line found in the matched files.",
+            "specReference": "",
+            "obligation": "implementation",
+            "nextEvidence": "Identify the implementation file or narrow the claim, then recheck the same revision.",
+            "contract": {
+              "checked": "Bounded source inspection at the recorded commit.",
+              "established": "No sufficient source support established.",
+              "unknown": "Uninspected files, execution and complete behavior are not established.",
+              "resolve": "Identify the implementation file or narrow the claim, then recheck the same revision."
+            }
+          },
+          {
+            "claimId": "fabrication",
+            "claimText": "A vibecheckImaginaryQuantumReceipt function is defined",
+            "verdict": "UNVERIFIED",
+            "reason": "No verified supporting line found in the matched files.",
+            "specReference": "",
+            "obligation": "implementation",
+            "nextEvidence": "Identify the implementation file or narrow the claim, then recheck the same revision.",
+            "contract": {
+              "checked": "Bounded source inspection at the recorded commit.",
+              "established": "No sufficient source support established.",
+              "unknown": "Uninspected files, execution and complete behavior are not established.",
+              "resolve": "Identify the implementation file or narrow the claim, then recheck the same revision."
+            }
+          },
+          {
+            "claimId": "license",
+            "claimText": "The package declares MIT licensing in package.json",
+            "verdict": "TRUE",
+            "reason": "Verified supporting line in package.json",
+            "specReference": "package.json:5: \"license\": \"MIT\",",
+            "code": {
+              "file": "package.json",
+              "line": 5,
+              "quote": "\"license\": \"MIT\","
+            },
+            "sourceCheck": {
+              "ceiling": "full",
+              "kind": "manifest-value",
+              "note": "Parsed manifest license declaration; licensing obligations are not assessed."
+            },
+            "obligation": "implementation",
+            "nextEvidence": "Inspect the cited implementation; use an execution check before relying on runtime behavior.",
+            "contract": {
+              "checked": "Bounded source inspection at the recorded commit.",
+              "established": "The cited source supports this bounded claim.",
+              "unknown": "Uninspected files, execution and complete behavior are not established.",
+              "resolve": "Inspect the cited implementation; use an execution check before relying on runtime behavior."
+            }
+          }
+        ],
+        "headSha": "47fc05abd46171b235e24174cd2dba83d25bf037",
+        "docs": [],
+        "sourceWindows": {
+          "declaration": [
+            {
+              "file": "source/index.js",
+              "startLine": 1,
+              "endLine": 263,
+              "truncated": false
+            },
+            {
+              "file": "package.json",
+              "startLine": 1,
+              "endLine": 93,
+              "truncated": false
+            }
+          ],
+          "universal": [
+            {
+              "file": "source/index.js",
+              "startLine": 1,
+              "endLine": 263,
+              "truncated": false
+            },
+            {
+              "file": "package.json",
+              "startLine": 1,
+              "endLine": 93,
+              "truncated": false
+            }
+          ],
+          "fabrication": [
+            {
+              "file": "source/index.js",
+              "startLine": 1,
+              "endLine": 263,
+              "truncated": false
+            },
+            {
+              "file": "package.json",
+              "startLine": 1,
+              "endLine": 93,
+              "truncated": false
+            }
+          ],
+          "license": [
+            {
+              "file": "source/index.js",
+              "startLine": 1,
+              "endLine": 263,
+              "truncated": false
+            },
+            {
+              "file": "package.json",
+              "startLine": 1,
+              "endLine": 93,
+              "truncated": false
+            }
+          ]
+        },
+        "model": "gemini-3-flash-preview",
+        "modelFallback": false,
+        "usage": {
+          "model": "gemini-3-flash-preview",
+          "modelFallback": false,
+          "promptTokenCount": 5676,
+          "candidatesTokenCount": 356,
+          "thoughtsTokenCount": 3364
+        },
+        "timings": {
+          "specDocFetch": 6104,
+          "supportFileFetch": 2539,
+          "gemini": 24422,
+          "validation": 1,
+          "total": 33067
+        }
+      },
+      "providerAnswers": [
+        {
+          "model": "gemini-3-flash-preview",
+          "text": "[\n\t{\n\t\t\"claimId\": \"declaration\",\n\t\t\"contradicts\": false,\n\t\t\"sourceDoc\": \"\",\n\t\t\"contradictingLine\": \"\",\n\t\t\"reason\": \"\",\n\t\t\"supported\": true,\n\t\t\"coverage\": \"full\",\n\t\t\"supportingFile\": \"source/index.js\",\n\t\t\"supportingQuote\": \"function createChalk(options) {\"\n\t},\n\t{\n\t\t\"claimId\": \"universal\",\n\t\t\"contradicts\": false,\n\t\t\"sourceDoc\": \"\",\n\t\t\"contradictingLine\": \"\",\n\t\t\"reason\": \"The matched files do not contain any routing or authorization logic.\",\n\t\t\"supported\": false,\n\t\t\"coverage\": \"none\",\n\t\t\"supportingFile\": \"\",\n\t\t\"supportingQuote\": \"\"\n\t},\n\t{\n\t\t\"claimId\": \"fabrication\",\n\t\t\"contradicts\": false,\n\t\t\"sourceDoc\": \"\",\n\t\t\"contradictingLine\": \"\",\n\t\t\"reason\": \"The matched files do not contain a definition for the function vibecheckImaginaryQuantumReceipt.\",\n\t\t\"supported\": false,\n\t\t\"coverage\": \"none\",\n\t\t\"supportingFile\": \"\",\n\t\t\"supportingQuote\": \"\"\n\t},\n\t{\n\t\t\"claimId\": \"license\",\n\t\t\"contradicts\": false,\n\t\t\"sourceDoc\": \"\",\n\t\t\"contradictingLine\": \"\",\n\t\t\"reason\": \"\",\n\t\t\"supported\": true,\n\t\t\"coverage\": \"full\",\n\t\t\"supportingFile\": \"package.json\",\n\t\t\"supportingQuote\": \"\\t\\\"license\\\": \\\"MIT\\\",\"\n\t}\n]",
+          "usage": {
+            "promptTokenCount": 5676,
+            "candidatesTokenCount": 356,
+            "totalTokenCount": 9396,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 5676
+              }
+            ],
+            "thoughtsTokenCount": 3364,
+            "serviceTier": "standard"
+          }
+        }
+      ],
+      "outcomes": [
+        {
+          "id": "declaration",
+          "kind": "source-presence",
+          "allowed": [
+            "TRUE"
+          ],
+          "actual": "UNVERIFIED",
+          "baseline": "TRUE",
+          "matched": false,
+          "baselineMatched": true
+        },
+        {
+          "id": "execution",
+          "kind": "execution-boundary",
+          "allowed": [
+            "UNVERIFIED"
+          ],
+          "actual": "UNVERIFIED",
+          "baseline": "UNVERIFIED",
+          "matched": true,
+          "baselineMatched": true
+        },
+        {
+          "id": "deployment",
+          "kind": "runtime-boundary",
+          "allowed": [
+            "UNVERIFIED"
+          ],
+          "actual": "UNVERIFIED",
+          "baseline": "UNVERIFIED",
+          "matched": true,
+          "baselineMatched": true
+        },
+        {
+          "id": "universal",
+          "kind": "universal-overclaim",
+          "allowed": [
+            "UNVERIFIED",
+            "PARTIAL"
+          ],
+          "actual": "UNVERIFIED",
+          "baseline": "UNVERIFIED",
+          "matched": true,
+          "baselineMatched": true
+        },
+        {
+          "id": "fabrication",
+          "kind": "unsupported-in-inspected-source",
+          "allowed": [
+            "UNVERIFIED"
+          ],
+          "actual": "UNVERIFIED",
+          "baseline": "UNVERIFIED",
+          "matched": true,
+          "baselineMatched": true
+        },
+        {
+          "id": "license",
+          "kind": "manifest-declaration",
+          "allowed": [
+            "TRUE"
+          ],
+          "actual": "TRUE",
+          "baseline": "TRUE",
+          "matched": true,
+          "baselineMatched": true
+        }
+      ],
+      "durationMs": 34428,
+      "finishedAt": "2026-10-18T07:20:21.057Z"
+    },
+    {
+      "repository": "pallets/flask",
+      "headSha": "d086db856be187255b8ec61ef409357393020f32",
+      "startedAt": "2026-10-18T07:20:34.293Z",
+      "providerCalls": [
+        {
+          "model": "gemini-3-flash-preview",
+          "status": "failed",
+          "durationMs": 25184,
+          "error": "This operation was aborted"
+        },
+        {
+          "model": "gemini-3.1-flash-lite",
+          "status": "completed",
+          "durationMs": 11076
+        }
+      ],
+      "httpStatus": 200,
+      "result": {
+        "drift": [
+          {
+            "claimId": "declaration",
+            "claimText": "A wsgi_app function is defined",
+            "verdict": "TRUE",
+            "reason": "Verified supporting line in src/flask/app.py",
+            "specReference": "src/flask/app.py:1566: def wsgi_app(",
+            "code": {
+              "file": "src/flask/app.py",
+              "line": 1566,
+              "quote": "def wsgi_app("
+            },
+            "sourceCheck": {
+              "ceiling": "full",
+              "kind": "source-line",
+              "note": "Exact source support; reachability and execution remain outside this check."
+            },
+            "obligation": "implementation",
+            "nextEvidence": "Inspect the cited implementation; use an execution check before relying on runtime behavior.",
+            "contract": {
+              "checked": "Bounded source inspection at the recorded commit.",
+              "established": "The cited source supports this bounded claim.",
+              "unknown": "Uninspected files, execution and complete behavior are not established.",
+              "resolve": "Inspect the cited implementation; use an execution check before relying on runtime behavior."
+            }
+          },
+          {
+            "claimId": "execution",
+            "claimText": "All tests passed",
+            "verdict": "UNVERIFIED",
+            "reason": "This claim needs an execution or deployment record for the inspected commit. Source code alone cannot establish the outcome.",
+            "specReference": "",
+            "obligation": "execution",
+            "nextEvidence": "Attach a completed CI check for this commit, including its name and result.",
+            "contract": {
+              "checked": "Source and separately attributed records; no repository code executed.",
+              "established": "No sufficient source support established.",
+              "unknown": "The claimed execution or deployment outcome is not certified.",
+              "resolve": "Attach a completed CI check for this commit, including its name and result."
+            }
+          },
+          {
+            "claimId": "deployment",
+            "claimText": "The application is deployed to production",
+            "verdict": "UNVERIFIED",
+            "reason": "This claim needs an execution or deployment record for the inspected commit. Source code alone cannot establish the outcome.",
+            "specReference": "",
+            "obligation": "runtime",
+            "nextEvidence": "Provide a deployment or runtime observation bound to this commit.",
+            "contract": {
+              "checked": "Source and separately attributed records; no repository code executed.",
+              "established": "No sufficient source support established.",
+              "unknown": "The claimed execution or deployment outcome is not certified.",
+              "resolve": "Provide a deployment or runtime observation bound to this commit."
+            }
+          },
+          {
+            "claimId": "universal",
+            "claimText": "Every route is fully protected against unauthorized access",
+            "verdict": "UNVERIFIED",
+            "reason": "No verified supporting line found in the matched files.",
+            "specReference": "",
+            "obligation": "implementation",
+            "nextEvidence": "Identify the implementation file or narrow the claim, then recheck the same revision.",
+            "contract": {
+              "checked": "Bounded source inspection at the recorded commit.",
+              "established": "No sufficient source support established.",
+              "unknown": "Uninspected files, execution and complete behavior are not established.",
+              "resolve": "Identify the implementation file or narrow the claim, then recheck the same revision."
+            }
+          },
+          {
+            "claimId": "fabrication",
+            "claimText": "A vibecheckImaginaryQuantumReceipt function is defined",
+            "verdict": "UNVERIFIED",
+            "reason": "No verified supporting line found in the matched files.",
+            "specReference": "",
+            "obligation": "implementation",
+            "nextEvidence": "Identify the implementation file or narrow the claim, then recheck the same revision.",
+            "contract": {
+              "checked": "Bounded source inspection at the recorded commit.",
+              "established": "No sufficient source support established.",
+              "unknown": "Uninspected files, execution and complete behavior are not established.",
+              "resolve": "Identify the implementation file or narrow the claim, then recheck the same revision."
+            }
+          }
+        ],
+        "headSha": "d086db856be187255b8ec61ef409357393020f32",
+        "docs": [],
+        "sourceWindows": {
+          "declaration": [
+            {
+              "file": "src/flask/app.py",
+              "startLine": 1558,
+              "endLine": 1626,
+              "truncated": true
+            },
+            {
+              "file": "pyproject.toml",
+              "startLine": 1,
+              "endLine": 273,
+              "truncated": false
+            }
+          ],
+          "universal": [
+            {
+              "file": "src/flask/app.py",
+              "startLine": 280,
+              "endLine": 785,
+              "truncated": true
+            },
+            {
+              "file": "pyproject.toml",
+              "startLine": 1,
+              "endLine": 273,
+              "truncated": false
+            }
+          ],
+          "fabrication": [
+            {
+              "file": "src/flask/app.py",
+              "startLine": 1,
+              "endLine": 509,
+              "truncated": true
+            },
+            {
+              "file": "pyproject.toml",
+              "startLine": 1,
+              "endLine": 273,
+              "truncated": false
+            }
+          ]
+        },
+        "model": "gemini-3.1-flash-lite",
+        "modelFallback": true,
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 19696,
+          "candidatesTokenCount": 274,
+          "thoughtsTokenCount": null
+        },
+        "timings": {
+          "specDocFetch": 3468,
+          "supportFileFetch": 7647,
+          "gemini": 36261,
+          "validation": 1,
+          "total": 47378
+        }
+      },
+      "providerAnswers": [
+        {
+          "model": "gemini-3.1-flash-lite",
+          "text": "[\n  {\n    \"claimId\": \"declaration\",\n    \"contradicts\": false,\n    \"sourceDoc\": \"\",\n    \"contradictingLine\": \"\",\n    \"reason\": \"\",\n    \"supported\": true,\n    \"coverage\": \"full\",\n    \"supportingFile\": \"src/flask/app.py\",\n    \"supportingQuote\": \"    def wsgi_app(\"\n  },\n  {\n    \"claimId\": \"universal\",\n    \"contradicts\": false,\n    \"sourceDoc\": \"\",\n    \"contradictingLine\": \"\",\n    \"reason\": \"The provided code does not implement any authorization or access control logic for routes.\",\n    \"supported\": false,\n    \"coverage\": \"none\",\n    \"supportingFile\": \"\",\n    \"supportingQuote\": \"\"\n  },\n  {\n    \"claimId\": \"fabrication\",\n    \"contradicts\": false,\n    \"sourceDoc\": \"\",\n    \"contradictingLine\": \"\",\n    \"reason\": \"No function named 'vibecheckImaginaryQuantumReceipt' exists in the provided files.\",\n    \"supported\": false,\n    \"coverage\": \"none\",\n    \"supportingFile\": \"\",\n    \"supportingQuote\": \"\"\n  }\n]",
+          "usage": {
+            "promptTokenCount": 19696,
+            "candidatesTokenCount": 274,
+            "totalTokenCount": 19970,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 19696
+              }
+            ],
+            "serviceTier": "standard"
+          }
+        }
+      ],
+      "outcomes": [
+        {
+          "id": "declaration",
+          "kind": "source-presence",
+          "allowed": [
+            "TRUE"
+          ],
+          "actual": "TRUE",
+          "baseline": "TRUE",
+          "matched": true,
+          "baselineMatched": true
+        },
+        {
+          "id": "execution",
+          "kind": "execution-boundary",
+          "allowed": [
+            "UNVERIFIED"
+          ],
+          "actual": "UNVERIFIED",
+          "baseline": "UNVERIFIED",
+          "matched": true,
+          "baselineMatched": true
+        },
+        {
+          "id": "deployment",
+          "kind": "runtime-boundary",
+          "allowed": [
+            "UNVERIFIED"
+          ],
+          "actual": "UNVERIFIED",
+          "baseline": "UNVERIFIED",
+          "matched": true,
+          "baselineMatched": true
+        },
+        {
+          "id": "universal",
+          "kind": "universal-overclaim",
+          "allowed": [
+            "UNVERIFIED",
+            "PARTIAL"
+          ],
+          "actual": "UNVERIFIED",
+          "baseline": "UNVERIFIED",
+          "matched": true,
+          "baselineMatched": true
+        },
+        {
+          "id": "fabrication",
+          "kind": "unsupported-in-inspected-source",
+          "allowed": [
+            "UNVERIFIED"
+          ],
+          "actual": "UNVERIFIED",
+          "baseline": "UNVERIFIED",
+          "matched": true,
+          "baselineMatched": true
+        }
+      ],
+      "durationMs": 51139,
+      "finishedAt": "2026-10-18T07:21:25.432Z"
+    },
+    {
+      "repository": "psf/requests",
+      "headSha": "611c6162cbc4ac2020a2f91c7cfa4f3abf9bbb60",
+      "startedAt": "2026-10-18T07:21:32.673Z",
+      "providerCalls": [
+        {
+          "model": "gemini-3-flash-preview",
+          "status": "completed",
+          "durationMs": 14903
+        }
+      ],
+      "httpStatus": 200,
+      "result": {
+        "drift": [
+          {
+            "claimId": "declaration",
+            "claimText": "A get function is defined",
+            "verdict": "TRUE",
+            "reason": "Verified supporting line in src/requests/api.py",
+            "specReference": "src/requests/api.py:74: def get(",
+            "code": {
+              "file": "src/requests/api.py",
+              "line": 74,
+              "quote": "def get("
+            },
+            "sourceCheck": {
+              "ceiling": "full",
+              "kind": "source-line",
+              "note": "Exact source support; reachability and execution remain outside this check."
+            },
+            "obligation": "implementation",
+            "nextEvidence": "Inspect the cited implementation; use an execution check before relying on runtime behavior.",
+            "contract": {
+              "checked": "Bounded source inspection at the recorded commit.",
+              "established": "The cited source supports this bounded claim.",
+              "unknown": "Uninspected files, execution and complete behavior are not established.",
+              "resolve": "Inspect the cited implementation; use an execution check before relying on runtime behavior."
+            }
+          },
+          {
+            "claimId": "execution",
+            "claimText": "All tests passed",
+            "verdict": "UNVERIFIED",
+            "reason": "This claim needs an execution or deployment record for the inspected commit. Source code alone cannot establish the outcome.",
+            "specReference": "",
+            "obligation": "execution",
+            "nextEvidence": "Attach a completed CI check for this commit, including its name and result.",
+            "contract": {
+              "checked": "Source and separately attributed records; no repository code executed.",
+              "established": "No sufficient source support established.",
+              "unknown": "The claimed execution or deployment outcome is not certified.",
+              "resolve": "Attach a completed CI check for this commit, including its name and result."
+            }
+          },
+          {
+            "claimId": "deployment",
+            "claimText": "The application is deployed to production",
+            "verdict": "UNVERIFIED",
+            "reason": "This claim needs an execution or deployment record for the inspected commit. Source code alone cannot establish the outcome.",
+            "specReference": "",
+            "obligation": "runtime",
+            "nextEvidence": "Provide a deployment or runtime observation bound to this commit.",
+            "contract": {
+              "checked": "Source and separately attributed records; no repository code executed.",
+              "established": "No sufficient source support established.",
+              "unknown": "The claimed execution or deployment outcome is not certified.",
+              "resolve": "Provide a deployment or runtime observation bound to this commit."
+            }
+          },
+          {
+            "claimId": "universal",
+            "claimText": "Every route is fully protected against unauthorized access",
+            "verdict": "UNVERIFIED",
+            "reason": "No verified supporting line found in the matched files.",
+            "specReference": "",
+            "obligation": "implementation",
+            "nextEvidence": "Identify the implementation file or narrow the claim, then recheck the same revision.",
+            "contract": {
+              "checked": "Bounded source inspection at the recorded commit.",
+              "established": "No sufficient source support established.",
+              "unknown": "Uninspected files, execution and complete behavior are not established.",
+              "resolve": "Identify the implementation file or narrow the claim, then recheck the same revision."
+            }
+          },
+          {
+            "claimId": "fabrication",
+            "claimText": "A vibecheckImaginaryQuantumReceipt function is defined",
+            "verdict": "UNVERIFIED",
+            "reason": "No verified supporting line found in the matched files.",
+            "specReference": "",
+            "obligation": "implementation",
+            "nextEvidence": "Identify the implementation file or narrow the claim, then recheck the same revision.",
+            "contract": {
+              "checked": "Bounded source inspection at the recorded commit.",
+              "established": "No sufficient source support established.",
+              "unknown": "Uninspected files, execution and complete behavior are not established.",
+              "resolve": "Identify the implementation file or narrow the claim, then recheck the same revision."
+            }
+          }
+        ],
+        "headSha": "611c6162cbc4ac2020a2f91c7cfa4f3abf9bbb60",
+        "docs": [],
+        "sourceWindows": {
+          "declaration": [
+            {
+              "file": "src/requests/api.py",
+              "startLine": 1,
+              "endLine": 181,
+              "truncated": false
+            },
+            {
+              "file": "pyproject.toml",
+              "startLine": 1,
+              "endLine": 126,
+              "truncated": false
+            }
+          ],
+          "universal": [
+            {
+              "file": "src/requests/api.py",
+              "startLine": 1,
+              "endLine": 181,
+              "truncated": false
+            },
+            {
+              "file": "pyproject.toml",
+              "startLine": 1,
+              "endLine": 126,
+              "truncated": false
+            }
+          ],
+          "fabrication": [
+            {
+              "file": "src/requests/api.py",
+              "startLine": 1,
+              "endLine": 181,
+              "truncated": false
+            },
+            {
+              "file": "pyproject.toml",
+              "startLine": 1,
+              "endLine": 126,
+              "truncated": false
+            }
+          ]
+        },
+        "model": "gemini-3-flash-preview",
+        "modelFallback": false,
+        "usage": {
+          "model": "gemini-3-flash-preview",
+          "modelFallback": false,
+          "promptTokenCount": 5081,
+          "candidatesTokenCount": 269,
+          "thoughtsTokenCount": 2413
+        },
+        "timings": {
+          "specDocFetch": 5955,
+          "supportFileFetch": 2498,
+          "gemini": 14903,
+          "validation": 1,
+          "total": 23367
+        }
+      },
+      "providerAnswers": [
+        {
+          "model": "gemini-3-flash-preview",
+          "text": "[\n  {\n    \"claimId\": \"declaration\",\n    \"contradicts\": false,\n    \"sourceDoc\": \"\",\n    \"contradictingLine\": \"\",\n    \"reason\": \"\",\n    \"supported\": true,\n    \"coverage\": \"full\",\n    \"supportingFile\": \"src/requests/api.py\",\n    \"supportingQuote\": \"def get(\"\n  },\n  {\n    \"claimId\": \"universal\",\n    \"contradicts\": false,\n    \"sourceDoc\": \"\",\n    \"contradictingLine\": \"\",\n    \"reason\": \"The provided files do not contain any route definitions or authorization logic.\",\n    \"supported\": false,\n    \"coverage\": \"none\",\n    \"supportingFile\": \"\",\n    \"supportingQuote\": \"\"\n  },\n  {\n    \"claimId\": \"fabrication\",\n    \"contradicts\": false,\n    \"sourceDoc\": \"\",\n    \"contradictingLine\": \"\",\n    \"reason\": \"The function 'vibecheckImaginaryQuantumReceipt' is not defined in the provided files.\",\n    \"supported\": false,\n    \"coverage\": \"none\",\n    \"supportingFile\": \"\",\n    \"supportingQuote\": \"\"\n  }\n]",
+          "usage": {
+            "promptTokenCount": 5081,
+            "candidatesTokenCount": 269,
+            "totalTokenCount": 7763,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 5081
+              }
+            ],
+            "thoughtsTokenCount": 2413,
+            "serviceTier": "standard"
+          }
+        }
+      ],
+      "outcomes": [
+        {
+          "id": "declaration",
+          "kind": "source-presence",
+          "allowed": [
+            "TRUE"
+          ],
+          "actual": "TRUE",
+          "baseline": "TRUE",
+          "matched": true,
+          "baselineMatched": true
+        },
+        {
+          "id": "execution",
+          "kind": "execution-boundary",
+          "allowed": [
+            "UNVERIFIED"
+          ],
+          "actual": "UNVERIFIED",
+          "baseline": "UNVERIFIED",
+          "matched": true,
+          "baselineMatched": true
+        },
+        {
+          "id": "deployment",
+          "kind": "runtime-boundary",
+          "allowed": [
+            "UNVERIFIED"
+          ],
+          "actual": "UNVERIFIED",
+          "baseline": "UNVERIFIED",
+          "matched": true,
+          "baselineMatched": true
+        },
+        {
+          "id": "universal",
+          "kind": "universal-overclaim",
+          "allowed": [
+            "UNVERIFIED",
+            "PARTIAL"
+          ],
+          "actual": "UNVERIFIED",
+          "baseline": "UNVERIFIED",
+          "matched": true,
+          "baselineMatched": true
+        },
+        {
+          "id": "fabrication",
+          "kind": "unsupported-in-inspected-source",
+          "allowed": [
+            "UNVERIFIED"
+          ],
+          "actual": "UNVERIFIED",
+          "baseline": "UNVERIFIED",
+          "matched": true,
+          "baselineMatched": true
+        }
+      ],
+      "durationMs": 24494,
+      "finishedAt": "2026-10-18T07:21:57.168Z"
+    },
+    {
+      "repository": "honojs/hono",
+      "headSha": "5ca49b0720755c585c9a9835f0a479ceea36fb52",
+      "startedAt": "2026-10-18T07:22:01.538Z",
+      "providerCalls": [
+        {
+          "model": "gemini-3-flash-preview",
+          "status": "completed",
+          "durationMs": 15757
+        }
+      ],
+      "httpStatus": 200,
+      "result": {
+        "drift": [
+          {
+            "claimId": "declaration",
+            "claimText": "A Hono class is defined",
+            "verdict": "TRUE",
+            "reason": "Verified supporting line in src/hono.ts",
+            "specReference": "src/hono.ts:16: export class Hono<",
+            "code": {
+              "file": "src/hono.ts",
+              "line": 16,
+              "quote": "export class Hono<"
+            },
+            "sourceCheck": {
+              "ceiling": "full",
+              "kind": "source-line",
+              "note": "Exact source support; reachability and execution remain outside this check."
+            },
+            "obligation": "implementation",
+            "nextEvidence": "Inspect the cited implementation; use an execution check before relying on runtime behavior.",
+            "contract": {
+              "checked": "Bounded source inspection at the recorded commit.",
+              "established": "The cited source supports this bounded claim.",
+              "unknown": "Uninspected files, execution and complete behavior are not established.",
+              "resolve": "Inspect the cited implementation; use an execution check before relying on runtime behavior."
+            }
+          },
+          {
+            "claimId": "execution",
+            "claimText": "All tests passed",
+            "verdict": "UNVERIFIED",
+            "reason": "This claim needs an execution or deployment record for the inspected commit. Source code alone cannot establish the outcome.",
+            "specReference": "",
+            "obligation": "execution",
+            "nextEvidence": "Attach a completed CI check for this commit, including its name and result.",
+            "contract": {
+              "checked": "Source and separately attributed records; no repository code executed.",
+              "established": "No sufficient source support established.",
+              "unknown": "The claimed execution or deployment outcome is not certified.",
+              "resolve": "Attach a completed CI check for this commit, including its name and result."
+            }
+          },
+          {
+            "claimId": "deployment",
+            "claimText": "The application is deployed to production",
+            "verdict": "UNVERIFIED",
+            "reason": "This claim needs an execution or deployment record for the inspected commit. Source code alone cannot establish the outcome.",
+            "specReference": "",
+            "obligation": "runtime",
+            "nextEvidence": "Provide a deployment or runtime observation bound to this commit.",
+            "contract": {
+              "checked": "Source and separately attributed records; no repository code executed.",
+              "established": "No sufficient source support established.",
+              "unknown": "The claimed execution or deployment outcome is not certified.",
+              "resolve": "Provide a deployment or runtime observation bound to this commit."
+            }
+          },
+          {
+            "claimId": "universal",
+            "claimText": "Every route is fully protected against unauthorized access",
+            "verdict": "UNVERIFIED",
+            "reason": "No verified supporting line found in the matched files.",
+            "specReference": "",
+            "obligation": "implementation",
+            "nextEvidence": "Identify the implementation file or narrow the claim, then recheck the same revision.",
+            "contract": {
+              "checked": "Bounded source inspection at the recorded commit.",
+              "established": "No sufficient source support established.",
+              "unknown": "Uninspected files, execution and complete behavior are not established.",
+              "resolve": "Identify the implementation file or narrow the claim, then recheck the same revision."
+            }
+          },
+          {
+            "claimId": "fabrication",
+            "claimText": "A vibecheckImaginaryQuantumReceipt function is defined",
+            "verdict": "UNVERIFIED",
+            "reason": "No verified supporting line found in the matched files.",
+            "specReference": "",
+            "obligation": "implementation",
+            "nextEvidence": "Identify the implementation file or narrow the claim, then recheck the same revision.",
+            "contract": {
+              "checked": "Bounded source inspection at the recorded commit.",
+              "established": "No sufficient source support established.",
+              "unknown": "Uninspected files, execution and complete behavior are not established.",
+              "resolve": "Identify the implementation file or narrow the claim, then recheck the same revision."
+            }
+          },
+          {
+            "claimId": "license",
+            "claimText": "The package declares MIT licensing in package.json",
+            "verdict": "TRUE",
+            "reason": "Verified supporting line in package.json",
+            "specReference": "package.json:660: \"license\": \"MIT\",",
+            "code": {
+              "file": "package.json",
+              "line": 660,
+              "quote": "\"license\": \"MIT\","
+            },
+            "sourceCheck": {
+              "ceiling": "full",
+              "kind": "manifest-value",
+              "note": "Parsed manifest license declaration; licensing obligations are not assessed."
+            },
+            "obligation": "implementation",
+            "nextEvidence": "Inspect the cited implementation; use an execution check before relying on runtime behavior.",
+            "contract": {
+              "checked": "Bounded source inspection at the recorded commit.",
+              "established": "The cited source supports this bounded claim.",
+              "unknown": "Uninspected files, execution and complete behavior are not established.",
+              "resolve": "Inspect the cited implementation; use an execution check before relying on runtime behavior."
+            }
+          }
+        ],
+        "headSha": "5ca49b0720755c585c9a9835f0a479ceea36fb52",
+        "docs": [],
+        "sourceWindows": {
+          "declaration": [
+            {
+              "file": "src/hono.ts",
+              "startLine": 1,
+              "endLine": 35,
+              "truncated": false
+            },
+            {
+              "file": "package.json",
+              "startLine": 1,
+              "endLine": 715,
+              "truncated": false
+            }
+          ],
+          "universal": [
+            {
+              "file": "src/hono.ts",
+              "startLine": 1,
+              "endLine": 35,
+              "truncated": false
+            },
+            {
+              "file": "package.json",
+              "startLine": 1,
+              "endLine": 715,
+              "truncated": false
+            }
+          ],
+          "fabrication": [
+            {
+              "file": "src/hono.ts",
+              "startLine": 1,
+              "endLine": 35,
+              "truncated": false
+            },
+            {
+              "file": "package.json",
+              "startLine": 1,
+              "endLine": 715,
+              "truncated": false
+            }
+          ],
+          "license": [
+            {
+              "file": "src/hono.ts",
+              "startLine": 1,
+              "endLine": 35,
+              "truncated": false
+            },
+            {
+              "file": "package.json",
+              "startLine": 1,
+              "endLine": 715,
+              "truncated": false
+            }
+          ]
+        },
+        "model": "gemini-3-flash-preview",
+        "modelFallback": false,
+        "usage": {
+          "model": "gemini-3-flash-preview",
+          "modelFallback": false,
+          "promptTokenCount": 12399,
+          "candidatesTokenCount": 370,
+          "thoughtsTokenCount": 1273
+        },
+        "timings": {
+          "specDocFetch": 4736,
+          "supportFileFetch": 1093,
+          "gemini": 15757,
+          "validation": 4,
+          "total": 21592
+        }
+      },
+      "providerAnswers": [
+        {
+          "model": "gemini-3-flash-preview",
+          "text": "[\n  {\n    \"claimId\": \"declaration\",\n    \"contradicts\": false,\n    \"sourceDoc\": \"\",\n    \"contradictingLine\": \"\",\n    \"reason\": \"\",\n    \"supported\": true,\n    \"coverage\": \"full\",\n    \"supportingFile\": \"src/hono.ts\",\n    \"supportingQuote\": \"export class Hono<\"\n  },\n  {\n    \"claimId\": \"universal\",\n    \"contradicts\": false,\n    \"sourceDoc\": \"\",\n    \"contradictingLine\": \"\",\n    \"reason\": \"The provided files define the Hono class and package configuration but do not contain any logic or configuration that ensures every route is protected against unauthorized access.\",\n    \"supported\": false,\n    \"coverage\": \"none\",\n    \"supportingFile\": \"\",\n    \"supportingQuote\": \"\"\n  },\n  {\n    \"claimId\": \"fabrication\",\n    \"contradicts\": false,\n    \"sourceDoc\": \"\",\n    \"contradictingLine\": \"\",\n    \"reason\": \"No function named vibecheckImaginaryQuantumReceipt is defined in the provided files.\",\n    \"supported\": false,\n    \"coverage\": \"none\",\n    \"supportingFile\": \"\",\n    \"supportingQuote\": \"\"\n  },\n  {\n    \"claimId\": \"license\",\n    \"contradicts\": false,\n    \"sourceDoc\": \"\",\n    \"contradictingLine\": \"\",\n    \"reason\": \"\",\n    \"supported\": true,\n    \"coverage\": \"full\",\n    \"supportingFile\": \"package.json\",\n    \"supportingQuote\": \"  \\\"license\\\": \\\"MIT\\\",\"\n  }\n]",
+          "usage": {
+            "promptTokenCount": 12399,
+            "candidatesTokenCount": 370,
+            "totalTokenCount": 14042,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 12399
+              }
+            ],
+            "thoughtsTokenCount": 1273,
+            "serviceTier": "standard"
+          }
+        }
+      ],
+      "outcomes": [
+        {
+          "id": "declaration",
+          "kind": "source-presence",
+          "allowed": [
+            "TRUE"
+          ],
+          "actual": "TRUE",
+          "baseline": "TRUE",
+          "matched": true,
+          "baselineMatched": true
+        },
+        {
+          "id": "execution",
+          "kind": "execution-boundary",
+          "allowed": [
+            "UNVERIFIED"
+          ],
+          "actual": "UNVERIFIED",
+          "baseline": "UNVERIFIED",
+          "matched": true,
+          "baselineMatched": true
+        },
+        {
+          "id": "deployment",
+          "kind": "runtime-boundary",
+          "allowed": [
+            "UNVERIFIED"
+          ],
+          "actual": "UNVERIFIED",
+          "baseline": "UNVERIFIED",
+          "matched": true,
+          "baselineMatched": true
+        },
+        {
+          "id": "universal",
+          "kind": "universal-overclaim",
+          "allowed": [
+            "UNVERIFIED",
+            "PARTIAL"
+          ],
+          "actual": "UNVERIFIED",
+          "baseline": "UNVERIFIED",
+          "matched": true,
+          "baselineMatched": true
+        },
+        {
+          "id": "fabrication",
+          "kind": "unsupported-in-inspected-source",
+          "allowed": [
+            "UNVERIFIED"
+          ],
+          "actual": "UNVERIFIED",
+          "baseline": "UNVERIFIED",
+          "matched": true,
+          "baselineMatched": true
+        },
+        {
+          "id": "license",
+          "kind": "manifest-declaration",
+          "allowed": [
+            "TRUE"
+          ],
+          "actual": "TRUE",
+          "baseline": "TRUE",
+          "matched": true,
+          "baselineMatched": true
+        }
+      ],
+      "durationMs": 21771,
+      "finishedAt": "2026-10-18T07:22:23.326Z"
+    },
+    {
+      "repository": "colinhacks/zod",
+      "headSha": "680d19f7d1e042e55934209caeb79bc843b94f44",
+      "startedAt": "2026-10-18T07:22:27.423Z",
+      "providerCalls": [
+        {
+          "model": "gemini-3-flash-preview",
+          "status": "completed",
+          "durationMs": 7811
+        }
+      ],
+      "httpStatus": 200,
+      "result": {
+        "drift": [
+          {
+            "claimId": "declaration",
+            "claimText": "The entry point exports bindings",
+            "verdict": "TRUE",
+            "reason": "Verified supporting line in packages/zod/src/index.ts",
+            "specReference": "packages/zod/src/index.ts:7: export { z, z as default };",
+            "code": {
+              "file": "packages/zod/src/index.ts",
+              "line": 7,
+              "quote": "export { z, z as default };"
+            },
+            "sourceCheck": {
+              "ceiling": "full",
+              "kind": "source-line",
+              "note": "Exact source support; reachability and execution remain outside this check."
+            },
+            "obligation": "implementation",
+            "nextEvidence": "Inspect the cited implementation; use an execution check before relying on runtime behavior.",
+            "contract": {
+              "checked": "Bounded source inspection at the recorded commit.",
+              "established": "The cited source supports this bounded claim.",
+              "unknown": "Uninspected files, execution and complete behavior are not established.",
+              "resolve": "Inspect the cited implementation; use an execution check before relying on runtime behavior."
+            }
+          },
+          {
+            "claimId": "execution",
+            "claimText": "All tests passed",
+            "verdict": "UNVERIFIED",
+            "reason": "This claim needs an execution or deployment record for the inspected commit. Source code alone cannot establish the outcome.",
+            "specReference": "",
+            "obligation": "execution",
+            "nextEvidence": "Attach a completed CI check for this commit, including its name and result.",
+            "contract": {
+              "checked": "Source and separately attributed records; no repository code executed.",
+              "established": "No sufficient source support established.",
+              "unknown": "The claimed execution or deployment outcome is not certified.",
+              "resolve": "Attach a completed CI check for this commit, including its name and result."
+            }
+          },
+          {
+            "claimId": "deployment",
+            "claimText": "The application is deployed to production",
+            "verdict": "UNVERIFIED",
+            "reason": "This claim needs an execution or deployment record for the inspected commit. Source code alone cannot establish the outcome.",
+            "specReference": "",
+            "obligation": "runtime",
+            "nextEvidence": "Provide a deployment or runtime observation bound to this commit.",
+            "contract": {
+              "checked": "Source and separately attributed records; no repository code executed.",
+              "established": "No sufficient source support established.",
+              "unknown": "The claimed execution or deployment outcome is not certified.",
+              "resolve": "Provide a deployment or runtime observation bound to this commit."
+            }
+          },
+          {
+            "claimId": "universal",
+            "claimText": "Every route is fully protected against unauthorized access",
+            "verdict": "UNVERIFIED",
+            "reason": "No verified supporting line found in the matched files.",
+            "specReference": "",
+            "obligation": "implementation",
+            "nextEvidence": "Identify the implementation file or narrow the claim, then recheck the same revision.",
+            "contract": {
+              "checked": "Bounded source inspection at the recorded commit.",
+              "established": "No sufficient source support established.",
+              "unknown": "Uninspected files, execution and complete behavior are not established.",
+              "resolve": "Identify the implementation file or narrow the claim, then recheck the same revision."
+            }
+          },
+          {
+            "claimId": "fabrication",
+            "claimText": "A vibecheckImaginaryQuantumReceipt function is defined",
+            "verdict": "UNVERIFIED",
+            "reason": "No verified supporting line found in the matched files.",
+            "specReference": "",
+            "obligation": "implementation",
+            "nextEvidence": "Identify the implementation file or narrow the claim, then recheck the same revision.",
+            "contract": {
+              "checked": "Bounded source inspection at the recorded commit.",
+              "established": "No sufficient source support established.",
+              "unknown": "Uninspected files, execution and complete behavior are not established.",
+              "resolve": "Identify the implementation file or narrow the claim, then recheck the same revision."
+            }
+          }
+        ],
+        "headSha": "680d19f7d1e042e55934209caeb79bc843b94f44",
+        "docs": [],
+        "sourceWindows": {
+          "declaration": [
+            {
+              "file": "packages/zod/src/index.ts",
+              "startLine": 1,
+              "endLine": 8,
+              "truncated": false
+            },
+            {
+              "file": "package.json",
+              "startLine": 1,
+              "endLine": 98,
+              "truncated": false
+            }
+          ],
+          "universal": [
+            {
+              "file": "packages/zod/src/index.ts",
+              "startLine": 1,
+              "endLine": 8,
+              "truncated": false
+            },
+            {
+              "file": "package.json",
+              "startLine": 1,
+              "endLine": 98,
+              "truncated": false
+            }
+          ],
+          "fabrication": [
+            {
+              "file": "packages/zod/src/index.ts",
+              "startLine": 1,
+              "endLine": 8,
+              "truncated": false
+            },
+            {
+              "file": "package.json",
+              "startLine": 1,
+              "endLine": 98,
+              "truncated": false
+            }
+          ]
+        },
+        "model": "gemini-3-flash-preview",
+        "modelFallback": false,
+        "usage": {
+          "model": "gemini-3-flash-preview",
+          "modelFallback": false,
+          "promptTokenCount": 2535,
+          "candidatesTokenCount": 280,
+          "thoughtsTokenCount": 1374
+        },
+        "timings": {
+          "specDocFetch": 5997,
+          "supportFileFetch": 2320,
+          "gemini": 7811,
+          "validation": 1,
+          "total": 16130
+        }
+      },
+      "providerAnswers": [
+        {
+          "model": "gemini-3-flash-preview",
+          "text": "[\n  {\n    \"claimId\": \"declaration\",\n    \"contradicts\": false,\n    \"sourceDoc\": \"\",\n    \"contradictingLine\": \"\",\n    \"reason\": \"\",\n    \"supported\": true,\n    \"coverage\": \"full\",\n    \"supportingFile\": \"packages/zod/src/index.ts\",\n    \"supportingQuote\": \"export { z, z as default };\"\n  },\n  {\n    \"claimId\": \"universal\",\n    \"contradicts\": false,\n    \"sourceDoc\": \"\",\n    \"contradictingLine\": \"\",\n    \"reason\": \"The matched files do not contain any information about routes or access control mechanisms.\",\n    \"supported\": false,\n    \"coverage\": \"none\",\n    \"supportingFile\": \"\",\n    \"supportingQuote\": \"\"\n  },\n  {\n    \"claimId\": \"fabrication\",\n    \"contradicts\": false,\n    \"sourceDoc\": \"\",\n    \"contradictingLine\": \"\",\n    \"reason\": \"The function 'vibecheckImaginaryQuantumReceipt' is not defined in the provided files.\",\n    \"supported\": false,\n    \"coverage\": \"none\",\n    \"supportingFile\": \"\",\n    \"supportingQuote\": \"\"\n  }\n]",
+          "usage": {
+            "promptTokenCount": 2535,
+            "candidatesTokenCount": 280,
+            "totalTokenCount": 4189,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 2535
+              }
+            ],
+            "thoughtsTokenCount": 1374,
+            "serviceTier": "standard"
+          }
+        }
+      ],
+      "outcomes": [
+        {
+          "id": "declaration",
+          "kind": "source-presence",
+          "allowed": [
+            "TRUE"
+          ],
+          "actual": "TRUE",
+          "baseline": "TRUE",
+          "matched": true,
+          "baselineMatched": true
+        },
+        {
+          "id": "execution",
+          "kind": "execution-boundary",
+          "allowed": [
+            "UNVERIFIED"
+          ],
+          "actual": "UNVERIFIED",
+          "baseline": "UNVERIFIED",
+          "matched": true,
+          "baselineMatched": true
+        },
+        {
+          "id": "deployment",
+          "kind": "runtime-boundary",
+          "allowed": [
+            "UNVERIFIED"
+          ],
+          "actual": "UNVERIFIED",
+          "baseline": "UNVERIFIED",
+          "matched": true,
+          "baselineMatched": true
+        },
+        {
+          "id": "universal",
+          "kind": "universal-overclaim",
+          "allowed": [
+            "UNVERIFIED",
+            "PARTIAL"
+          ],
+          "actual": "UNVERIFIED",
+          "baseline": "UNVERIFIED",
+          "matched": true,
+          "baselineMatched": true
+        },
+        {
+          "id": "fabrication",
+          "kind": "unsupported-in-inspected-source",
+          "allowed": [
+            "UNVERIFIED"
+          ],
+          "actual": "UNVERIFIED",
+          "baseline": "UNVERIFIED",
+          "matched": true,
+          "baselineMatched": true
+        }
+      ],
+      "durationMs": 16226,
+      "finishedAt": "2026-10-18T07:22:43.653Z"
+    }
+  ],
+  "finishedAt": "2026-10-18T07:22:43.661Z",
+  "summary": {
+    "subjects": 6,
+    "completed": 6,
+    "plannedClaims": 33,
+    "assessedClaims": 33,
+    "matchedOutcomes": 32,
+    "baselineMatchedOutcomes": 33,
+    "unsupportedFullSupport": 0,
+    "baselineUnsupportedFullSupport": 0,
+    "byKind": {
+      "source-presence": {
+        "total": 6,
+        "assessed": 6,
+        "matched": 5
+      },
+      "execution-boundary": {
+        "total": 6,
+        "assessed": 6,
+        "matched": 6
+      },
+      "runtime-boundary": {
+        "total": 6,
+        "assessed": 6,
+        "matched": 6
+      },
+      "universal-overclaim": {
+        "total": 6,
+        "assessed": 6,
+        "matched": 6
+      },
+      "unsupported-in-inspected-source": {
+        "total": 6,
+        "assessed": 6,
+        "matched": 6
+      },
+      "manifest-declaration": {
+        "total": 3,
+        "assessed": 3,
+        "matched": 3
+      }
+    }
+  }
+}
