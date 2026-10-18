@@ -1,5 +1,5 @@
 import { splitClaimText } from "./evidence-depth.mjs";
-export const VERIFIER_VERSION = "2.1.0";
+export const VERIFIER_VERSION = "2.2.0";
 export const RUNTIME_EVIDENCE_REASON =
   "This claim needs an execution or deployment record for the inspected commit. Source code alone cannot establish the outcome.";
 

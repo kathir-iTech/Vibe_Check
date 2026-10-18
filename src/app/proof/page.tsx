@@ -1,3 +1,4 @@
+import Link from "next/link";
 import observation from "benchmark/v2/public-browser-observation.json";
 
 export default function RecordedProofPage() {
@@ -43,9 +44,9 @@ export default function RecordedProofPage() {
           complete signature before displaying it. This selected run is not a
           reliability or accuracy estimate.
         </p>
-        <a className="text-button" href="/">
+        <Link className="text-button" href="/">
           ← Run your own check
-        </a>
+        </Link>
       </section>
     </main>
   );

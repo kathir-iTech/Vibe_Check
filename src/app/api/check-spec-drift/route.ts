@@ -153,6 +153,7 @@ export async function POST(request: NextRequest) {
     if (typeof body.requirements === "string" && body.requirements.trim())
       docs.unshift({
         file: "provided-requirements.md",
+        provided: true,
         text: body.requirements
           .split("\n")
           .map((line: string) => line.trim())

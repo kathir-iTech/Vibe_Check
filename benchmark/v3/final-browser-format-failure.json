@@ -1,0 +1,19 @@
+{
+  "scope": "Actual browser attempt failed before a complete report; no successful audit or signature verification is inferred.",
+  "observedAt": "2026-10-18T09:14:58.474Z",
+  "error": "The assessment needs attention\n\nGemini API error: Bad control character in string literal in JSON at position 713 (line 22 column 25)\n\nInspect a recorded real audit \u00e2\u2020\u2014Recover extracted claims",
+  "pageErrors": [],
+  "applicationRevision": "33379bb095c2d013d01d2ce50b82e96766af4d03",
+  "repository": "https://github.com/chalk/chalk",
+  "headSha": "47fc05abd46171b235e24174cd2dba83d25bf037",
+  "claims": [
+    "A createChalk function is defined.",
+    "This package is MIT licensed.",
+    "All tests passed."
+  ],
+  "providedTestRequirement": "MIT licensing is forbidden. This is a builder test, not Chalk owner policy.",
+  "answeringModel": null,
+  "upstreamStatus": null,
+  "signatureVerified": false,
+  "providerSourceSha256": "88811efe9e1c5cd4e937b24cbc13583eaed5121fb01988df7e83ed78a5d8c1b5"
+}

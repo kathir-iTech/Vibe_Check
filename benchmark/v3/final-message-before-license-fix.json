@@ -1,0 +1,512 @@
+{
+  "scope": "Actual builder browser -> server -> GitHub/Gemini -> export -> independent Node signature verification. The license prohibition is a supplied test requirement, not Chalk owner policy. This is not independent user testing.",
+  "observedAt": "2026-10-18T09:30:02.539Z",
+  "service": {
+    "status": "configured",
+    "verifierVersion": "2.1.0",
+    "sourceHead": null,
+    "gitBranch": null,
+    "signingConfigured": true,
+    "providerConfigured": true,
+    "scope": "Configuration check only. Provider availability and actual source observations require a completed audit."
+  },
+  "signatureVerified": true,
+  "pageErrors": [],
+  "audit": {
+    "verifierVersion": "2.1.0",
+    "source": {
+      "kind": "live",
+      "label": "Server assessment of GitHub source"
+    },
+    "requirements": [
+      {
+        "id": "requirement-1",
+        "text": "MIT licensing is forbidden.",
+        "file": "provided-requirements.md",
+        "line": 1,
+        "quote": "- MIT licensing is forbidden.",
+        "section": "",
+        "strength": "explicit",
+        "status": "not-mentioned",
+        "claimIds": [],
+        "suggestedClaimIds": [],
+        "note": "Lexical/alias association for review; requirement fulfillment is not certified. Possible matches need confirmation."
+      }
+    ],
+    "sourceDocuments": [
+      {
+        "file": "provided-requirements.md",
+        "sha256": "937f0aba83c83bacc834827755feb37bb9ddb6aefa1510bcfe279677f93e6d77",
+        "truncated": false
+      }
+    ],
+    "models": {
+      "extract": {
+        "model": "gemini-3-flash-preview",
+        "fallback": false,
+        "usage": {
+          "model": "gemini-3-flash-preview",
+          "modelFallback": false,
+          "promptTokenCount": 220,
+          "candidatesTokenCount": 63,
+          "thoughtsTokenCount": 443
+        }
+      },
+      "assessment": {
+        "model": "gemini-3.1-flash-lite",
+        "fallback": true,
+        "usage": {
+          "model": "gemini-3.1-flash-lite",
+          "modelFallback": true,
+          "promptTokenCount": 17399,
+          "candidatesTokenCount": 198,
+          "thoughtsTokenCount": null
+        }
+      }
+    },
+    "timings": {
+      "sourceAndClaimsMs": 17908,
+      "evidenceMs": 24455,
+      "assessmentMs": 34072,
+      "totalMs": 76434
+    },
+    "warnings": [
+      "Retrieval is bounded. An uninspected file may contain additional evidence; UNVERIFIED does not mean false."
+    ],
+    "retrieval": {
+      "totalFiles": 35,
+      "candidateFiles": 30,
+      "inspectedFiles": 8,
+      "omittedFiles": 27,
+      "treeTruncated": false,
+      "bounded": true,
+      "followupCandidates": 2,
+      "fileHints": [
+        "source/index.js",
+        "package.json"
+      ]
+    },
+    "repoUrl": "https://github.com/chalk/chalk",
+    "headSha": "47fc05abd46171b235e24174cd2dba83d25bf037",
+    "reviewContext": "1f3c55cc60a83cc5ca2fe1d177b4ef9c276cb199bd4895962bd36e09161eb0cd",
+    "generatedAt": "2026-10-18T09:29:52.758Z",
+    "claims": [
+      {
+        "id": "1",
+        "text": "A createChalk function is defined.",
+        "evidenceType": [
+          "file",
+          "commit"
+        ]
+      },
+      {
+        "id": "2",
+        "text": "The package is MIT licensed.",
+        "evidenceType": [
+          "file",
+          "commit"
+        ]
+      },
+      {
+        "id": "3",
+        "text": "All tests passed.",
+        "evidenceType": [
+          "file",
+          "commit"
+        ]
+      }
+    ],
+    "evidence": {
+      "1": {
+        "files": [
+          "source/index.js",
+          "package.json",
+          "test/chalk.js",
+          "benchmark.js",
+          "source/utilities.js",
+          "source/vendor/ansi-styles/index.js"
+        ],
+        "fileMatches": [
+          {
+            "file": "source/index.js",
+            "hitCount": 5,
+            "matchedTerms": [
+              "createchalk",
+              "function",
+              "defined",
+              "create",
+              "chalk"
+            ],
+            "pathMatched": false,
+            "lineNumber": 61,
+            "previewLine": "function createChalk(options) {"
+          },
+          {
+            "file": "test/chalk.js",
+            "hitCount": 3,
+            "matchedTerms": [
+              "function",
+              "defined",
+              "chalk"
+            ],
+            "pathMatched": true,
+            "lineNumber": 52,
+            "previewLine": "const nested = chalk.yellow('b' + chalk.green('c') + 'b');"
+          },
+          {
+            "file": "benchmark.js",
+            "hitCount": 1,
+            "matchedTerms": [
+              "chalk"
+            ],
+            "pathMatched": false,
+            "lineNumber": 5,
+            "previewLine": "const chalkRed = chalk.red;"
+          },
+          {
+            "file": "source/utilities.js",
+            "hitCount": 1,
+            "matchedTerms": [
+              "function"
+            ],
+            "pathMatched": false,
+            "lineNumber": 2,
+            "previewLine": "export function stringReplaceAll(string, substring, postfix) {"
+          },
+          {
+            "file": "source/vendor/ansi-styles/index.js",
+            "hitCount": 1,
+            "matchedTerms": [
+              "function"
+            ],
+            "pathMatched": false,
+            "lineNumber": 106,
+            "previewLine": "function assembleStyles() {"
+          }
+        ],
+        "commits": [
+          {
+            "sha": "9c93a04eae27fb1801764fbd60eb0811e2068b83",
+            "message": "Fix inconsistent coercion of two arguments\n\nFixes #691",
+            "date": "2026-09-27T03:29:39Z",
+            "author": "Sindre Sorhus",
+            "filesChanged": [
+              "source/index.js",
+              "test/chalk.js"
+            ],
+            "additions": 15,
+            "deletions": 1,
+            "patchPreview": "+\t\t\t// The template literal matches `Array#join` coercion (`null` and `undefined` become empty, objects use `toString`) while being faster. +\t\t\treturn applyStyle(builder, `${arguments_[0] ?? ''} ${arguments_[1] ?? ''}`);"
+          },
+          {
+            "sha": "f8381204fb096207074089f5ab265fffff6bc341",
+            "message": "Update `CIRCLECI` environments to return level 3 color support\n\nhttps://github.com/chalk/supports-color/commit/89a52f4a8e3f7606c27810a8f182394d333a844f",
+            "date": "2024-12-18T17:57:37Z",
+            "author": "Sindre Sorhus",
+            "filesChanged": [
+              "source/vendor/supports-color/index.js"
+            ],
+            "additions": 2,
+            "deletions": 2,
+            "patchPreview": "+\t\tif (['GITHUB_ACTIONS', 'GITEA_ACTIONS', 'CIRCLECI'].some(key => key in env)) { +\t\tif (['TRAVIS', 'APPVEYOR', 'GITLAB_CI', 'BUILDKITE', 'DRONE'].some(sign => sign in env) || env.CI_NAME === 'codeship') {"
+          }
+        ],
+        "matchedTerms": [
+          "createchalk",
+          "chalk",
+          "function",
+          "defined",
+          "create"
+        ],
+        "totalFilesInRepo": 35,
+        "defaultBranch": "main",
+        "headSha": "47fc05abd46171b235e24174cd2dba83d25bf037",
+        "treeTruncated": false,
+        "sourceWindows": [
+          {
+            "file": "source/index.js",
+            "startLine": 1,
+            "endLine": 263,
+            "truncated": false
+          },
+          {
+            "file": "package.json",
+            "startLine": 1,
+            "endLine": 93,
+            "truncated": false
+          },
+          {
+            "file": "test/chalk.js",
+            "startLine": 1,
+            "endLine": 239,
+            "truncated": false
+          },
+          {
+            "file": "benchmark.js",
+            "startLine": 1,
+            "endLine": 58,
+            "truncated": false
+          },
+          {
+            "file": "source/utilities.js",
+            "startLine": 1,
+            "endLine": 34,
+            "truncated": false
+          },
+          {
+            "file": "source/vendor/ansi-styles/index.js",
+            "startLine": 1,
+            "endLine": 262,
+            "truncated": false
+          }
+        ]
+      },
+      "2": {
+        "files": [
+          "source/index.js",
+          "package.json",
+          "license"
+        ],
+        "fileMatches": [
+          {
+            "file": "package.json",
+            "hitCount": 0,
+            "matchedTerms": [],
+            "pathMatched": true
+          },
+          {
+            "file": "license",
+            "hitCount": 0,
+            "matchedTerms": [],
+            "pathMatched": true
+          }
+        ],
+        "commits": [
+          {
+            "sha": "47fc05abd46171b235e24174cd2dba83d25bf037",
+            "message": "6.0.1",
+            "date": "2026-09-27T03:37:26Z",
+            "author": "Sindre Sorhus",
+            "filesChanged": [
+              "package.json"
+            ],
+            "additions": 1,
+            "deletions": 1,
+            "patchPreview": "+\t\"version\": \"6.0.1\","
+          }
+        ],
+        "matchedTerms": [
+          "package",
+          "licensed"
+        ],
+        "totalFilesInRepo": 35,
+        "defaultBranch": "main",
+        "headSha": "47fc05abd46171b235e24174cd2dba83d25bf037",
+        "treeTruncated": false,
+        "sourceWindows": [
+          {
+            "file": "source/index.js",
+            "startLine": 1,
+            "endLine": 263,
+            "truncated": false
+          },
+          {
+            "file": "package.json",
+            "startLine": 1,
+            "endLine": 93,
+            "truncated": false
+          },
+          {
+            "file": "license",
+            "startLine": 1,
+            "endLine": 10,
+            "truncated": false
+          }
+        ]
+      },
+      "3": {
+        "files": [
+          "source/index.js",
+          "package.json",
+          "test/chalk.js",
+          "test/level.js",
+          "test/visible.js",
+          "test/_fixture.js",
+          "test/instance.js"
+        ],
+        "fileMatches": [
+          {
+            "file": "test/chalk.js",
+            "hitCount": 0,
+            "matchedTerms": [],
+            "pathMatched": true
+          },
+          {
+            "file": "test/level.js",
+            "hitCount": 0,
+            "matchedTerms": [],
+            "pathMatched": true
+          },
+          {
+            "file": "test/visible.js",
+            "hitCount": 0,
+            "matchedTerms": [],
+            "pathMatched": true
+          },
+          {
+            "file": "test/_fixture.js",
+            "hitCount": 0,
+            "matchedTerms": [],
+            "pathMatched": true
+          },
+          {
+            "file": "test/instance.js",
+            "hitCount": 0,
+            "matchedTerms": [],
+            "pathMatched": true
+          }
+        ],
+        "commits": [
+          {
+            "sha": "9c93a04eae27fb1801764fbd60eb0811e2068b83",
+            "message": "Fix inconsistent coercion of two arguments\n\nFixes #691",
+            "date": "2026-09-27T03:29:39Z",
+            "author": "Sindre Sorhus",
+            "filesChanged": [
+              "source/index.js",
+              "test/chalk.js"
+            ],
+            "additions": 15,
+            "deletions": 1,
+            "patchPreview": "+\t\t\t// The template literal matches `Array#join` coercion (`null` and `undefined` become empty, objects use `toString`) while being faster. +\t\t\treturn applyStyle(builder, `${arguments_[0] ?? ''} ${arguments_[1] ?? ''}`);"
+          }
+        ],
+        "matchedTerms": [
+          "tests"
+        ],
+        "totalFilesInRepo": 35,
+        "defaultBranch": "main",
+        "headSha": "47fc05abd46171b235e24174cd2dba83d25bf037",
+        "treeTruncated": false,
+        "sourceWindows": []
+      }
+    },
+    "verdicts": [
+      {
+        "claimId": "1",
+        "claimText": "A createChalk function is defined.",
+        "verdict": "TRUE",
+        "reason": "The function is defined in the source code.",
+        "specReference": "source/index.js:61: function createChalk(options) {",
+        "code": {
+          "file": "source/index.js",
+          "line": 61,
+          "quote": "function createChalk(options) {"
+        },
+        "sourceCheck": {
+          "ceiling": "full",
+          "kind": "source-line",
+          "note": "Exact source support; reachability and execution remain outside this check."
+        },
+        "obligation": "implementation",
+        "nextEvidence": "Inspect the cited implementation; use an execution check before relying on runtime behavior.",
+        "contract": {
+          "checked": "Bounded source inspection at the recorded commit.",
+          "established": "The cited source supports this bounded claim.",
+          "unknown": "Uninspected files, execution and complete behavior are not established.",
+          "resolve": "Inspect the cited implementation; use an execution check before relying on runtime behavior."
+        }
+      },
+      {
+        "claimId": "2",
+        "claimText": "The package is MIT licensed.",
+        "verdict": "TRUE",
+        "reason": "The package.json file specifies the license as MIT.",
+        "specReference": "package.json:5: \"license\": \"MIT\",",
+        "code": {
+          "file": "package.json",
+          "line": 5,
+          "quote": "\"license\": \"MIT\","
+        },
+        "sourceCheck": {
+          "ceiling": "full",
+          "kind": "manifest-value",
+          "note": "Parsed manifest license declaration; licensing obligations are not assessed."
+        },
+        "obligation": "configuration",
+        "nextEvidence": "Inspect the cited implementation; use an execution check before relying on runtime behavior.",
+        "contract": {
+          "checked": "Bounded source inspection at the recorded commit.",
+          "established": "The cited source supports this bounded claim.",
+          "unknown": "Uninspected files, execution and complete behavior are not established.",
+          "resolve": "Inspect the cited implementation; use an execution check before relying on runtime behavior."
+        }
+      },
+      {
+        "claimId": "3",
+        "claimText": "All tests passed.",
+        "verdict": "UNVERIFIED",
+        "reason": "This claim needs an execution or deployment record for the inspected commit. Source code alone cannot establish the outcome.",
+        "specReference": "",
+        "obligation": "execution",
+        "nextEvidence": "Attach a completed CI check for this commit, including its name and result.",
+        "contract": {
+          "checked": "Source and separately attributed records; no repository code executed.",
+          "established": "No sufficient source support established.",
+          "unknown": "The claimed execution or deployment outcome is not certified.",
+          "resolve": "Attach a completed CI check for this commit, including its name and result."
+        }
+      }
+    ],
+    "executionRecords": [
+      {
+        "name": "Node.js 26",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/chalk/chalk/actions/runs/36291955143/job/108543618010",
+        "headSha": "47fc05abd46171b235e24174cd2dba83d25bf037",
+        "completedAt": "2026-09-27T03:38:16Z",
+        "claimIds": [],
+        "note": "Provider-reported named check only; does not certify unspecified tests or complete functionality."
+      },
+      {
+        "name": "Node.js 22",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/chalk/chalk/actions/runs/36291955143/job/108543617887",
+        "headSha": "47fc05abd46171b235e24174cd2dba83d25bf037",
+        "completedAt": "2026-09-27T03:38:17Z",
+        "claimIds": [],
+        "note": "Provider-reported named check only; does not certify unspecified tests or complete functionality."
+      },
+      {
+        "name": "Node.js 26",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/chalk/chalk/actions/runs/36291955059/job/108543617591",
+        "headSha": "47fc05abd46171b235e24174cd2dba83d25bf037",
+        "completedAt": "2026-09-27T03:38:22Z",
+        "claimIds": [],
+        "note": "Provider-reported named check only; does not certify unspecified tests or complete functionality."
+      },
+      {
+        "name": "Node.js 22",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/chalk/chalk/actions/runs/36291955059/job/108543617484",
+        "headSha": "47fc05abd46171b235e24174cd2dba83d25bf037",
+        "completedAt": "2026-09-27T03:38:14Z",
+        "claimIds": [],
+        "note": "Provider-reported named check only; does not certify unspecified tests or complete functionality."
+      }
+    ],
+    "schema": "vibecheck/audit/v2",
+    "keyId": "127987f5e2ec7540",
+    "sig": "dGFSnpiuXXInF7VIq4znde41VUs7nNAN2N22xYElZt4dz-pHdDR3Hb1F_Lx_qINnOeXvL3QLvj_54FcIswDzDA"
+  },
+  "applicationRevision": "9af380d6127ec573526729a94a1994d640fc4e87",
+  "expectedOutcomesMatched": 2,
+  "plannedClaims": 3,
+  "missedExpectation": "The explicit supplied MIT license prohibition was not surfaced as a planning conflict. The complete report was issued and its signature independently verified; this is a semantic false negative, not a fully successful audit.",
+  "testHarnessFailure": "The observer initially matched the license claim by the original words This package; extraction used The package. After inspecting the actual report, the classification still missed the expected conflict. No rerun is inferred."
+}

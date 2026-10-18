@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -44,16 +45,16 @@ export default function RootLayout({
         </a>
         <header className="site-nav">
           <div className="nav-inner">
-            <a className="wordmark" href="/" aria-label="VibeCheck home">
+            <Link className="wordmark" href="/" aria-label="VibeCheck home">
               <span className="brand-mark">
                 V<span>✓</span>
               </span>
               vibecheck<span className="brand-period">.</span>
-            </a>
+            </Link>
             <nav aria-label="Main navigation">
-              <a href="/#inspector">Workspace</a>
-              <a href="/#method">How it works</a>
-              <a href="/#evaluation">Proof</a>
+              <Link href="/#inspector">Workspace</Link>
+              <Link href="/#method">How it works</Link>
+              <Link href="/proof">Real audit</Link>
               <a
                 href="https://github.com/kathir-iTech/Vibe_Check"
                 target="_blank"

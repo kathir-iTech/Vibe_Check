@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { Audit } from "@/types/audit";
 import { AuditResults } from "@/components/AuditResults";
@@ -8,7 +9,11 @@ export default function VerifiedReportPage() {
   const [error, setError] = useState("");
   useEffect(() => {
     let active = true;
+    let loadId = 0;
     async function load() {
+      const currentLoad = ++loadId;
+      setAudit(null);
+      setError("");
       try {
         const raw = location.hash.slice(1);
         if (!raw || raw.length > 256 * 1024)
@@ -26,17 +31,19 @@ export default function VerifiedReportPage() {
           throw new Error(
             "A service signature is required for this shared audit.",
           );
-        if (active) setAudit(report.audit);
+        if (active && currentLoad === loadId) setAudit(report.audit);
       } catch (err) {
-        if (active)
+        if (active && currentLoad === loadId)
           setError(
             err instanceof Error ? err.message : "Report verification failed",
           );
       }
     }
     void load();
+    window.addEventListener("hashchange", load);
     return () => {
       active = false;
+      window.removeEventListener("hashchange", load);
     };
   }, []);
   return (
@@ -80,9 +87,9 @@ export default function VerifiedReportPage() {
             </div>
           </>
         ) : null}
-        <a className="text-button" href="/">
+        <Link className="text-button" href="/">
           ← Inspect another handoff
-        </a>
+        </Link>
       </section>
     </main>
   );

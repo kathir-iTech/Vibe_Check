@@ -1,0 +1,123 @@
+{
+  "schema": "vibecheck/dependency-audit/v1",
+  "observedAt": "2026-10-18T08:58:17.854381+00:00",
+  "scope": "Registry advisory scan of the locked dependency tree. Zero known production advisories is not a security certification. Development-tooling findings are retained, including ranges without a compatible patched release.",
+  "lockfileSha256": "e35395f4c38d82d419032ab37c24b81dfaa91b529c81be8b5e4728abf2c90006",
+  "runtime": {
+    "info": 0,
+    "low": 0,
+    "moderate": 0,
+    "high": 0,
+    "critical": 0,
+    "total": 0
+  },
+  "fullTree": {
+    "info": 0,
+    "low": 0,
+    "moderate": 2,
+    "high": 7,
+    "critical": 0,
+    "total": 9
+  },
+  "developmentFindings": [
+    {
+      "package": "@next/eslint-plugin-next",
+      "severity": "high",
+      "affectedRange": ">=14.3.0-canary.0",
+      "advisories": [],
+      "fixAvailable": {
+        "name": "eslint-config-next",
+        "version": "14.2.35",
+        "isSemVerMajor": true
+      }
+    },
+    {
+      "package": "braces",
+      "severity": "high",
+      "affectedRange": "*",
+      "advisories": [
+        "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm"
+      ],
+      "fixAvailable": {
+        "name": "tailwindcss",
+        "version": "4.3.3",
+        "isSemVerMajor": true
+      }
+    },
+    {
+      "package": "chokidar",
+      "severity": "high",
+      "affectedRange": "2.0.0 - 3.6.0",
+      "advisories": [],
+      "fixAvailable": {
+        "name": "tailwindcss",
+        "version": "4.3.3",
+        "isSemVerMajor": true
+      }
+    },
+    {
+      "package": "eslint-config-next",
+      "severity": "high",
+      "affectedRange": ">=14.3.0-canary.0",
+      "advisories": [],
+      "fixAvailable": {
+        "name": "eslint-config-next",
+        "version": "14.2.35",
+        "isSemVerMajor": true
+      }
+    },
+    {
+      "package": "fast-glob",
+      "severity": "high",
+      "affectedRange": "*",
+      "advisories": [],
+      "fixAvailable": {
+        "name": "eslint-config-next",
+        "version": "14.2.35",
+        "isSemVerMajor": true
+      }
+    },
+    {
+      "package": "micromatch",
+      "severity": "high",
+      "affectedRange": ">=0.2.0",
+      "advisories": [],
+      "fixAvailable": {
+        "name": "tailwindcss",
+        "version": "4.3.3",
+        "isSemVerMajor": true
+      }
+    },
+    {
+      "package": "postcss-nested",
+      "severity": "moderate",
+      "affectedRange": "2.0.3 - 6.2.0",
+      "advisories": [],
+      "fixAvailable": true
+    },
+    {
+      "package": "postcss-selector-parser",
+      "severity": "moderate",
+      "affectedRange": "<7.1.6",
+      "advisories": [
+        "https://github.com/advisories/GHSA-rj75-hqrm-r3gf"
+      ],
+      "fixAvailable": {
+        "name": "tailwindcss",
+        "version": "4.3.3",
+        "isSemVerMajor": true
+      }
+    },
+    {
+      "package": "tailwindcss",
+      "severity": "high",
+      "affectedRange": "<=0.0.0-oxide-insiders.ff2c25f || 0.5.0 - 3.4.19",
+      "advisories": [],
+      "fixAvailable": {
+        "name": "tailwindcss",
+        "version": "4.3.3",
+        "isSemVerMajor": true
+      }
+    }
+  ]
+}

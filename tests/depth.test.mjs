@@ -4,6 +4,7 @@ import {
   sourceSupportCheck,
   splitClaimText,
   evidenceContract,
+  explicitLicenseConflict,
 } from "../src/lib/evidence-depth.mjs";
 import {
   validateAuditClaims,
@@ -15,6 +16,127 @@ import { repairHandoff } from "../src/lib/repair-handoff.mjs";
 import { tokenize } from "../src/lib/verification-guards.mjs";
 import { loadProduction } from "../scripts/test-support.mjs";
 import { sourceWindow } from "../src/lib/source-window.mjs";
+
+test("literal supplied license restrictions exclude negation, conditions, examples and compound SPDX expressions", () => {
+  const source = JSON.stringify({ license: "Apache-2.0" });
+  const docs = (text, file = "provided-requirements.md", provided = true) => [
+    { file, text, provided },
+  ];
+  const found = explicitLicenseConflict(
+    "packages/api/package.json",
+    source,
+    docs("- Apache-2.0 licensing is forbidden."),
+  );
+  assert.equal(found.license, "Apache-2.0");
+  assert.equal(found.line, 1);
+  for (const line of [
+    "Apache-2.0 licensing is not forbidden.",
+    "Apache-2.0 licensing is forbidden if the code is proprietary.",
+    "If shipped, Apache-2.0 licensing is forbidden.",
+    "Apache-2.0 licensing is discouraged.",
+    "> Apache-2.0 licensing is forbidden.",
+    '"Apache-2.0 licensing is forbidden."',
+    "```text\nApache-2.0 licensing is forbidden.\n```",
+    "- ```text\n- Apache-2.0 licensing is forbidden.\n- ```",
+    "````text\n```\nApache-2.0 licensing is forbidden.\n````",
+    "MIT licensing is forbidden.",
+  ])
+    assert.equal(
+      explicitLicenseConflict("package.json", source, docs(line)),
+      null,
+      line,
+    );
+  assert.equal(
+    explicitLicenseConflict(
+      "README.md",
+      source,
+      docs("Apache-2.0 licensing is forbidden."),
+    ),
+    null,
+  );
+  assert.equal(
+    explicitLicenseConflict(
+      "package.json",
+      source,
+      docs("Apache-2.0 licensing is forbidden.", "scope.md"),
+    ),
+    null,
+  );
+  assert.equal(
+    explicitLicenseConflict(
+      "package.json",
+      '{"license":"MIT OR Apache-2.0"}',
+      docs("MIT licensing is forbidden."),
+    ),
+    null,
+  );
+  assert.equal(
+    explicitLicenseConflict(
+      "package.json",
+      '{"license":',
+      docs("MIT licensing is forbidden."),
+    ),
+    null,
+  );
+});
+
+test("actual validator surfaces an explicit manifest-license conflict without promoting rejected evidence", () => {
+  const { validateAssessments } = loadProduction("src/lib/gemini.ts");
+  const claims = [{ id: "c", text: "The package is MIT licensed." }];
+  const source = '{\n  "license": "MIT"\n}';
+  assert.equal(
+    sourceSupportCheck(
+      "The package is MIT-0 licensed.",
+      "package.json",
+      source,
+      2,
+    ).ceiling,
+    "none",
+  );
+  const docs = [
+    {
+      file: "provided-requirements.md",
+      text: "- MIT licensing is forbidden.",
+      provided: true,
+    },
+  ];
+  const files = { c: [{ file: "package.json", text: source }] };
+  const item = {
+    claimId: "c",
+    contradicts: false,
+    supported: true,
+    coverage: "full",
+    supportingFile: "package.json",
+    supportingQuote: '"license": "MIT"',
+  };
+  const [conflict] = validateAssessments([item], claims, docs, files);
+  assert.equal(conflict.supported, true);
+  assert.equal(conflict.contradicts, true);
+  assert.equal(conflict.sourceDoc, "provided-requirements.md");
+  assert.equal(conflict.lineNumber, 1);
+  assert.equal(conflict.contradictingLine, docs[0].text);
+  const [untrusted] = validateAssessments(
+    [item],
+    claims,
+    [{ ...docs[0], provided: false }],
+    files,
+  );
+  assert.equal(untrusted.contradicts, false);
+  assert.match(conflict.reason, /manifest declares MIT/);
+  for (const change of [
+    { supported: false },
+    { supportingQuote: "invented quote" },
+    { coverage: "partial" },
+  ]) {
+    const [limited] = validateAssessments(
+      [{ ...item, ...change }],
+      claims,
+      docs,
+      files,
+    );
+    assert.equal(limited.contradicts, false);
+  }
+});
 
 test("independent predicates split without turning negation or noun lists into promises", () => {
   assert.deepEqual(

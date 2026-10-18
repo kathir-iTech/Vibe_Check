@@ -34,7 +34,8 @@ export function validReportShape(data) {
     !/^https:\/\/github\.com\/[\w.-]+\/[\w.-]+$/.test(data.repoUrl)
   )
     return false;
-  if (data.headSha && !/^[a-f0-9]{40}$/i.test(data.headSha)) return false;
+  if (typeof data.headSha !== "string" || !/^[a-f0-9]{40}$/i.test(data.headSha))
+    return false;
   if (
     !data.source ||
     !["live", "demo", "imported"].includes(data.source.kind) ||
@@ -43,7 +44,16 @@ export function validReportShape(data) {
     return false;
   if (
     typeof data.verifierVersion !== "string" ||
-    typeof data.generatedAt !== "string"
+    typeof data.generatedAt !== "string" ||
+    (!Number.isFinite(Date.parse(data.generatedAt)) &&
+      !(data.source.kind === "demo" && data.generatedAt === ""))
+  )
+    return false;
+  if (
+    data.retrieval?.fileHints != null &&
+    (!Array.isArray(data.retrieval.fileHints) ||
+      data.retrieval.fileHints.length > 8 ||
+      !data.retrieval.fileHints.every((path) => typeof path === "string"))
   )
     return false;
   if (
@@ -73,7 +83,11 @@ export function validReportShape(data) {
       (v) =>
         !v ||
         typeof v !== "object" ||
-        (v.model != null && typeof v.model !== "string"),
+        (v.model != null && typeof v.model !== "string") ||
+        (v.usage?.promptTokenCount != null &&
+          (typeof v.usage.promptTokenCount !== "number" ||
+            !Number.isFinite(v.usage.promptTokenCount) ||
+            v.usage.promptTokenCount < 0)),
     )
   )
     return false;
@@ -84,7 +98,13 @@ export function validReportShape(data) {
         typeof r.text !== "string" ||
         typeof r.file !== "string" ||
         typeof r.status !== "string" ||
-        !Array.isArray(r.claimIds),
+        !Array.isArray(r.claimIds) ||
+        !r.claimIds.every((id) => typeof id === "string") ||
+        (r.strength != null && typeof r.strength !== "string") ||
+        (r.line != null && (!Number.isInteger(r.line) || r.line < 1)) ||
+        (r.suggestedClaimIds != null &&
+          (!Array.isArray(r.suggestedClaimIds) ||
+            !r.suggestedClaimIds.every((id) => typeof id === "string"))),
     )
   )
     return false;
