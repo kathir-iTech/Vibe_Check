@@ -138,6 +138,19 @@ export async function runAudit(
     usage: assessed.usage,
   };
   let verdicts: Finding[] = assessed.drift;
+  for (const claim of claims) {
+    if (ev.evidence[claim.id])
+      ev.evidence[claim.id].sourceWindows =
+        assessed.sourceWindows?.[claim.id] || [];
+  }
+  if (
+    Object.values(assessed.sourceWindows || {}).some((rows: any) =>
+      rows.some((row: any) => row.truncated),
+    )
+  )
+    warnings.push(
+      "Some source files were inspected in bounded windows. Citations retain original line numbers; omitted regions remain unassessed.",
+    );
   if (baseSha) {
     try {
       const diff = await githubApi(

@@ -14,6 +14,7 @@ import {
 import { repairHandoff } from "../src/lib/repair-handoff.mjs";
 import { tokenize } from "../src/lib/verification-guards.mjs";
 import { loadProduction } from "../scripts/test-support.mjs";
+import { sourceWindow } from "../src/lib/source-window.mjs";
 
 test("independent predicates split without turning negation or noun lists into promises", () => {
   assert.deepEqual(
@@ -269,4 +270,90 @@ test("provider cancellation does not start a fallback after the caller stops", a
     extractClaimsViaGemini("Login exists", "test-only", controller.signal),
   );
   assert.equal(count, 1);
+});
+
+test("a native SDK timeout without an HTTP status gets one fallback", async () => {
+  let count = 0;
+  const { extractClaimsViaGemini } = loadProduction("src/lib/gemini.ts", {
+    "@google/genai": {
+      GoogleGenAI: class {
+        models = {
+          generateContent: async () => {
+            count++;
+            if (count === 1) throw new Error("This operation was aborted");
+            return { text: '[{"id":"c","text":"A function exists"}]' };
+          },
+        };
+      },
+    },
+  });
+  const result = await extractClaimsViaGemini("A function exists", "test-only");
+  assert.equal(count, 2);
+  assert.equal(result.modelFallback, true);
+});
+
+test("late-file windows retain absolute citations and whole-source comment boundaries", () => {
+  const source =
+    Array.from(
+      { length: 1800 },
+      () => "# unrelated material that fills the source budget",
+    ).join("\n") + "\ndef target_action():\n    return process()\n";
+  const window = sourceWindow(
+    "app.py",
+    source,
+    "A target_action function is defined",
+  );
+  assert.ok(window.startLine > 1);
+  assert.ok(window.text.includes("def target_action():"));
+  const { validateAssessments, buildAssessmentPrompt } =
+    loadProduction("src/lib/gemini.ts");
+  const claims = [{ id: "c", text: "A target_action function is defined" }];
+  const [result] = validateAssessments(
+    [
+      {
+        claimId: "c",
+        contradicts: false,
+        supported: true,
+        coverage: "full",
+        supportingFile: "app.py",
+        supportingQuote: "def target_action():",
+      },
+    ],
+    claims,
+    [],
+    { c: [window] },
+  );
+  assert.equal(result.supportingLine, 1801);
+  assert.match(
+    buildAssessmentPrompt(claims, [], { c: [window] }, "nonce"),
+    /1801: def target_action/,
+  );
+  const bait =
+    "/*\n" +
+    Array.from(
+      { length: 1800 },
+      () => "unrelated material that fills the source budget",
+    ).join("\n") +
+    "\nfunction target_action() {}\n*/";
+  const commented = sourceWindow(
+    "app.ts",
+    bait,
+    "A target_action function is defined",
+  );
+  const [rejected] = validateAssessments(
+    [
+      {
+        claimId: "c",
+        contradicts: false,
+        supported: true,
+        coverage: "full",
+        supportingFile: "app.ts",
+        supportingQuote: "function target_action() {}",
+      },
+    ],
+    claims,
+    [],
+    { c: [commented] },
+  );
+  assert.equal(rejected.supported, false);
 });

@@ -142,6 +142,26 @@ export function validReportShape(data) {
       ].some((k) => verdict[k] != null && typeof verdict[k] !== "string")
     )
       return false;
+    if (
+      verdict.contract != null &&
+      (!verdict.contract ||
+        typeof verdict.contract !== "object" ||
+        !["checked", "established", "unknown", "resolve"].every(
+          (k) =>
+            typeof verdict.contract[k] === "string" &&
+            verdict.contract[k].length < 4000,
+        ))
+    )
+      return false;
+    if (
+      verdict.sourceCheck != null &&
+      (!verdict.sourceCheck ||
+        typeof verdict.sourceCheck !== "object" ||
+        !["ceiling", "kind", "note"].every(
+          (k) => typeof verdict.sourceCheck[k] === "string",
+        ))
+    )
+      return false;
     for (const field of ["code", "spec"])
       if (
         verdict[field] &&

@@ -22,6 +22,7 @@ if (existsSync(target))
 const paths = [
   "src/lib/gemini.ts",
   "src/lib/evidence-depth.mjs",
+  "src/lib/source-window.mjs",
   "src/lib/audit-policy.mjs",
   "src/lib/github.ts",
   "src/app/api/check-spec-drift/route.ts",

@@ -14,10 +14,11 @@ Built for **Build With AI: Basics** using the Devpost Learn Skill Pack. Original
 
 1. Open the workspace and paste your agent's message, or use **Try an example** to inspect illustrative results.
 2. Enter a public GitHub repository. For private source, use your own authorized read token in the advanced options.
-3. Select **Check the proof**. Watch the actual source, extraction, retrieval, assessment and report stages.
+3. Optionally select **Review extracted claims first** to edit the atomic claims before source inspection. Select **Check the proof** to run the audit.
 4. Inspect each claim's evidence and next step. Open **Requirements** for explicit planning statements absent from the completion message.
 5. Download JSON, copy PR Markdown or copy a verified report link. Signed reports are checked against the service's public key before they are displayed.
-6. After a fix, select **Recheck latest revision**. **Compare** matches claim text after case and whitespace normalization; it does not infer semantic equivalence between paraphrases.
+6. Use **Inspect more evidence** to retain a finding's revision and add up to eight relevant paths under Advanced options. Hints guide inspection and are labeled as user-supplied.
+7. Copy a **Repair handoff** for unresolved claims and their acceptance evidence. After an actual fix, select **Recheck latest revision**. **Compare** matches exact normalized text or lets you explicitly confirm equivalence. It rejects cross-repository comparisons and does not infer improvement from changed review context, a different verifier or unchanged source.
 
 The example uses disclosed illustrative data and makes no model calls. It cannot receive a live-audit receipt. Live provider failures produce explicit errors; they never silently become an example or a successful result.
 
@@ -32,15 +33,16 @@ The example uses disclosed illustrative data and makes no model calls. It cannot
 
 A test script cannot prove a test run passed. A source file cannot prove a deployment succeeded. GitHub check-run records, when accessible, are shown as attributed provider observations at the selected SHA; generic “all tests passed” claims remain unverified without sufficient specific execution evidence.
 
-Requirement extraction examines a bounded set of explicit must/shall/never/only bullets. Associations are lexical review aids, not requirement-fulfillment certificates. Prose requirements, synonyms and omitted files still need human review. A missing mention does not establish a missing implementation.
+Requirement extraction examines up to 32 normative prose statements and acceptance items, including numbered lists; advisory wording is labeled and fenced code is skipped. Exact conflict citations take precedence. Lexical associations and limited aliases are review aids; possible matches remain suggestions, never fulfillment certificates. Implicit requirements, complex tables and omitted material still need human review.
 
 ## Evidence boundaries
 
 - Resolve one immutable Git SHA and use it for source, tree, planning documents and citations.
 - PR/commit imports select the actual source revision. An explicitly entered unrelated target is rejected.
-- Source retrieval is bounded to 60 candidate files, 20KB per file, a finite time window and a bounded model context. Coverage and omissions are reported.
+- Source retrieval inspects up to 60 initial candidates and 16 tree-listed relative import targets. Assessment can focus a 20KB window around claim identifiers in source scanned up to 512KB; package manifests allow a 64KB window. Original line numbers and whole-source comment checks are retained. Finite request/context budgets still apply. Explicit hints prioritize up to eight readable source paths. Secrets, generated files and excluded evidence paths remain ineligible. Coverage and omissions are reported.
 - A supplied comparison base must be a valid ancestor. An observed added supporting line is narrower evidence than “the feature was newly implemented.”
 - Quote checks preserve case and literal whitespace. Comment, restatement and disabled-setting guards are defensive heuristics, not a proof of program semantics.
+- Additional checks parse package manifests, reject mismatched dependency/license subjects, and cap support from imports, declarations, documentation and universal claims. A dependency declaration does not establish an integrated feature. These checks only limit model support; they do not promote a model rejection into success.
 - **No repository code is executed.** Prompt delimiters, quote checks and bounded inputs reduce some attacks; they do not eliminate prompt injection or model mistakes.
 - A public service token cannot grant an anonymous visitor private repository access. Private inspection requires the visitor's own GitHub authority.
 
@@ -97,6 +99,9 @@ The browser suite starts/reuses port 3018. Production verification, including ac
 - [Current live source observations](benchmark/v2/live-evaluation.json): eight labeled claims across pinned Express and Chalk revisions matched their expected outcomes. These selected builder requests use actual GitHub and Gemini responses. They are separate from the manufactured regression cases and historical benchmark.
 - `node scripts/live-evaluation.mjs` runs another explicit provider-consuming observation against a local service. Archive the existing records first; this intentionally writes a new run.
 - [Build record](BUILD_STATUS.md) discloses actual live-provider observations, setup/test failures and limits. Controlled tests, illustrative examples and real provider runs are labeled separately.
+- [Product backlog and limits](devpost/PRODUCT_STATUS.md) maps the authorized improvements to their implementation and remaining evidence gaps.
+- [Frozen six-repository plan](benchmark/v3/plan.json) contains 33 builder-authored evidence-class expectations. `node scripts/run-product-evaluation.mjs NEW-RUN-NAME` runs actual provider requests through the production assessment handler and retains each attempt. It supplies explicit source paths, so it does not measure automatic retrieval quality. Its baseline is the same raw model answer before deterministic validation, not a competing product.
+- [Independent observation protocol](devpost/product-observation.md) defines user-comprehension, changed-decision and timing observations. Those sessions remain pending; automated checks are not independent users.
 
 No population success rate, independent-user adoption, financial savings or numerical winning probability is established. External testing would strengthen the impact evidence, but is not fabricated from the builder's own runs.
 

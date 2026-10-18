@@ -1,4 +1,5 @@
 import { parseGitHubRepoUrl } from "./report-crypto.mjs";
+import { sourceWindow } from "./source-window.mjs";
 
 export { parseGitHubRepoUrl };
 
@@ -405,6 +406,8 @@ export interface RepoFileContent {
   file: string;
   text: string;
   truncated: boolean;
+  startLine?: number;
+  nonImplementationLines?: number[];
 }
 
 export function isSkippableFile(path: string): boolean {
@@ -449,8 +452,8 @@ async function fetchRepoFile(
     let text = Buffer.from(data.content, "base64").toString("utf8");
     if (text.includes("\u0000")) return null;
     let truncated = false;
-    if (text.length > MAX_FILE_CHARS) {
-      text = text.slice(0, MAX_FILE_CHARS) + TRUNCATION_MARKER;
+    if (text.length > 512 * 1024) {
+      text = text.slice(0, 512 * 1024);
       truncated = true;
     }
     return { file: path, text, truncated };
@@ -668,6 +671,7 @@ export async function fetchFileContentsForClaims(
   filesByClaim: Record<string, string[]>,
   userToken?: string,
   ref?: string,
+  claimsById: Record<string, string> = {},
 ): Promise<Record<string, RepoFileContent[]>> {
   const cache = new Map<string, Promise<RepoFileContent | null>>();
   const load = (path: string): Promise<RepoFileContent | null> => {
@@ -688,7 +692,16 @@ export async function fetchFileContentsForClaims(
       const loaded = await Promise.all(eligible.map(load));
       return [
         claimId,
-        loaded.filter((f): f is RepoFileContent => f !== null),
+        loaded
+          .filter((f): f is RepoFileContent => f !== null)
+          .map((doc) => {
+            const window = sourceWindow(
+              doc.file,
+              doc.text,
+              claimsById[claimId] || "",
+            );
+            return { ...window, truncated: doc.truncated || window.truncated };
+          }),
       ] as const;
     }),
   );

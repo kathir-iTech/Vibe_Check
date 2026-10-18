@@ -223,6 +223,7 @@ export async function POST(request: NextRequest) {
         filesByClaim,
         userToken,
         headSha,
+        Object.fromEntries(toAssess.map((c) => [c.id, c.text])),
       );
     } catch {
       supportFiles = {};
@@ -359,6 +360,17 @@ export async function POST(request: NextRequest) {
       }),
       headSha,
       docs,
+      sourceWindows: Object.fromEntries(
+        Object.entries(supportFiles).map(([id, files]) => [
+          id,
+          files.map((file) => ({
+            file: file.file,
+            startLine: file.startLine || 1,
+            endLine: (file.startLine || 1) + file.text.split("\n").length - 1,
+            truncated: Boolean((file as any).truncated),
+          })),
+        ]),
+      ),
       model,
       modelFallback,
       usage,

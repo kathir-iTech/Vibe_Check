@@ -116,7 +116,15 @@ export function isFallbackWorthy(error: unknown): boolean {
   const status = httpStatusOf(error);
   // The primary can return DEADLINE_EXCEEDED (504) even within the client
   // deadline. Make one bounded fallback attempt for transient provider failures.
-  return [404, 408, 429, 500, 502, 503, 504].includes(status ?? 0);
+  return (
+    [404, 408, 429, 500, 502, 503, 504].includes(status ?? 0) ||
+    (error instanceof Error &&
+      (error.name === "AbortError" ||
+        error.name === "TimeoutError" ||
+        /^(?:This operation was aborted|The operation was aborted|Request timed out)\.?$/i.test(
+          error.message,
+        )))
+  );
 }
 
 async function generateText(
@@ -282,6 +290,8 @@ export async function extractClaimsViaGemini(
 export interface SpecDoc {
   file: string;
   text: string;
+  startLine?: number;
+  nonImplementationLines?: number[];
 }
 
 export interface SpecAssessment {
@@ -404,7 +414,11 @@ export function validateAssessments(
         const lineText = doc ? doc.text.split("\n")[found - 1] || "" : "";
         if (
           !isExecutableCodeLine(lineText, supportingFile) ||
-          !isImplementationLineAt(doc.text, found, supportingFile)
+          !(doc.nonImplementationLines
+            ? !doc.nonImplementationLines.includes(
+                found + (doc.startLine || 1) - 1,
+              )
+            : isImplementationLineAt(doc.text, found, supportingFile))
         ) {
           quoteRejected = true;
           supported = false;
@@ -421,7 +435,7 @@ export function validateAssessments(
           supportingLine = 0;
           rejectionReason = RESTATEMENT_REASON;
         } else {
-          supportingLine = found;
+          supportingLine = found + (doc.startLine || 1) - 1;
           supportingQuote = lineText.trim();
           sourceCheck = sourceSupportCheck(
             claim.text,
@@ -485,10 +499,10 @@ function emptyAssessments(
   }));
 }
 
-const numbered = (text: string) =>
+const numbered = (text: string, startLine = 1) =>
   text
     .split("\n")
-    .map((line, i) => `${i + 1}: ${line}`)
+    .map((line, i) => `${i + startLine}: ${line}`)
     .join("\n");
 
 export function buildAssessmentPrompt(
@@ -506,20 +520,25 @@ export function buildAssessmentPrompt(
     text: string;
     claimIds: string[];
     bestRank: number;
+    startLine: number;
+    key: string;
   }
   const distinct = new Map<string, FileEntry>();
   for (const claim of claims) {
     (supportByClaim[claim.id] || []).forEach((f, rank) => {
-      const existing = distinct.get(f.file);
+      const key = `${f.file}:${f.startLine || 1}`;
+      const existing = distinct.get(key);
       if (existing) {
         existing.claimIds.push(claim.id);
         existing.bestRank = Math.min(existing.bestRank, rank);
       } else {
-        distinct.set(f.file, {
+        distinct.set(key, {
           file: f.file,
           text: f.text,
           claimIds: [claim.id],
           bestRank: rank,
+          key,
+          startLine: f.startLine || 1,
         });
       }
     });
@@ -533,22 +552,25 @@ export function buildAssessmentPrompt(
   let budget = MAX_PROMPT_FILE_CHARS;
   for (const entry of ordered) {
     if (entry.text.length <= budget) {
-      kept.add(entry.file);
+      kept.add(entry.key);
       budget -= entry.text.length;
     }
   }
 
   const fileSections = ordered
-    .filter((e) => kept.has(e.file))
-    .map((e) => `=== ${e.file} ===\n${untrusted(numbered(e.text), nonce)}`)
+    .filter((e) => kept.has(e.key))
+    .map(
+      (e) =>
+        `=== ${e.file} ===\n${untrusted(numbered(e.text, e.startLine), nonce)}`,
+    )
     .join("\n\n");
 
   const claimFileList = claims
     .map((c) => {
       const matched = supportByClaim[c.id] || [];
       const keptNames = matched
-        .filter((f) => kept.has(f.file))
-        .map((f) => f.file);
+        .filter((f) => kept.has(`${f.file}:${f.startLine || 1}`))
+        .map((f) => `${f.file} (window starts at line ${f.startLine || 1})`);
       const omittedCount = matched.length - keptNames.length;
       const parts = [
         `${c.id}: ${keptNames.length ? keptNames.join(", ") : "(none shown)"}`,

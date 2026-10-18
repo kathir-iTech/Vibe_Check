@@ -40,9 +40,7 @@ test("review extraction precedes inspection and accepts explicit source hints", 
   expect(inspected).toBe(false);
   await page.getByText("Advanced options", { exact: false }).click();
   await page.getByLabel(/Relevant files/).fill("src/auth.ts");
-  await page
-    .getByRole("button", { name: "Check the proof", exact: true })
-    .click();
+  await page.getByRole("button", { name: /Check the proof/ }).click();
   await expect(
     page.getByRole("heading", { name: "A quick look at the results." }),
   ).toBeVisible();
@@ -71,9 +69,7 @@ test("a failed later stage preserves extracted claims at the original revision",
     }),
   );
   await page.goto("/");
-  await page
-    .getByRole("button", { name: "Check the proof", exact: true })
-    .click();
+  await page.getByRole("button", { name: /Check the proof/ }).click();
   await expect(page.getByRole("alert")).toContainText(
     "Provider temporarily unavailable",
   );
