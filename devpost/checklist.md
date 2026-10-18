@@ -7,6 +7,60 @@ status: approved
 
 Build mode: fast — learner issues scoped Fix prompts, agent builds/verifies/commits, learner reviews after push (confirmed by the Fix 6 prompt: "Send 'Fix 6 pushed' and I'll clone and check it").
 
+## Evidence-workspace upgrade — approved 18 October 2026
+
+The owner approved implementing the reviewed next-level plan and delegated implementation, verification, GitHub pushes and existing Vercel delivery. Continue fast mode. Preserve earlier planning and measured results; extend the five existing features with evidence provenance, requirement coverage and comparison. The static/API-only execution boundary remains. External user recruitment and personal submission/video actions remain outside implementation.
+
+- [ ] **21. Trustworthy evidence and reports**
+  Becomes usable: Quotes preserve code semantics and reports cannot authenticate changed or client-invented audit results.
+  Why now: Direct counterexamples defeat the current trust promise.
+  PRD ref: `prd.md > Features and Behavior > Shareable Verdict Report`
+  Spec ref: `spec.md > Data Model`, `spec.md > Important Failure Modes`
+  Build: Complete versioned signatures, server audit receipts, strict payload and source quote validation.
+  Verify (mechanical): Production-function and actual route tampering/forgery/missing-secret regression checks; typecheck and existing suite.
+  Learner check: Open a verified report; change its evidence and observe rejection.
+  Commit: `fix: bind reports to complete server audit evidence`
+
+- [ ] **22. One snapshot and precise evidence obligations**
+  Becomes usable: An audit reads one commit and distinguishes source support from runtime claims and new changes.
+  Why now: Requirements and comparisons need stable evidence identities.
+  PRD ref: `prd.md > Features and Behavior > Repo Evidence Checker`
+  Spec ref: `spec.md > Components`, `spec.md > Important Failure Modes`
+  Build: Immutable GitHub snapshots, correct PR/commit targets, bounded coverage, requirements retrieval and server orchestration.
+  Verify (mechanical): Snapshot movement, private-access, source mismatch, runtime overclaim and malformed-input checks; one real GitHub/Gemini audit.
+  Learner check: Inspect every citation at the displayed commit and distinguish configuration from execution proof.
+  Commit: `feat: audit claims and requirements at an immutable source revision`
+
+- [ ] **23. Clear audit, requirement and recheck workspace**
+  Becomes usable: Inspect evidence, omissions, next actions and changes between audits; export results with persistent provenance.
+  Why now: Makes the stronger verification accessible in the existing core journey.
+  PRD ref: `prd.md > The Core Journey`, `prd.md > Screens and Layout`
+  Spec ref: `spec.md > Look and Feel`, `spec.md > Components`
+  Build: Accessible workspace, source labels, requirements map, result comparison, evidence export/import and interruption recovery.
+  Verify (mechanical): Desktop/mobile browser workflows, keyboard/theme/error states, export/reimport and report integrity.
+  Learner check: Run a claim, inspect its evidence and missing-proof request, then compare a recheck.
+  Commit: `feat: build an evidence-first audit and recheck workspace`
+
+- [ ] **24. Reproducible adversarial evaluation**
+  Becomes usable: Inspect current verifier tests and held-out model results without confusing them with historical benchmarks.
+  Why now: New behavior needs measured evidence beyond curated examples.
+  PRD ref: `prd.md > Product Decisions`
+  Spec ref: `spec.md > Important Failure Modes`
+  Build: Versioned adversarial cases, explicit drift/partial/runtime obligations, honest denominators and comparison records.
+  Verify (mechanical): Evaluation recomputation and actual bounded live calls; preserve failures and historical raw data.
+  Learner check: Compare source/version identities and inspect an actual failure as well as successes.
+  Commit: `test: publish bounded current-verifier evaluation and limitations`
+
+- [ ] **25. Reviewed delivery**
+  Becomes usable: The tested workspace is available from the existing public website and GitHub repository.
+  Why now: Delivery must follow successful implementation and verification.
+  PRD ref: `prd.md > What We're Building`
+  Spec ref: `spec.md > Where It Runs and How Someone Tries It`
+  Build: Reproduction/docs alignment, staged production deployment, hosted readbacks and release record.
+  Verify (mechanical): Full verification gate, actual deployed browser/API/report checks, source identity and GitHub push checks.
+  Learner check: Open the hosted app and try the audit journey; feedback can guide a subsequent focused revision.
+  Commit: `docs: record verified evidence-workspace delivery`
+
 ## Slices
 
 - [x] **1. Project scaffold and build passing**
