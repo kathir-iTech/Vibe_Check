@@ -1,0 +1,205 @@
+{
+  "scope": "Actual hosted HTTP -> GitHub -> deterministic execution-evidence boundary -> signed report -> independent Node Ed25519 verification -> share endpoint. This intentionally makes no model calls and does not establish model availability or semantic accuracy. Configuration health is distinct from provider readiness.",
+  "observedAt": "2026-10-18T07:52:00.897Z",
+  "origin": "https://vibe-check-dev.vercel.app",
+  "health": {
+    "status": "configured",
+    "verifierVersion": "2.1.0",
+    "sourceHead": "e83ced8c3a10ed137eec9ec4d2fbab74373dc063",
+    "gitBranch": "codex/verification-depth",
+    "signingConfigured": true,
+    "providerConfigured": true,
+    "scope": "Configuration check only. Provider availability and actual source observations require a completed audit."
+  },
+  "rootStatus": 200,
+  "proofStatus": 200,
+  "signatureVerified": true,
+  "shareEndpointVerified": true,
+  "durationMs": 15673,
+  "audit": {
+    "verifierVersion": "2.1.0",
+    "source": {
+      "kind": "live",
+      "label": "Server assessment of GitHub source"
+    },
+    "requirements": [],
+    "sourceDocuments": [],
+    "models": {
+      "assessment": {
+        "model": null,
+        "fallback": false,
+        "usage": null
+      }
+    },
+    "timings": {
+      "sourceAndClaimsMs": 439,
+      "evidenceMs": 1225,
+      "assessmentMs": 656,
+      "totalMs": 2320
+    },
+    "warnings": [
+      "No bounded requirements were extracted. Planning coverage needs human review.",
+      "Retrieval is bounded. An uninspected file may contain additional evidence; UNVERIFIED does not mean false."
+    ],
+    "retrieval": {
+      "totalFiles": 35,
+      "candidateFiles": 28,
+      "inspectedFiles": 28,
+      "omittedFiles": 7,
+      "treeTruncated": false,
+      "bounded": true,
+      "followupCandidates": 0,
+      "fileHints": []
+    },
+    "repoUrl": "https://github.com/chalk/chalk",
+    "headSha": "47fc05abd46171b235e24174cd2dba83d25bf037",
+    "reviewContext": "040e3fcbce8aae90c3110b328b49c45b40bf648e4e9f45d4b425cda8e03f9d8a",
+    "generatedAt": "2026-10-18T07:51:48.600Z",
+    "claims": [
+      {
+        "id": "execution",
+        "text": "All tests passed",
+        "evidenceType": [
+          "file",
+          "commit"
+        ]
+      }
+    ],
+    "evidence": {
+      "execution": {
+        "files": [
+          "test/force-color.js",
+          "test/chalk.js",
+          "test/level.js",
+          "test/visible.js",
+          "test/_fixture.js"
+        ],
+        "fileMatches": [
+          {
+            "file": "test/force-color.js",
+            "hitCount": 1,
+            "matchedTerms": [
+              "tests"
+            ],
+            "pathMatched": true
+          },
+          {
+            "file": "test/chalk.js",
+            "hitCount": 0,
+            "matchedTerms": [],
+            "pathMatched": true
+          },
+          {
+            "file": "test/level.js",
+            "hitCount": 0,
+            "matchedTerms": [],
+            "pathMatched": true
+          },
+          {
+            "file": "test/visible.js",
+            "hitCount": 0,
+            "matchedTerms": [],
+            "pathMatched": true
+          },
+          {
+            "file": "test/_fixture.js",
+            "hitCount": 0,
+            "matchedTerms": [],
+            "pathMatched": true
+          }
+        ],
+        "commits": [
+          {
+            "sha": "9c93a04eae27fb1801764fbd60eb0811e2068b83",
+            "message": "Fix inconsistent coercion of two arguments\n\nFixes #691",
+            "date": "2026-09-27T03:29:39Z",
+            "author": "Sindre Sorhus",
+            "filesChanged": [
+              "source/index.js",
+              "test/chalk.js"
+            ],
+            "additions": 15,
+            "deletions": 1,
+            "patchPreview": "+\t\t\t// The template literal matches `Array#join` coercion (`null` and `undefined` become empty, objects use `toString`) while being faster. +\t\t\treturn applyStyle(builder, `${arguments_[0] ?? ''} ${arguments_[1] ?? ''}`);"
+          }
+        ],
+        "matchedTerms": [
+          "tests"
+        ],
+        "totalFilesInRepo": 35,
+        "defaultBranch": "main",
+        "headSha": "47fc05abd46171b235e24174cd2dba83d25bf037",
+        "treeTruncated": false,
+        "sourceWindows": []
+      }
+    },
+    "verdicts": [
+      {
+        "claimId": "execution",
+        "claimText": "All tests passed",
+        "verdict": "UNVERIFIED",
+        "reason": "This claim needs an execution or deployment record for the inspected commit. Source code alone cannot establish the outcome.",
+        "specReference": "",
+        "obligation": "execution",
+        "nextEvidence": "Attach a completed CI check for this commit, including its name and result.",
+        "contract": {
+          "checked": "Source and separately attributed records; no repository code executed.",
+          "established": "No sufficient source support established.",
+          "unknown": "The claimed execution or deployment outcome is not certified.",
+          "resolve": "Attach a completed CI check for this commit, including its name and result."
+        }
+      }
+    ],
+    "executionRecords": [
+      {
+        "name": "Node.js 26",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/chalk/chalk/actions/runs/36291955143/job/108543618010",
+        "headSha": "47fc05abd46171b235e24174cd2dba83d25bf037",
+        "completedAt": "2026-09-27T03:38:16Z",
+        "claimIds": [],
+        "note": "Provider-reported named check only; does not certify unspecified tests or complete functionality."
+      },
+      {
+        "name": "Node.js 22",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/chalk/chalk/actions/runs/36291955143/job/108543617887",
+        "headSha": "47fc05abd46171b235e24174cd2dba83d25bf037",
+        "completedAt": "2026-09-27T03:38:17Z",
+        "claimIds": [],
+        "note": "Provider-reported named check only; does not certify unspecified tests or complete functionality."
+      },
+      {
+        "name": "Node.js 26",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/chalk/chalk/actions/runs/36291955059/job/108543617591",
+        "headSha": "47fc05abd46171b235e24174cd2dba83d25bf037",
+        "completedAt": "2026-09-27T03:38:22Z",
+        "claimIds": [],
+        "note": "Provider-reported named check only; does not certify unspecified tests or complete functionality."
+      },
+      {
+        "name": "Node.js 22",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/chalk/chalk/actions/runs/36291955059/job/108543617484",
+        "headSha": "47fc05abd46171b235e24174cd2dba83d25bf037",
+        "completedAt": "2026-09-27T03:38:14Z",
+        "claimIds": [],
+        "note": "Provider-reported named check only; does not certify unspecified tests or complete functionality."
+      }
+    ],
+    "schema": "vibecheck/audit/v2",
+    "keyId": "127987f5e2ec7540",
+    "sig": "zyxcXaQAA0XL2Cuf1pWBIjfMxwbTM6sg0DwSLEbrMT2uyFH43MCLuwy7-wj9Fv7A4dIFiaPz8lHCJIJYXLknDA"
+  },
+  "verificationKey": {
+    "algorithm": "Ed25519",
+    "keyId": "127987f5e2ec7540",
+    "publicKey": "MCowBQYDK2VwAyEAumOzBXgDmhxqIgLX5AORpijBX+44AMhuFA9B3Zt2BQU="
+  },
+  "permalink": "https://vibe-check-dev.vercel.app/report/view#eyJ2ZXJpZmllclZlcnNpb24iOiIyLjEuMCIsInNvdXJjZSI6eyJraW5kIjoibGl2ZSIsImxhYmVsIjoiU2VydmVyIGFzc2Vzc21lbnQgb2YgR2l0SHViIHNvdXJjZSJ9LCJyZXF1aXJlbWVudHMiOltdLCJzb3VyY2VEb2N1bWVudHMiOltdLCJtb2RlbHMiOnsiYXNzZXNzbWVudCI6eyJtb2RlbCI6bnVsbCwiZmFsbGJhY2siOmZhbHNlLCJ1c2FnZSI6bnVsbH19LCJ0aW1pbmdzIjp7InNvdXJjZUFuZENsYWltc01zIjo0MzksImV2aWRlbmNlTXMiOjEyMjUsImFzc2Vzc21lbnRNcyI6NjU2LCJ0b3RhbE1zIjoyMzIwfSwid2FybmluZ3MiOlsiTm8gYm91bmRlZCByZXF1aXJlbWVudHMgd2VyZSBleHRyYWN0ZWQuIFBsYW5uaW5nIGNvdmVyYWdlIG5lZWRzIGh1bWFuIHJldmlldy4iLCJSZXRyaWV2YWwgaXMgYm91bmRlZC4gQW4gdW5pbnNwZWN0ZWQgZmlsZSBtYXkgY29udGFpbiBhZGRpdGlvbmFsIGV2aWRlbmNlOyBVTlZFUklGSUVEIGRvZXMgbm90IG1lYW4gZmFsc2UuIl0sInJldHJpZXZhbCI6eyJ0b3RhbEZpbGVzIjozNSwiY2FuZGlkYXRlRmlsZXMiOjI4LCJpbnNwZWN0ZWRGaWxlcyI6MjgsIm9taXR0ZWRGaWxlcyI6NywidHJlZVRydW5jYXRlZCI6ZmFsc2UsImJvdW5kZWQiOnRydWUsImZvbGxvd3VwQ2FuZGlkYXRlcyI6MCwiZmlsZUhpbnRzIjpbXX0sInJlcG9VcmwiOiJodHRwczovL2dpdGh1Yi5jb20vY2hhbGsvY2hhbGsiLCJoZWFkU2hhIjoiNDdmYzA1YWJkNDYxNzFiMjM1ZTI0MTc0Y2QyZGJhODNkMjViZjAzNyIsInJldmlld0NvbnRleHQiOiIwNDBlM2ZjYmNlOGFhZTkwYzMxMTBiMzI4YjQ5YzQ1YjQwYmY2NDhlNGU5ZjQ1ZDRiNDI1Y2RhOGUwM2Y5ZDhhIiwiZ2VuZXJhdGVkQXQiOiIyMDI2LTEwLTE4VDA3OjUxOjQ4LjYwMFoiLCJjbGFpbXMiOlt7ImlkIjoiZXhlY3V0aW9uIiwidGV4dCI6IkFsbCB0ZXN0cyBwYXNzZWQiLCJldmlkZW5jZVR5cGUiOlsiZmlsZSIsImNvbW1pdCJdfV0sImV2aWRlbmNlIjp7ImV4ZWN1dGlvbiI6eyJmaWxlcyI6WyJ0ZXN0L2ZvcmNlLWNvbG9yLmpzIiwidGVzdC9jaGFsay5qcyIsInRlc3QvbGV2ZWwuanMiLCJ0ZXN0L3Zpc2libGUuanMiLCJ0ZXN0L19maXh0dXJlLmpzIl0sImZpbGVNYXRjaGVzIjpbeyJmaWxlIjoidGVzdC9mb3JjZS1jb2xvci5qcyIsImhpdENvdW50IjoxLCJtYXRjaGVkVGVybXMiOlsidGVzdHMiXSwicGF0aE1hdGNoZWQiOnRydWV9LHsiZmlsZSI6InRlc3QvY2hhbGsuanMiLCJoaXRDb3VudCI6MCwibWF0Y2hlZFRlcm1zIjpbXSwicGF0aE1hdGNoZWQiOnRydWV9LHsiZmlsZSI6InRlc3QvbGV2ZWwuanMiLCJoaXRDb3VudCI6MCwibWF0Y2hlZFRlcm1zIjpbXSwicGF0aE1hdGNoZWQiOnRydWV9LHsiZmlsZSI6InRlc3QvdmlzaWJsZS5qcyIsImhpdENvdW50IjowLCJtYXRjaGVkVGVybXMiOltdLCJwYXRoTWF0Y2hlZCI6dHJ1ZX0seyJmaWxlIjoidGVzdC9fZml4dHVyZS5qcyIsImhpdENvdW50IjowLCJtYXRjaGVkVGVybXMiOltdLCJwYXRoTWF0Y2hlZCI6dHJ1ZX1dLCJjb21taXRzIjpbeyJzaGEiOiI5YzkzYTA0ZWFlMjdmYjE4MDE3NjRmYmQ2MGViMDgxMWUyMDY4YjgzIiwibWVzc2FnZSI6IkZpeCBpbmNvbnNpc3RlbnQgY29lcmNpb24gb2YgdHdvIGFyZ3VtZW50c1xuXG5GaXhlcyAjNjkxIiwiZGF0ZSI6IjIwMjYtMDktMjdUMDM6Mjk6MzlaIiwiYXV0aG9yIjoiU2luZHJlIFNvcmh1cyIsImZpbGVzQ2hhbmdlZCI6WyJzb3VyY2UvaW5kZXguanMiLCJ0ZXN0L2NoYWxrLmpzIl0sImFkZGl0aW9ucyI6MTUsImRlbGV0aW9ucyI6MSwicGF0Y2hQcmV2aWV3IjoiK1x0XHRcdC8vIFRoZSB0ZW1wbGF0ZSBsaXRlcmFsIG1hdGNoZXMgYEFycmF5I2pvaW5gIGNvZXJjaW9uIChgbnVsbGAgYW5kIGB1bmRlZmluZWRgIGJlY29tZSBlbXB0eSwgb2JqZWN0cyB1c2UgYHRvU3RyaW5nYCkgd2hpbGUgYmVpbmcgZmFzdGVyLiArXHRcdFx0cmV0dXJuIGFwcGx5U3R5bGUoYnVpbGRlciwgYCR7YXJndW1lbnRzX1swXSA_PyAnJ30gJHthcmd1bWVudHNfWzFdID8_ICcnfWApOyJ9XSwibWF0Y2hlZFRlcm1zIjpbInRlc3RzIl0sInRvdGFsRmlsZXNJblJlcG8iOjM1LCJkZWZhdWx0QnJhbmNoIjoibWFpbiIsImhlYWRTaGEiOiI0N2ZjMDVhYmQ0NjE3MWIyMzVlMjQxNzRjZDJkYmE4M2QyNWJmMDM3IiwidHJlZVRydW5jYXRlZCI6ZmFsc2UsInNvdXJjZVdpbmRvd3MiOltdfX0sInZlcmRpY3RzIjpbeyJjbGFpbUlkIjoiZXhlY3V0aW9uIiwiY2xhaW1UZXh0IjoiQWxsIHRlc3RzIHBhc3NlZCIsInZlcmRpY3QiOiJVTlZFUklGSUVEIiwicmVhc29uIjoiVGhpcyBjbGFpbSBuZWVkcyBhbiBleGVjdXRpb24gb3IgZGVwbG95bWVudCByZWNvcmQgZm9yIHRoZSBpbnNwZWN0ZWQgY29tbWl0LiBTb3VyY2UgY29kZSBhbG9uZSBjYW5ub3QgZXN0YWJsaXNoIHRoZSBvdXRjb21lLiIsInNwZWNSZWZlcmVuY2UiOiIiLCJvYmxpZ2F0aW9uIjoiZXhlY3V0aW9uIiwibmV4dEV2aWRlbmNlIjoiQXR0YWNoIGEgY29tcGxldGVkIENJIGNoZWNrIGZvciB0aGlzIGNvbW1pdCwgaW5jbHVkaW5nIGl0cyBuYW1lIGFuZCByZXN1bHQuIiwiY29udHJhY3QiOnsiY2hlY2tlZCI6IlNvdXJjZSBhbmQgc2VwYXJhdGVseSBhdHRyaWJ1dGVkIHJlY29yZHM7IG5vIHJlcG9zaXRvcnkgY29kZSBleGVjdXRlZC4iLCJlc3RhYmxpc2hlZCI6Ik5vIHN1ZmZpY2llbnQgc291cmNlIHN1cHBvcnQgZXN0YWJsaXNoZWQuIiwidW5rbm93biI6IlRoZSBjbGFpbWVkIGV4ZWN1dGlvbiBvciBkZXBsb3ltZW50IG91dGNvbWUgaXMgbm90IGNlcnRpZmllZC4iLCJyZXNvbHZlIjoiQXR0YWNoIGEgY29tcGxldGVkIENJIGNoZWNrIGZvciB0aGlzIGNvbW1pdCwgaW5jbHVkaW5nIGl0cyBuYW1lIGFuZCByZXN1bHQuIn19XSwiZXhlY3V0aW9uUmVjb3JkcyI6W3sibmFtZSI6Ik5vZGUuanMgMjYiLCJzdGF0dXMiOiJjb21wbGV0ZWQiLCJjb25jbHVzaW9uIjoic3VjY2VzcyIsInVybCI6Imh0dHBzOi8vZ2l0aHViLmNvbS9jaGFsay9jaGFsay9hY3Rpb25zL3J1bnMvMzYyOTE5NTUxNDMvam9iLzEwODU0MzYxODAxMCIsImhlYWRTaGEiOiI0N2ZjMDVhYmQ0NjE3MWIyMzVlMjQxNzRjZDJkYmE4M2QyNWJmMDM3IiwiY29tcGxldGVkQXQiOiIyMDI2LTA5LTI3VDAzOjM4OjE2WiIsImNsYWltSWRzIjpbXSwibm90ZSI6IlByb3ZpZGVyLXJlcG9ydGVkIG5hbWVkIGNoZWNrIG9ubHk7IGRvZXMgbm90IGNlcnRpZnkgdW5zcGVjaWZpZWQgdGVzdHMgb3IgY29tcGxldGUgZnVuY3Rpb25hbGl0eS4ifSx7Im5hbWUiOiJOb2RlLmpzIDIyIiwic3RhdHVzIjoiY29tcGxldGVkIiwiY29uY2x1c2lvbiI6InN1Y2Nlc3MiLCJ1cmwiOiJodHRwczovL2dpdGh1Yi5jb20vY2hhbGsvY2hhbGsvYWN0aW9ucy9ydW5zLzM2MjkxOTU1MTQzL2pvYi8xMDg1NDM2MTc4ODciLCJoZWFkU2hhIjoiNDdmYzA1YWJkNDYxNzFiMjM1ZTI0MTc0Y2QyZGJhODNkMjViZjAzNyIsImNvbXBsZXRlZEF0IjoiMjAyNi0wOS0yN1QwMzozODoxN1oiLCJjbGFpbUlkcyI6W10sIm5vdGUiOiJQcm92aWRlci1yZXBvcnRlZCBuYW1lZCBjaGVjayBvbmx5OyBkb2VzIG5vdCBjZXJ0aWZ5IHVuc3BlY2lmaWVkIHRlc3RzIG9yIGNvbXBsZXRlIGZ1bmN0aW9uYWxpdHkuIn0seyJuYW1lIjoiTm9kZS5qcyAyNiIsInN0YXR1cyI6ImNvbXBsZXRlZCIsImNvbmNsdXNpb24iOiJzdWNjZXNzIiwidXJsIjoiaHR0cHM6Ly9naXRodWIuY29tL2NoYWxrL2NoYWxrL2FjdGlvbnMvcnVucy8zNjI5MTk1NTA1OS9qb2IvMTA4NTQzNjE3NTkxIiwiaGVhZFNoYSI6IjQ3ZmMwNWFiZDQ2MTcxYjIzNWUyNDE3NGNkMmRiYTgzZDI1YmYwMzciLCJjb21wbGV0ZWRBdCI6IjIwMjYtMDktMjdUMDM6Mzg6MjJaIiwiY2xhaW1JZHMiOltdLCJub3RlIjoiUHJvdmlkZXItcmVwb3J0ZWQgbmFtZWQgY2hlY2sgb25seTsgZG9lcyBub3QgY2VydGlmeSB1bnNwZWNpZmllZCB0ZXN0cyBvciBjb21wbGV0ZSBmdW5jdGlvbmFsaXR5LiJ9LHsibmFtZSI6Ik5vZGUuanMgMjIiLCJzdGF0dXMiOiJjb21wbGV0ZWQiLCJjb25jbHVzaW9uIjoic3VjY2VzcyIsInVybCI6Imh0dHBzOi8vZ2l0aHViLmNvbS9jaGFsay9jaGFsay9hY3Rpb25zL3J1bnMvMzYyOTE5NTUwNTkvam9iLzEwODU0MzYxNzQ4NCIsImhlYWRTaGEiOiI0N2ZjMDVhYmQ0NjE3MWIyMzVlMjQxNzRjZDJkYmE4M2QyNWJmMDM3IiwiY29tcGxldGVkQXQiOiIyMDI2LTA5LTI3VDAzOjM4OjE0WiIsImNsYWltSWRzIjpbXSwibm90ZSI6IlByb3ZpZGVyLXJlcG9ydGVkIG5hbWVkIGNoZWNrIG9ubHk7IGRvZXMgbm90IGNlcnRpZnkgdW5zcGVjaWZpZWQgdGVzdHMgb3IgY29tcGxldGUgZnVuY3Rpb25hbGl0eS4ifV0sInNjaGVtYSI6InZpYmVjaGVjay9hdWRpdC92MiIsImtleUlkIjoiMTI3OTg3ZjVlMmVjNzU0MCIsInNpZyI6Inp5eGNYYVFBQTBYTDJDdWYxcFdCSWpmTXh3YlRNNnNnMER3U0xFYnJNVDJ1eUZINDNNQ0x1d3k3LXdqOUZ2N0E0ZElGaWFQejhsSENKSUpZWExrbkRBIn0"
+}
