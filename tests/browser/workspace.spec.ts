@@ -15,6 +15,9 @@ test("first visit shows an honest idle state and an explicitly illustrative exam
   await expect(
     page.getByText("Live server assessment", { exact: true }),
   ).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Check the proof" }),
+  ).toBeEnabled();
   mkdirSync("artifacts/ui", { recursive: true });
   await page.screenshot({
     path: "artifacts/ui/light-desktop.png",

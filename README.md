@@ -84,6 +84,8 @@ REPORT_SIGNING_SECRET=your-dedicated-random-secret-at-least-32-characters
 
 `GEMINI_PRIMARY_MODEL` optionally selects the primary Google model. The service reports actual model/fallback use. Provider attempts are explicitly bounded and provider availability is not guaranteed. Do not place credentials in `NEXT_PUBLIC_` variables or commit local environment files.
 
+Extraction and assessment request explicit JSON schemas. Empty, malformed or structurally invalid output gets at most one fallback attempt; conservative evidence rejections remain valid outcomes and do not trigger a retry for a positive answer. Two invalid responses stop with a clear error and preserve the draft.
+
 ```sh
 npm run dev
 npm run verify

@@ -115,6 +115,15 @@ function httpStatusOf(error: unknown): number | null {
   return match ? Number(match[1]) : null;
 }
 
+class ProviderFormatError extends Error {
+  constructor() {
+    super(
+      "The AI provider returned an invalid response format. Your input is preserved; please retry.",
+    );
+    this.name = "ProviderFormatError";
+  }
+}
+
 export function isFallbackWorthy(error: unknown): boolean {
   const status = httpStatusOf(error);
   // The primary can return DEADLINE_EXCEEDED (504) even within the client
@@ -122,7 +131,8 @@ export function isFallbackWorthy(error: unknown): boolean {
   return (
     [404, 408, 429, 500, 502, 503, 504].includes(status ?? 0) ||
     (error instanceof Error &&
-      (error.name === "AbortError" ||
+      (error.name === "ProviderFormatError" ||
+        error.name === "AbortError" ||
         error.name === "TimeoutError" ||
         /^(?:This operation was aborted|The operation was aborted|Request timed out)\.?$/i.test(
           error.message,
@@ -134,7 +144,8 @@ async function generateText(
   ai: GoogleGenAI,
   prompt: string,
   temperature: number,
-  signal?: AbortSignal,
+  signal: AbortSignal | undefined,
+  output: { schema: unknown; validate: (text: string) => unknown },
 ): Promise<{
   text: string;
   model: string;
@@ -144,6 +155,16 @@ async function generateText(
 }> {
   const started = performance.now();
   signal?.throwIfAborted();
+  const validateText = (text: string | undefined): string => {
+    signal?.throwIfAborted();
+    if (!text) throw new ProviderFormatError();
+    try {
+      output.validate(text);
+    } catch {
+      throw new ProviderFormatError();
+    }
+    return text;
+  };
   try {
     const response = await ai.models.generateContent({
       model: PRIMARY_MODEL,
@@ -152,13 +173,11 @@ async function generateText(
         temperature,
         abortSignal: signal,
         responseMimeType: "application/json",
+        responseJsonSchema: output.schema,
         httpOptions: { timeout: 25000, retryOptions: { attempts: 1 } },
       },
     });
-    const text = response.text;
-    if (!text) {
-      throw new Error("Gemini returned an empty response");
-    }
+    const text = validateText(response.text);
     return {
       text,
       model: PRIMARY_MODEL,
@@ -178,13 +197,11 @@ async function generateText(
         temperature,
         abortSignal: signal,
         responseMimeType: "application/json",
+        responseJsonSchema: output.schema,
         httpOptions: { timeout: 25000, retryOptions: { attempts: 1 } },
       },
     });
-    const text = response.text;
-    if (!text) {
-      throw new Error("Gemini returned an empty response");
-    }
+    const text = validateText(response.text);
     return {
       text,
       model: FALLBACK_MODEL,
@@ -278,6 +295,26 @@ export async function extractClaimsViaGemini(
     prompt,
     0.1,
     signal,
+    {
+      schema: {
+        type: "array",
+        minItems: 1,
+        maxItems: MAX_CLAIMS,
+        items: {
+          type: "object",
+          properties: {
+            id: { type: "string" },
+            text: { type: "string" },
+            evidenceType: { type: "array", items: { type: "string" } },
+          },
+          required: ["id", "text", "evidenceType"],
+        },
+      },
+      validate: (text) => {
+        if (!validateClaims(extractJson(text)).length)
+          throw new Error("No claims returned");
+      },
+    },
   );
 
   const parsed = extractJson(text);
@@ -658,6 +695,40 @@ export async function assessClaimsAgainstSpec(
     prompt,
     0,
     signal,
+    {
+      schema: {
+        type: "array",
+        minItems: claims.length,
+        maxItems: claims.length,
+        items: {
+          type: "object",
+          properties: {
+            claimId: { type: "string", enum: claims.map((claim) => claim.id) },
+            contradicts: { type: "boolean" },
+            sourceDoc: { type: "string" },
+            contradictingLine: { type: "string" },
+            reason: { type: "string" },
+            supported: { type: "boolean" },
+            coverage: { type: "string", enum: ["full", "partial", "none"] },
+            supportingFile: { type: "string" },
+            supportingQuote: { type: "string" },
+          },
+          required: [
+            "claimId",
+            "contradicts",
+            "sourceDoc",
+            "contradictingLine",
+            "reason",
+            "supported",
+            "coverage",
+            "supportingFile",
+            "supportingQuote",
+          ],
+        },
+      },
+      validate: (text) =>
+        validateAssessments(extractJson(text), claims, docs, supportByClaim),
+    },
   );
 
   const validationStart = performance.now();
