@@ -6,6 +6,7 @@ node_modules/
 /devpost/learner-profile.md
 *.tsbuildinfo
 devserver.err
+*.log
 txtout*.txt
 FIX_*_SUMMARY.txt
 AGENTS.md

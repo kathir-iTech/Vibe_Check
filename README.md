@@ -4,7 +4,7 @@
 
 VibeCheck helps solo builders review an AI coding agent's handoff. Paste its completion message, enter atomic claims, or import a GitHub PR/commit. The server inspects one fixed source revision and returns source citations, planning conflicts, missing evidence and a review of unmentioned requirements.
 
-[Open the workspace](https://vibe-check-dev.vercel.app) · [Illustrative example](https://vibe-check-dev.vercel.app/demo) · [Build record](BUILD_STATUS.md)
+[Open the workspace](https://vibe-check-dev.vercel.app) · [Recorded real audit](https://vibe-check-dev.vercel.app/proof) · [Evaluation & limits](https://vibe-check-dev.vercel.app/evaluation) · [Build record](BUILD_STATUS.md)
 
 [Recorded live audit](https://vibe-check-dev.vercel.app/proof) provides an explicitly labeled actual public-source observation and its original verifiable report without another model call. Its builder-supplied test requirement is disclosed. It is separate from the illustrative example and from a fresh audit.
 
@@ -16,9 +16,11 @@ Built for **Build With AI: Basics** using the Devpost Learn Skill Pack. Original
 2. Enter a public GitHub repository. For private source, use your own authorized read token in the advanced options.
 3. Optionally select **Review extracted claims first** to edit the atomic claims before source inspection. Select **Check the proof** to run the audit.
 4. Inspect each claim's evidence and next step. Open **Requirements** for explicit planning statements absent from the completion message.
-5. Download JSON, copy PR Markdown or copy a verified report link. Signed reports are checked against the service's public key before they are displayed.
+5. Download JSON, copy PR Markdown or copy a verified report link. Imported and shared signed reports are checked against the service's public key before they are displayed. A restored tab copy is labeled separately.
 6. Use **Inspect more evidence** to retain a finding's revision and add up to eight relevant paths under Advanced options. Hints guide inspection and are labeled as user-supplied.
 7. Copy a **Repair handoff** for unresolved claims and their acceptance evidence. After an actual fix, select **Recheck latest revision**. **Compare** matches exact normalized text or lets you explicitly confirm equivalence. It rejects cross-repository comparisons and does not infer improvement from changed review context, a different verifier or unchanged source.
+
+**Clear this tab** removes the draft, optional token, requirements, recovery checkpoint and assessment together. Theme preference is independent of the workspace draft. Detailed benchmark methodology lives on the evaluation page so the first screen stays focused on the handoff.
 
 The example uses disclosed illustrative data and makes no model calls. It cannot receive a live-audit receipt. Live provider failures produce explicit errors; they never silently become an example or a successful result.
 
@@ -88,6 +90,8 @@ npm run verify
 npm run test:browser
 ```
 
+For a local production server, run `npm run build` followed by `npm start`. Pass `-- --port 3018` to `npm start` to use the browser suite's default port.
+
 The browser suite starts/reuses port 3018. Production verification, including actual model use, is separate from controlled browser fixtures. `BASE_URL` selects an existing deployment for browser checks.
 
 ## Evaluation and reproducibility
@@ -96,11 +100,13 @@ The browser suite starts/reuses port 3018. Production verification, including ac
 - `npm run check-benchmark` recomputes that historical summary from its raw records.
 - `node scripts/evaluate-verifier.mjs` recomputes the current manufactured regression comparison using actual preserved legacy and current production functions/routes. It also checks declared source hashes.
 - `node scripts/evaluate-verifier.mjs --write` records a new manufactured result after intentional verifier changes; review the changed inputs and results before publication.
-- [Current live source observations](benchmark/v2/live-evaluation.json): eight labeled claims across pinned Express and Chalk revisions matched their expected outcomes. These selected builder requests use actual GitHub and Gemini responses. They are separate from the manufactured regression cases and historical benchmark.
+- [Earlier live source observations](benchmark/v2/live-evaluation.json): eight labeled claims across pinned Express and Chalk revisions matched their expected outcomes. These selected builder requests use actual GitHub and Gemini responses. They are separate from the manufactured regression cases and historical benchmark.
 - `node scripts/live-evaluation.mjs` runs another explicit provider-consuming observation against a local service. Archive the existing records first; this intentionally writes a new run.
 - [Build record](BUILD_STATUS.md) discloses actual live-provider observations, setup/test failures and limits. Controlled tests, illustrative examples and real provider runs are labeled separately.
 - [Product backlog and limits](devpost/PRODUCT_STATUS.md) maps the authorized improvements to their implementation and remaining evidence gaps.
 - [Frozen six-repository plan](benchmark/v3/plan.json) contains 33 builder-authored evidence-class expectations. `node scripts/run-product-evaluation.mjs NEW-RUN-NAME` runs actual provider requests through the production assessment handler and retains each attempt. It supplies explicit source paths, so it does not measure automatic retrieval quality. Its baseline is the same raw model answer before deterministic validation, not a competing product.
+- [Latest retained live cohort](benchmark/v3/summary.json): six requests completed and matched 32/33 expectations; raw model answers matched 33/33. A corrected-validator replay matched 33/33 with no new model calls. Earlier request failures and the subsequent browser capacity failure remain recorded separately.
+- [Final product and rule audit](devpost/FINAL_AUDIT.md) records the checked Devpost requirements, cleanup scope and limits. Presentation, video and submission quality are excluded from the product assessment.
 - [Independent observation protocol](devpost/product-observation.md) defines user-comprehension, changed-decision and timing observations. Those sessions remain pending; automated checks are not independent users.
 
 No population success rate, independent-user adoption, financial savings or numerical winning probability is established. External testing would strengthen the impact evidence, but is not fabricated from the builder's own runs.

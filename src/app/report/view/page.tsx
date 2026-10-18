@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { Audit } from "@/types/audit";
 import { AuditResults } from "@/components/AuditResults";
@@ -80,9 +81,9 @@ export default function VerifiedReportPage() {
             </div>
           </>
         ) : null}
-        <a className="text-button" href="/">
+        <Link className="text-button" href="/">
           ← Inspect another handoff
-        </a>
+        </Link>
       </section>
     </main>
   );

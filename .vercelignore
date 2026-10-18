@@ -11,3 +11,4 @@ devpost/learner-profile.md
 .env.*
 *.tsbuildinfo
 devserver.err
+*.log

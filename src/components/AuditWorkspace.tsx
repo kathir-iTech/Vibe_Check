@@ -1,17 +1,15 @@
 "use client";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { Audit } from "@/types/audit";
 import { AuditResults } from "./AuditResults";
 import { EXAMPLE_AUDIT } from "@/lib/example-audit";
+import { validReportShape } from "@/lib/report-format.mjs";
 import {
   auditMarkdown,
   downloadFile,
   verifyDownloadedReport,
 } from "@/lib/report-client";
-import adversarial from "benchmark/v2/adversarial.json";
-import productEvaluation from "benchmark/v3/summary.json";
-const latestEvaluation =
-  productEvaluation.runs[productEvaluation.runs.length - 1];
 
 const defaultMessage =
   "Configured Next.js and Tailwind CSS. All tests passed. Added Google OAuth login.";
@@ -67,6 +65,18 @@ export default function AuditWorkspace({
   const abortRef = useRef<AbortController | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const uploadRef = useRef<HTMLInputElement>(null);
+  const resultsRef = useRef<HTMLElement>(null);
+  function revealResults() {
+    if (window.matchMedia("(max-width: 760px)").matches) {
+      requestAnimationFrame(() => {
+        resultsRef.current?.scrollIntoView({
+          block: "start",
+          behavior: "instant",
+        });
+        resultsRef.current?.focus({ preventScroll: true });
+      });
+    }
+  }
   useEffect(() => {
     if (
       startWithExample ||
@@ -78,20 +88,34 @@ export default function AuditWorkspace({
     }
     try {
       const saved = JSON.parse(sessionStorage.getItem(STORE) || "null");
-      if (saved?.audit) {
+      if (validReportShape(saved?.audit)) {
         setAudit(saved.audit);
         setReceipt(saved.receipt || null);
         setRestored(true);
       }
-      if (saved?.message) setMessage(saved.message);
-      if (saved?.repoUrl) setRepoUrl(saved.repoUrl);
-      if (saved?.mode) setMode(saved.mode);
-      if (saved?.sourceUrl) setSourceUrl(saved.sourceUrl);
-      if (saved?.headSha) setHeadSha(saved.headSha);
-      if (saved?.baseSha) setBaseSha(saved.baseSha);
-      if (saved?.requirements) setRequirements(saved.requirements);
-      if (saved?.fileHints) setFileHints(saved.fileHints);
-      if (saved?.checkpoint) setCheckpoint(saved.checkpoint);
+      if (typeof saved?.message === "string") setMessage(saved.message);
+      if (typeof saved?.repoUrl === "string") setRepoUrl(saved.repoUrl);
+      if (["message", "claims", "source"].includes(saved?.mode))
+        setMode(saved.mode);
+      if (typeof saved?.sourceUrl === "string") setSourceUrl(saved.sourceUrl);
+      if (typeof saved?.headSha === "string") setHeadSha(saved.headSha);
+      if (typeof saved?.baseSha === "string") setBaseSha(saved.baseSha);
+      if (typeof saved?.requirements === "string")
+        setRequirements(saved.requirements);
+      if (typeof saved?.fileHints === "string") setFileHints(saved.fileHints);
+      if (
+        typeof saved?.checkpoint?.repoUrl === "string" &&
+        /^[a-f0-9]{40}$/i.test(saved.checkpoint.headSha) &&
+        Array.isArray(saved.checkpoint.claims) &&
+        saved.checkpoint.claims.length <= 15 &&
+        saved.checkpoint.claims.every(
+          (claim: any) =>
+            typeof claim?.id === "string" &&
+            typeof claim?.text === "string" &&
+            claim.text.length <= 300,
+        )
+      )
+        setCheckpoint(saved.checkpoint);
     } catch {
       /* storage is optional */
     }
@@ -177,10 +201,10 @@ export default function AuditWorkspace({
         headers,
         signal: controller.signal,
         body: JSON.stringify({
-          repoUrl,
+          repoUrl: latest && audit ? audit.repoUrl : repoUrl,
           message: claims ? undefined : message,
           claims: claims?.map((text, i) => ({ id: `claim-${i + 1}`, text })),
-          sourceUrl: mode === "source" ? sourceUrl : undefined,
+          sourceUrl: !latest && mode === "source" ? sourceUrl : undefined,
           headSha: latest ? "" : headSha,
           baseSha: latest && audit ? audit.headSha : baseSha,
           requirements,
@@ -249,6 +273,7 @@ export default function AuditWorkspace({
             setStage("done");
             completed = true;
             setCheckpoint(null);
+            revealResults();
           }
         }
         if (chunk.done) break;
@@ -272,6 +297,7 @@ export default function AuditWorkspace({
             : "Audit failed",
       );
       setStage("error");
+      revealResults();
     } finally {
       clearTimeout(timer);
       setBusy(false);
@@ -315,6 +341,7 @@ export default function AuditWorkspace({
     }
   }
   function example() {
+    if (busy) return;
     if (audit) setPrevious(audit);
     setAudit(EXAMPLE_AUDIT);
     setReceipt(null);
@@ -322,6 +349,7 @@ export default function AuditWorkspace({
     setError("");
     setNotice("");
     setStage("");
+    revealResults();
   }
   async function importFile(file: File) {
     try {
@@ -340,6 +368,7 @@ export default function AuditWorkspace({
       );
       setRestored(false);
       setError("");
+      revealResults();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Import failed");
     }
@@ -370,6 +399,31 @@ export default function AuditWorkspace({
       downloadFile("vibecheck-audit.md", auditMarkdown(audit), "text/markdown");
     }
   }
+  function clearWorkspace() {
+    if (busy) return;
+    try {
+      sessionStorage.removeItem(STORE);
+    } catch {
+      /* Clearing in-memory state still works without browser storage. */
+    }
+    setAudit(null);
+    setReceipt(null);
+    setPrevious(null);
+    setCheckpoint(null);
+    setMessage("");
+    setRepoUrl("");
+    setSourceUrl("");
+    setHeadSha("");
+    setBaseSha("");
+    setRequirements("");
+    setFileHints("");
+    setToken("");
+    setMode("message");
+    setError("");
+    setStage("");
+    setRestored(false);
+    setNotice("This tab’s inputs and saved assessment were cleared.");
+  }
   const live = audit?.source.kind === "live";
   return (
     <main className="workspace-shell" id="inspector">
@@ -386,17 +440,22 @@ export default function AuditWorkspace({
           </p>
         </div>
         <div className="intro-aside">
+          <Link className="recorded-audit-link" href="/proof">
+            Open a real audit <span aria-hidden="true">↗</span>
+          </Link>
+          <span className="example-caption">
+            Recorded GitHub + AI run. No setup.
+          </span>
           <button
             className="example-button"
             onClick={example}
-            disabled={!storageReady}
+            disabled={busy || !storageReady}
           >
             <span className="play-icon" aria-hidden="true">
               ▶
             </span>
             Try an example <span aria-hidden="true">↗</span>
           </button>
-          <span className="example-caption">No setup. No API call.</span>
         </div>
       </section>
       <div className="workspace-grid">
@@ -420,7 +479,10 @@ export default function AuditWorkspace({
                 key={id}
                 aria-pressed={mode === id}
                 disabled={busy}
-                onClick={() => setMode(id)}
+                onClick={() => {
+                  setMode(id);
+                  if (id === "source") setRepoUrl("");
+                }}
               >
                 {label}
               </button>
@@ -444,15 +506,15 @@ export default function AuditWorkspace({
                   required
                 />
                 <p className="field-help">
-                  The source revision is resolved from the URL. Clear the target
-                  below to use its repository automatically.
+                  Repository and commit come from this link. An optional target
+                  below must match.
                 </p>
               </>
             ) : (
               <>
                 <label htmlFor="agent-message">
                   {mode === "claims"
-                    ? "One atomic claim per line"
+                    ? "One claim per line"
                     : "Agent completion message"}
                 </label>
                 <textarea
@@ -612,7 +674,12 @@ export default function AuditWorkspace({
             One fixed commit. Source inspection only; no code execution.
           </p>
         </aside>
-        <section className="results-panel" aria-label="Audit results">
+        <section
+          ref={resultsRef}
+          tabIndex={-1}
+          className="results-panel"
+          aria-label="Audit results"
+        >
           <div className="panel-heading">
             <span className="eyebrow">02 / RESULTS</span>
             {audit && (
@@ -649,6 +716,9 @@ export default function AuditWorkspace({
             <div className="error-message" role="alert">
               <strong>The assessment needs attention</strong>
               <p>{error}</p>
+              <Link className="text-button" href="/proof">
+                Inspect a recorded real audit ↗
+              </Link>
               {checkpoint && (
                 <button
                   className="text-button"
@@ -724,6 +794,7 @@ export default function AuditWorkspace({
                   setMessage(text);
                   setRepoUrl(audit.repoUrl);
                   setHeadSha(audit.headSha);
+                  setBaseSha("");
                   setNotice(
                     "Add relevant file paths under Advanced options, then check this claim at the same commit.",
                   );
@@ -732,6 +803,9 @@ export default function AuditWorkspace({
                 onCheckRequirement={(text) => {
                   setMode("claims");
                   setMessage(text.slice(0, 300));
+                  setRepoUrl(audit.repoUrl);
+                  setHeadSha(audit.headSha);
+                  setBaseSha("");
                   inputRef.current?.focus();
                 }}
               />
@@ -874,79 +948,22 @@ export default function AuditWorkspace({
       <section className="evaluation-section" id="evaluation">
         <div>
           <p className="eyebrow">CHECK THE CHECKER</p>
-          <h2>Proof, including ours.</h2>
-          <p>Small, reproducible checks. Open results, including failures.</p>
+          <h2>Evidence you can inspect.</h2>
+          <p>Source citations, recorded runs and published failures.</p>
         </div>
-        <div className="historical-metrics">
-          <div>
-            <strong>
-              {adversarial.summary.currentExpectedOutcomes}/
-              {adversarial.summary.cases}
-            </strong>
-            <span>Controlled verification cases passed</span>
-          </div>
-          <div>
-            <strong>
-              {adversarial.summary.currentUnsafeAccepted}/
-              {adversarial.summary.unsafeCases}
-            </strong>
-            <span>Unsafe cases accepted in that set</span>
-          </div>
-          <div>
-            <strong>
-              {latestEvaluation.expectedOutcomes}/
-              {latestEvaluation.plannedClaims}
-            </strong>
-            <span>
-              Live expectations matched · {latestEvaluation.planned} public
-              repos
-            </span>
-          </div>
-        </div>
-        <details className="evaluation-details">
-          <summary>What these numbers mean</summary>
-          <p className="panel-note">
-            The 15 manufactured cases test quotation and report integrity. The
-            latest six-repository cohort completed 6/6 requests and matched
-            32/33 builder-labeled expectations; the earlier attempt completed
-            4/6 requests and matched 19/33 planned expectations. The raw-model
-            baseline matched 33/33 on the later run. A subsequent validator
-            replay matched 33/33 without new model calls; the original live
-            result remains 32/33. A fresh browser request then hit provider
-            capacity. These selected observations are not independent user
-            evidence or a general accuracy estimate.
-          </p>
-        </details>
-        <a
-          className="text-button"
-          href="https://github.com/kathir-iTech/Vibe_Check/tree/main/benchmark/v3"
-          target="_blank"
-          rel="noreferrer"
-        >
-          Inspect the evaluation records ↗
-        </a>
-        <a
-          className="text-button"
-          href="/proof"
-          style={{ display: "inline-block", marginLeft: 20 }}
-        >
-          Open a recorded live audit ↗
-        </a>
+        <Link className="text-button" href="/evaluation">
+          See evaluation & limits ↗
+        </Link>
       </section>
       <footer className="workspace-footer">
         <span>VibeCheck / inspect the handoff.</span>
         <span>Built with the Devpost Learn Skill Pack · MIT</span>
         <button
           className="text-button"
-          onClick={() => {
-            sessionStorage.removeItem(STORE);
-            setAudit(null);
-            setReceipt(null);
-            setPrevious(null);
-            setNotice("This tab’s saved assessment was cleared.");
-          }}
+          disabled={busy || !storageReady}
+          onClick={clearWorkspace}
         >
-          Clear this tab’s saved assessment
+          Clear this tab
         </button>
       </footer>
     </main>

@@ -16,7 +16,7 @@ test("actual claim review reaches pinned code, requirement conflict and independ
   await page.goto("/");
   await page.getByRole("button", { name: "Claim list", exact: true }).click();
   await page
-    .getByLabel("One atomic claim per line")
+    .getByLabel("One claim per line")
     .fill(
       "A createChalk function is defined.\nThis package is MIT licensed.\nAll tests passed.",
     );

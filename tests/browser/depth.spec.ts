@@ -34,7 +34,7 @@ test("review extraction precedes inspection and accepts explicit source hints", 
   await page
     .getByRole("button", { name: "Review extracted claims first" })
     .click();
-  await expect(page.getByLabel("One atomic claim per line")).toHaveValue(
+  await expect(page.getByLabel("One claim per line")).toHaveValue(
     "A login function exists\nAll tests passed",
   );
   expect(inspected).toBe(false);
@@ -74,7 +74,7 @@ test("a failed later stage preserves extracted claims at the original revision",
     "The AI provider is at capacity",
   );
   await page.getByRole("button", { name: "Recover extracted claims" }).click();
-  await expect(page.getByLabel("One atomic claim per line")).toHaveValue(
+  await expect(page.getByLabel("One claim per line")).toHaveValue(
     "A session function exists",
   );
   await expect(page.getByLabel("GitHub repository")).toHaveValue(
@@ -95,7 +95,7 @@ test("inspect-more keeps the report revision and repair handoffs contain unresol
     .getByRole("button", { name: "Inspect more evidence" })
     .first()
     .click();
-  await expect(page.getByLabel("One atomic claim per line")).toHaveValue(
+  await expect(page.getByLabel("One claim per line")).toHaveValue(
     "All tests passed.",
   );
   await page.locator("summary").filter({ hasText: "Advanced options" }).click();

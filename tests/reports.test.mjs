@@ -6,7 +6,11 @@ import {
   safeDecodeReportId,
   reportVerificationKey,
 } from "../src/lib/report-crypto.mjs";
-import { canonicalJSON, unsignedReport } from "../src/lib/report-format.mjs";
+import {
+  canonicalJSON,
+  unsignedReport,
+  validReportShape,
+} from "../src/lib/report-format.mjs";
 import { loadProduction } from "../scripts/test-support.mjs";
 process.env.REPORT_SIGNING_SECRET = "test-only-dedicated-secret-32-chars-long";
 const payload = {
@@ -27,6 +31,38 @@ const payload = {
 };
 const idOf = (value) =>
   Buffer.from(JSON.stringify(value)).toString("base64url");
+
+test("report imports reject malformed fields consumed by the workspace views", () => {
+  const { EXAMPLE_AUDIT } = loadProduction("src/lib/example-audit.ts");
+  assert.equal(validReportShape(EXAMPLE_AUDIT), true);
+  const fixture = structuredClone(EXAMPLE_AUDIT);
+  fixture.requirements = [
+    {
+      id: "r1",
+      text: "Must preserve login",
+      file: "scope.md",
+      line: 1,
+      status: "not-mentioned",
+      claimIds: [],
+    },
+  ];
+  for (const mutate of [
+    (p) => delete p.headSha,
+    (p) => (p.generatedAt = "invalid"),
+    (p) => (p.retrieval.fileHints = "not an array"),
+    (p) => (p.requirements[0].strength = { malformed: true }),
+    (p) => (p.requirements[0].suggestedClaimIds = "not an array"),
+    (p) => (p.requirements[0].claimIds = [{ malformed: true }]),
+    (p) =>
+      (p.models.assessment = {
+        usage: { promptTokenCount: { toLocaleString: true } },
+      }),
+  ]) {
+    const changed = structuredClone(fixture);
+    mutate(changed);
+    assert.equal(validReportShape(changed), false);
+  }
+});
 test("every displayed report field is signed and signature verifies with an independent public key", () => {
   const { id, signedPayload } = encodeSignedReport(payload);
   assert.equal(safeDecodeReportId(id).signatureVerified, true);
