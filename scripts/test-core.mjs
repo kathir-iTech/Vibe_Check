@@ -25,6 +25,7 @@ import {
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, "..");
+process.env.REPORT_SIGNING_SECRET = 'vibecheck-test-key-not-for-deployment-2026';
 
 function runTests() {
   console.log("=== VibeCheck Production Unit Test Suite ===");
@@ -109,7 +110,9 @@ function runTests() {
   const escapedLiveQuote =
     "throw new Error(\\`Gemini quoted text not found in \\${sourceDoc} for \\${claim.id}: \\${contradictingLine}\\`);";
   const geminiLine = findLineNumber(realGeminiFile, escapedLiveQuote);
-  assert.ok(geminiLine > 0, `Escaped template literal quote must match gemini.ts (found at line ${geminiLine})`);
+  assert.equal(geminiLine, -1, 'Double-escaped code is not the exact source line');
+  const exactErrorLine = realGeminiFile.split('\n').find(line=>line.includes('throw new Error(`Gemini quoted text not found'));
+  assert.ok(findLineNumber(realGeminiFile,exactErrorLine)>0,'Actual source line must match without semantic normalization');
 
   const realReadme = readFileSync(resolve(REPO_ROOT, "README.md"), "utf8");
   const unboldedQuote =
@@ -191,7 +194,7 @@ function runTests() {
     null,
     "Report with invalid verdict enum ('UNERIFIED') must be rejected as null"
   );
-  console.log("[test] PASS: Strict URL parser and HMAC-SHA256 report signing reject spoofed URLs and tampered reports");
+  console.log("[test] PASS: Strict URL parser and complete Ed25519 report signatures reject tampering");
 
   // 7. Test summarize.mjs per-claim isolation
   const fixtureClaims = [

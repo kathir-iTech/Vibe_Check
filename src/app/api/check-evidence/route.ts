@@ -14,6 +14,7 @@ import {
   tokenize,
 } from "@/lib/verification-guards.mjs";
 import { createTimings, serverTimingHeader } from "@/lib/timings";
+import { evidenceObligation, validateAuditClaims } from "@/lib/audit-policy.mjs";
 
 const PATH_MATCH_BONUS = 2;
 const TOP_FILES_PER_CLAIM = 5;
@@ -54,7 +55,8 @@ function findBestLinePreview(
     const hitScore = hits.filter((h) => lower.includes(h)).length;
     if (hitScore === 0) continue;
     const declBonus = calculateCodeRelevanceBonus(rawLine);
-    const totalScore = hitScore * 2 + declBonus;
+    const keyBonus = hits.some(h => new RegExp(`^[\\s"']*${h}["']?\\s*:`).test(rawLine)) ? 6 : 0;
+    const totalScore = hitScore * 2 + declBonus + keyBonus;
     if (totalScore > bestScore && rawLine.trim().length > 2) {
       bestScore = totalScore;
       bestLine = i + 1;
@@ -79,7 +81,9 @@ export async function POST(request: NextRequest) {
   }
 
   const repoUrl = typeof body?.repoUrl === "string" ? body.repoUrl.trim() : "";
-  const rawClaims = Array.isArray(body?.claims) ? body.claims.slice(0, MAX_CLAIMS) : [];
+  let rawClaims: any[];
+  try { rawClaims = validateAuditClaims(body?.claims); }
+  catch (error) { return NextResponse.json({error:String(error)},{status:400}); }
   const userToken = request.headers?.get?.("x-github-token") || undefined;
 
   if (!repoUrl) {
@@ -248,6 +252,7 @@ export async function POST(request: NextRequest) {
     const top = [...scored.values()]
       .sort(
         (a, b) =>
+          (evidenceObligation(claimText) === "configuration" ? ((/^(?:package\.json|pyproject\.toml|Cargo\.toml|go\.mod|requirements\.txt)$/i.test(b.file) ? 30 : 0) - (/^(?:package\.json|pyproject\.toml|Cargo\.toml|go\.mod|requirements\.txt)$/i.test(a.file) ? 30 : 0)) : 0) ||
           b.hitCount +
           (b.pathMatched ? PATH_MATCH_BONUS : 0) +
           (b.codeBonus > 0 ? 1 : 0) -

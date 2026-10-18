@@ -117,7 +117,7 @@ async function generateText(
     const response = await ai.models.generateContent({
       model: PRIMARY_MODEL,
       contents: prompt,
-      config: { temperature },
+      config: { temperature, responseMimeType: "application/json", httpOptions: { timeout: 25000, retryOptions: { attempts: 1 } } },
     });
     const text = response.text;
     if (!text) {
@@ -137,7 +137,7 @@ async function generateText(
     const response = await ai.models.generateContent({
       model: FALLBACK_MODEL,
       contents: prompt,
-      config: { temperature },
+      config: { temperature, responseMimeType: "application/json", httpOptions: { timeout: 25000, retryOptions: { attempts: 1 } } },
     });
     const text = response.text;
     if (!text) {
@@ -250,6 +250,7 @@ export interface SpecAssessment {
   supportingLine: number;
   quoteRejected: boolean;
   rejectionReason: string;
+  coverage?: "full" | "partial" | "none";
 }
 
 export function validateAssessments(
@@ -378,6 +379,7 @@ export function validateAssessments(
       supportingLine,
       quoteRejected,
       rejectionReason,
+      coverage: supported ? (item.coverage === "full" ? "full" : "partial") : "none",
     };
   });
 }
@@ -490,11 +492,12 @@ Support (checked against the matched repository files):
 - "supported": true ONLY when a non-comment, executable code or configuration line in one of that claim's matched repository files directly proves the claim (never a TODO comment or negated line).
 - When "supported" is true, "supportingFile" must be the file path exactly as given above, and "supportingQuote" an EXACT verbatim copy of one complete numbered line from that file (without the "N: " prefix).
 - When you are not certain the file supports the claim, return "supported": false with "supportingFile" and "supportingQuote" set to "".
+- Set "coverage" to "full", "partial" or "none". If a claim contains several obligations and the cited line establishes only some, coverage MUST be "partial". A function declaration alone does not establish that its body implements the promised behavior. An import or dependency alone does not establish that a feature works.
 - When "supported" is false, "reason" must say what the matched files did not show.
 - Return exactly one object per claim, keyed by claim id.
 
 Return ONLY a JSON array:
-[{"claimId":"claim-1","contradicts":false,"sourceDoc":"","contradictingLine":"","reason":"...","supported":false,"supportingFile":"","supportingQuote":""}]`;
+[{"claimId":"claim-1","contradicts":false,"sourceDoc":"","contradictingLine":"","reason":"...","supported":false,"coverage":"none","supportingFile":"","supportingQuote":""}]`;
 }
 
 export async function assessClaimsAgainstSpec(

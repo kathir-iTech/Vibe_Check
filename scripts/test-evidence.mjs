@@ -4,9 +4,11 @@ import { findLineNumber, isImplementationLineAt, hasNegationMismatch } from '../
 assert.equal(findLineNumber('const method = "GET";', 'const method = "get";'), -1);
 assert.equal(findLineNumber('const method = "GET";', 'const Method = "GET";'), -1);
 assert.equal(findLineNumber('const value = "a  b";', 'const value = "a b";'), -1);
+assert.equal(findLineNumber('const value = "$";', 'const value = "\\$";'), -1);
 assert.equal(findLineNumber('const value = "a  b";', '1: const value = "a  b";'), 1);
 assert.equal(findLineNumber('if (false) { authenticate(); }', 'authenticate();'), -1);
 assert.equal(isImplementationLineAt('/*\nAuthentication implemented\n*/', 2, 'auth.ts'), false);
 assert.equal(isImplementationLineAt('export function auth() {}', 1, 'auth.ts'), true);
+assert.equal(isImplementationLineAt('{"paths":{"@/*":["src/*"]}}\n"next": "16.3.5",', 2, 'package.json'), true);
 assert.equal(hasNegationMismatch('OAuth is enabled', 'const enabled = false;'), true);
 console.log('PASS: exact source semantics, partial-code rejection, block comments and disabled settings');

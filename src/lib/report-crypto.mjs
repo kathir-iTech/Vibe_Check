@@ -1,12 +1,19 @@
-import { createHmac, timingSafeEqual } from "crypto";
+import { createHash, createPrivateKey, createPublicKey, sign, verify } from "node:crypto";
+import { canonicalJSON, REPORT_SCHEMA, unsignedReport, validReportShape } from "./report-format.mjs";
 
 function getSigningSecret() {
-  return (
-    process.env.REPORT_SIGNING_SECRET ||
-    process.env.GEMINI_API_KEY ||
-    process.env.GITHUB_TOKEN ||
-    "vibecheck-forensic-report-hmac-v1"
-  );
+  const value = process.env.REPORT_SIGNING_SECRET;
+  if (!value || value.length < 32) throw new Error("Report signing is not configured. Set a dedicated REPORT_SIGNING_SECRET of at least 32 characters.");
+  return value;
+}
+
+function privateKey() {
+  const seed = createHash('sha256').update(getSigningSecret()).digest();
+  return createPrivateKey({key: Buffer.concat([Buffer.from('302e020100300506032b657004220420','hex'), seed]),format:'der',type:'pkcs8'});
+}
+export function reportVerificationKey() {
+  const publicKey = createPublicKey(privateKey()).export({format:'der',type:'spki'}).toString('base64');
+  return {algorithm:'Ed25519',keyId:createHash('sha256').update(publicKey).digest('hex').slice(0,16),publicKey};
 }
 
 export function parseGitHubRepoUrl(rawUrl) {
@@ -58,41 +65,29 @@ export function parseGitHubRepoUrl(rawUrl) {
 }
 
 function canonicalReportDigestInput(payload) {
-  return JSON.stringify({
-    repoUrl: payload.repoUrl || "",
-    headSha: payload.headSha || "",
-    generatedAt: payload.generatedAt || "",
-    claims: (payload.claims || []).map((c) => ({ id: c.id, text: c.text })),
-    verdicts: (payload.verdicts || []).map((v) => ({
-      claimId: v.claimId,
-      verdict: v.verdict,
-      specReference: v.specReference || "",
-    })),
-  });
+  return canonicalJSON(unsignedReport(payload));
 }
 
 export function signReportPayload(payload) {
-  const hmac = createHmac("sha256", getSigningSecret());
-  hmac.update(canonicalReportDigestInput(payload));
-  return hmac.digest("hex").slice(0, 32);
+  return sign(null, Buffer.from(canonicalReportDigestInput(payload)), privateKey()).toString('base64url');
 }
 
 export function verifyReportSignature(payload, signature) {
   if (!signature || typeof signature !== "string") return false;
-  const expected = signReportPayload(payload);
   try {
-    const a = Buffer.from(expected, "utf8");
-    const b = Buffer.from(signature, "utf8");
-    if (a.length !== b.length) return false;
-    return timingSafeEqual(a, b);
+    const key = reportVerificationKey();
+    if (payload.schema !== REPORT_SCHEMA || payload.keyId !== key.keyId) return false;
+    return verify(null, Buffer.from(canonicalReportDigestInput(payload)), createPublicKey(privateKey()), Buffer.from(signature, 'base64url'));
   } catch {
     return false;
   }
 }
 
 export function encodeSignedReport(payload) {
-  const sig = signReportPayload(payload);
-  const signedPayload = { ...payload, sig };
+  const unsigned = { verifierVersion:'2.0.0',source:{kind:'live',label:'Server assessment'},requirements:[],sourceDocuments:[],models:{},timings:{},warnings:[],retrieval:{totalFiles:0,candidateFiles:0,inspectedFiles:0,omittedFiles:0,bounded:true,treeTruncated:false},...unsignedReport(payload), schema: REPORT_SCHEMA, keyId: reportVerificationKey().keyId };
+  if (!validReportShape(unsigned)) throw new Error('Invalid audit report');
+  const sig = signReportPayload(unsigned);
+  const signedPayload = { ...unsigned, sig };
   return {
     id: Buffer.from(JSON.stringify(signedPayload), "utf8").toString("base64url"),
     sig,
@@ -102,31 +97,15 @@ export function encodeSignedReport(payload) {
 
 export function safeDecodeReportId(idParam) {
   try {
-    if (!idParam || typeof idParam !== "string" || idParam.length > 64 * 1024) {
+    if (!idParam || typeof idParam !== "string" || idParam.length > 256 * 1024) {
       return null;
     }
     const json = Buffer.from(idParam, "base64url").toString("utf8");
     const data = JSON.parse(json);
-    if (!data || typeof data !== "object" || !Array.isArray(data.claims)) {
+    if (!validReportShape(data)) {
       return null;
     }
-    const VALID_VERDICTS = new Set(["TRUE", "UNVERIFIED", "SPEC-DRIFT"]);
-    const verdicts = Array.isArray(data.verdicts) ? data.verdicts : [];
-    for (const v of verdicts) {
-      if (!v || !VALID_VERDICTS.has(v.verdict)) {
-        return null;
-      }
-    }
-    const report = {
-      repoUrl: typeof data.repoUrl === "string" ? data.repoUrl : "",
-      headSha: typeof data.headSha === "string" ? data.headSha : "",
-      claims: data.claims.slice(0, 15),
-      evidence: data.evidence && typeof data.evidence === "object" ? data.evidence : {},
-      verdicts: verdicts.slice(0, 15),
-      generatedAt: typeof data.generatedAt === "string" ? data.generatedAt : "",
-      sig: typeof data.sig === "string" ? data.sig : "",
-      signatureVerified: false,
-    };
+    const report = { ...data, signatureVerified: false };
     report.signatureVerified = verifyReportSignature(report, report.sig);
     return report;
   } catch {

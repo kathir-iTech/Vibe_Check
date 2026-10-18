@@ -9,7 +9,7 @@ export default async function ReportPage({
   const { id } = await params;
   const report = safeDecodeReportId(id);
 
-  if (!report) {
+  if (!report || !report.signatureVerified) {
     return (
       <main className="mx-auto max-w-4xl space-y-6 px-4 py-8 sm:py-12">
         <section className="rounded-xl border border-red-200 bg-white p-5 shadow-sm dark:border-red-500/30 dark:bg-zinc-900">
@@ -42,7 +42,7 @@ export default async function ReportPage({
             </h1>
             {report.signatureVerified ? (
               <span className="rounded-full border border-emerald-500/30 bg-emerald-100 px-2.5 py-0.5 font-mono text-[11px] font-bold text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300">
-                ✓ HMAC-SHA256 Signed
+                ✓ Complete Ed25519 signature
               </span>
             ) : (
               <span className="rounded-full border border-amber-500/30 bg-amber-100 px-2.5 py-0.5 font-mono text-[11px] font-bold text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">

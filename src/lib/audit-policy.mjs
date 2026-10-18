@@ -51,7 +51,7 @@ export function mapRequirements(requirements, claims, verdicts, tokenize) {
     const words = new Set(tokenize(row.text).filter(w => w.length > 3));
     const related = claims.filter(c => [...new Set(tokenize(c.text))].filter(w => words.has(w)).length >= 2);
     const flags = related.map(c => verdicts.find(v => v.claimId === c.id));
-    return { ...row, claimIds: related.map(c => c.id), status: flags.some(v => v?.verdict === 'SPEC-DRIFT') ? 'conflict' : related.length ? 'mentioned' : 'not-mentioned', note: 'Keyword association for review; requirement fulfillment is not certified.' };
+    return { ...row, claimIds: related.map(c => c.id), status: flags.some(v => v?.verdict === 'SPEC-DRIFT' && v?.spec?.file === row.file && v?.spec?.line === row.line) ? 'conflict' : related.length ? 'mentioned' : 'not-mentioned', note: 'Keyword association for review; requirement fulfillment is not certified.' };
   });
 }
 

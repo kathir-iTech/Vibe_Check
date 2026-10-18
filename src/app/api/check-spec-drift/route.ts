@@ -173,14 +173,17 @@ export async function POST(request: NextRequest) {
           reason: a.reason,
           specReference: `${a.sourceDoc}:${a.lineNumber}: ${a.contradictingLine}`,
           supportingReference: `${a.supportingFile}:${a.supportingLine}: ${a.supportingQuote}`,
+          code: { file: a.supportingFile, line: a.supportingLine, quote: a.supportingQuote },
+          spec: { file: a.sourceDoc, line: a.lineNumber, quote: a.contradictingLine },
         });
       } else if (a.supported && a.supportingLine > 0) {
         outcomes.set(a.claimId, {
           claimId: a.claimId,
           claimText,
-          verdict: "TRUE",
+          verdict: a.coverage === "partial" ? "PARTIAL" : "TRUE",
           reason: a.reason,
           specReference: `${a.supportingFile}:${a.supportingLine}: ${a.supportingQuote}`,
+          code: { file: a.supportingFile, line: a.supportingLine, quote: a.supportingQuote },
         });
       } else {
         outcomes.set(a.claimId, {

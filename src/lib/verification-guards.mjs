@@ -70,10 +70,9 @@ export function findLineNumber(docText, quote) {
     const candRaw = exact(lines[i]);
     if (!candRaw) continue;
     // Escaped template markers are accepted only as a complete source line.
-    const unescapedQuote = rawNormalized.replace(/\\`/g, "`").replace(/\\\$/g, "$");
     const markdownLine = /^(?:>|[-*] |#{1,6} )/.test(candRaw);
     const candStripped = stripOuterFormatting(normalizeForLineMatch(candRaw));
-    if (candRaw === rawNormalized || candRaw === unescapedQuote || (markdownLine && candStripped === strippedQuote)) {
+    if (candRaw === rawNormalized || (markdownLine && candStripped === strippedQuote)) {
       return i + 1;
     }
   }
@@ -105,7 +104,7 @@ export function isImplementationLineAt(text, line, path) {
   const lines = String(text || "").split("\n");
   if (!Number.isInteger(line) || line < 1 || line > lines.length) return false;
   const before = lines.slice(0, line).join("\n");
-  if (before.lastIndexOf("/*") > before.lastIndexOf("*/")) return false;
+  if (CODE_FILE_EXT.test(path) && before.lastIndexOf("/*") > before.lastIndexOf("*/")) return false;
   if (/\.(py|sh)$/i.test(path) && (before.match(/'''|"""/g) || []).length % 2) return false;
   return isExecutableCodeLine(lines[line - 1], path);
 }

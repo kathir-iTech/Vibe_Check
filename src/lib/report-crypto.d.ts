@@ -28,6 +28,7 @@ export declare function encodeSignedReport(payload: {
 };
 
 export declare function safeDecodeReportId(idParam: string): {
+  [key: string]: any;
   repoUrl: string;
   headSha: string;
   claims: any[];
@@ -37,3 +38,4 @@ export declare function safeDecodeReportId(idParam: string): {
   sig: string;
   signatureVerified: boolean;
 } | null;
+export declare function reportVerificationKey(): { algorithm: string; keyId: string; publicKey: string };

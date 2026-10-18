@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint src",
-    "test": "node scripts/test-core.mjs",
+    "test": "node scripts/test-core.mjs && node scripts/test-evidence.mjs && node --test tests/*.test.mjs",
+    "test:browser": "playwright test",
     "test-summarize": "node scripts/test-core.mjs",
     "check-seed": "node scripts/check-seed.mjs",
     "regenerate-seed": "node scripts/regenerate-seed.mjs",
@@ -23,6 +24,7 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@playwright/test": "1.64.0",
     "@types/node": "^20.14.0",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",

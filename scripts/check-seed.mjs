@@ -6,11 +6,16 @@
 import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, resolve } from "path";
+import { createHash } from 'node:crypto';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, "..");
 const SEED_PATH = resolve(REPO_ROOT, "src/lib/self-audit-seed.ts");
 const CLAIMS_JSON_PATH = resolve(REPO_ROOT, "src/lib/self-audit-claims.json");
+const historical = JSON.parse(readFileSync(resolve(REPO_ROOT,'benchmark/history/self-audit-source.json'),'utf8'));
+for (const file of Object.values(historical.files)) {
+  if (createHash('sha256').update(file.text).digest('hex') !== file.sha256) throw new Error('Historical source snapshot hash mismatch');
+}
 
 function extractClaimsFromSeed() {
   const content = readFileSync(SEED_PATH, "utf8");
@@ -34,7 +39,8 @@ function verifySpecRef(specReference) {
   if (!m) return false;
   const [, relFile, lineStr, quote] = m;
   const lineNum = Number(lineStr);
-  const fileText = readFileSync(resolve(REPO_ROOT, relFile), "utf8");
+  const fileText = historical.files[relFile]?.text;
+  if (!fileText) return false;
   const lines = fileText.split("\n");
   const actualLine = lines[lineNum - 1] || "";
   return actualLine.trim().includes(quote.trim());
@@ -77,7 +83,7 @@ function main() {
     console.error("[check-seed] Seed verification FAILED");
     process.exit(1);
   } else {
-    console.log("[check-seed] All seed claim texts and citations match source files");
+    console.log(`[check-seed] Historical seed citations match preserved source ${historical.revision}; no current-verifier success is inferred`);
     process.exit(0);
   }
 }
