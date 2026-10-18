@@ -82,7 +82,7 @@ async function json(path, body) {
 }
 const health = await json("/api/health");
 assert.equal(health.sourceHead, revision);
-assert.equal(health.verifierVersion, "2.1.0");
+assert.equal(health.verifierVersion, "2.2.0");
 assert.equal(health.signingConfigured, true);
 const root = await request("/");
 assert.equal(root.status, 200);
@@ -98,7 +98,7 @@ const result = await json("/api/audit", {
 assert.ok(result.auditReceipt);
 assert.equal(result.audit.verdicts[0].verdict, "UNVERIFIED");
 assert.equal(result.audit.models.assessment.model, null);
-assert.equal(result.audit.verifierVersion, "2.1.0");
+assert.equal(result.audit.verifierVersion, "2.2.0");
 const key = await json("/api/report-key");
 const publicKey = createPublicKey({
   key: Buffer.from(key.publicKey, "base64"),

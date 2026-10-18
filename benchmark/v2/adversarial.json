@@ -6,7 +6,7 @@
     "src/lib/verification-guards.mjs": "83104a270b75dbd2dfa0a05631fa56f4a96586e0c3fb064c12f14787fc38ffc9",
     "src/lib/report-crypto.mjs": "dd188c4d6b82634dcbdce6ae0ff255a801f3012461ab096b2e24b9e8ee7c5f13",
     "src/lib/report-format.mjs": "d71d32a3716795edd364ae681013960ec9bc7e835f4206b180dd7b963847a95d",
-    "src/lib/audit-policy.mjs": "2376785c201cac52d9d54e2c0ae2836496f41f36012a68fc889944a804fd5bdc",
+    "src/lib/audit-policy.mjs": "7ee229ce6c10af60a5cc6d92f6a2ccaee692191de2f75c4a068492046d3f8b19",
     "src/lib/evidence-depth.mjs": "787bab81b07b142d3f341a391a6b3333cf13a0c69b3bdf33b67b1603fd450745",
     "src/lib/source-window.mjs": "46b0e4f7cfef54e0206ebedf9328fbd7e0a84d646352f2004ebd5c7aa2b33387",
     "src/lib/gemini.ts": "91090af923a5ab3a260a61b2944f3fdd53875c0742384473360c5d25196834dd",

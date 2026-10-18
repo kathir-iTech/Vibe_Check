@@ -99,7 +99,7 @@ test("actual claim review reaches pinned code, requirement conflict and independ
     JSON.stringify(observation, null, 2) + "\n",
   );
   expect(verified.signatureVerified).toBe(true);
-  expect(audit.verifierVersion).toBe("2.1.0");
+  expect(audit.verifierVersion).toBe("2.2.0");
   expect(
     audit.verdicts.find((v) => v.claimText.startsWith("A createChalk")).verdict,
   ).toBe("TRUE");
