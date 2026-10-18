@@ -9,7 +9,9 @@ import {
   verifyDownloadedReport,
 } from "@/lib/report-client";
 import adversarial from "benchmark/v2/adversarial.json";
-import liveEvaluation from "benchmark/v2/live-evaluation.json";
+import productEvaluation from "benchmark/v3/summary.json";
+const latestEvaluation =
+  productEvaluation.runs[productEvaluation.runs.length - 1];
 
 const defaultMessage =
   "Configured Next.js and Tailwind CSS. All tests passed. Added Google OAuth login.";
@@ -892,25 +894,32 @@ export default function AuditWorkspace({
           </div>
           <div>
             <strong>
-              {liveEvaluation.summary.matchedOutcomes}/
-              {liveEvaluation.summary.labeledClaims}
+              {latestEvaluation.expectedOutcomes}/
+              {latestEvaluation.plannedClaims}
             </strong>
-            <span>Live labeled claims matched · 2 public repos</span>
+            <span>
+              Live expectations matched · {latestEvaluation.planned} public
+              repos
+            </span>
           </div>
         </div>
         <details className="evaluation-details">
           <summary>What these numbers mean</summary>
           <p className="panel-note">
-            The 15 manufactured cases test quote validation and report
-            integrity. The 8 live claims concern selected package-manifest facts
-            and execution overclaims on Express and Chalk. These builder-run
-            checks are not an independent study or a general accuracy estimate.
-            Historical results are preserved separately.
+            The 15 manufactured cases test quotation and report integrity. The
+            latest six-repository cohort completed 6/6 requests and matched
+            32/33 builder-labeled expectations; the earlier attempt completed
+            4/6 requests and matched 19/33 planned expectations. The raw-model
+            baseline matched 33/33 on the later run. A subsequent validator
+            replay matched 33/33 without new model calls; the original live
+            result remains 32/33. A fresh browser request then hit provider
+            capacity. These selected observations are not independent user
+            evidence or a general accuracy estimate.
           </p>
         </details>
         <a
           className="text-button"
-          href="https://github.com/kathir-iTech/Vibe_Check/tree/codex/vibecheck-evidence-workspace/benchmark"
+          href="https://github.com/kathir-iTech/Vibe_Check/tree/main/benchmark/v3"
           target="_blank"
           rel="noreferrer"
         >
