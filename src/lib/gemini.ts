@@ -8,6 +8,7 @@ import {
   hasContradictionKeywords,
   hasNegationMismatch,
   isExecutableCodeLine,
+  isImplementationLineAt,
   isRestatement,
   normalize,
   normalizeForLineMatch,
@@ -162,12 +163,18 @@ export function validateClaims(data: unknown): ParsedClaim[] {
   if (!Array.isArray(data)) {
     throw new Error("Gemini returned a non-array response");
   }
+  const ids = new Set<string>();
   return data.slice(0, MAX_CLAIMS).map((item: any, index: number) => {
     if (!item || typeof item !== "object" || typeof item.text !== "string") {
       throw new Error(`Claim at index ${index} is missing a valid "text" field`);
     }
+    const id = typeof item.id === "string" ? item.id : `claim-${index + 1}`;
+    if (!/^[a-zA-Z0-9_-]{1,64}$/.test(id) || ids.has(id) || !item.text.trim()) {
+      throw new Error("Claims need unique bounded identifiers and nonempty text");
+    }
+    ids.add(id);
     return {
-      id: typeof item.id === "string" ? item.id : `claim-${index + 1}`,
+      id,
       text: truncateTo(item.text, MAX_CLAIM_CHARS, CLAIM_TRUNCATION_MARKER),
       evidenceType: Array.isArray(item.evidenceType) ? item.evidenceType : ["file", "commit"],
     };
@@ -259,6 +266,9 @@ export function validateAssessments(
     if (!item || typeof item !== "object" || typeof item.claimId !== "string") {
       throw new Error("Gemini assessment missing a claimId");
     }
+    if (byId.has(item.claimId) || !claims.some(c => c.id === item.claimId)) {
+      throw new Error("Gemini assessment has a duplicate or unknown claimId");
+    }
     byId.set(item.claimId, item);
   }
   return claims.map((claim) => {
@@ -303,6 +313,7 @@ export function validateAssessments(
       if (lineNumber === -1) {
         throw new Error(`Gemini quoted text not found in ${sourceDoc} for ${claim.id}: ${contradictingLine}`);
       }
+      contradictingLine = doc.text.split("\n")[lineNumber - 1].trim();
       if (!reason) {
         reason = "Claim contradicts the repo's planning documents";
       }
@@ -328,7 +339,7 @@ export function validateAssessments(
         }
       } else {
         const lineText = doc ? doc.text.split("\n")[found - 1] || "" : "";
-        if (!isExecutableCodeLine(lineText, supportingFile)) {
+        if (!isExecutableCodeLine(lineText, supportingFile) || !isImplementationLineAt(doc.text, found, supportingFile)) {
           quoteRejected = true;
           supported = false;
           supportingLine = 0;
@@ -345,6 +356,7 @@ export function validateAssessments(
           rejectionReason = RESTATEMENT_REASON;
         } else {
           supportingLine = found;
+          supportingQuote = lineText.trim();
         }
       }
     }
